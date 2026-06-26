@@ -217,6 +217,31 @@ switch($action){
     Database::execute("DELETE FROM game_players WHERE game_id=? AND player_id=?",[$gameId,$pid]);
     ok('Entfernt');break;
 
+  case 'add_slogan':
+    $text  = trim($input['text'] ?? '');
+    $phase = in_array($input['phase'] ?? '', ['day','night']) ? $input['phase'] : 'day';
+    if ($text === '') err('Text darf nicht leer sein');
+    if (mb_strlen($text) > 255) err('Text zu lang (max. 255 Zeichen)');
+    $count = (int)(Database::queryOne("SELECT COUNT(*) AS c FROM slogans WHERE phase=?", [$phase])['c'] ?? 0);
+    if ($count >= 20) err('Maximal 20 Sprüche pro Phase erlaubt');
+    try {
+        Database::execute("INSERT INTO slogans (text, phase) VALUES (?,?)", [$text, $phase]);
+        ok('Spruch gespeichert');
+    } catch (\Throwable $e) { err('Dieser Spruch existiert bereits'); }
+    break;
+
+  case 'delete_slogan':
+    $sid = (int)($input['slogan_id'] ?? 0);
+    if (!$sid) err('Ungültige ID');
+    Database::execute("DELETE FROM slogans WHERE id=?", [$sid]);
+    ok('Gelöscht');break;
+
+  case 'toggle_slogan':
+    $sid = (int)($input['slogan_id'] ?? 0);
+    if (!$sid) err('Ungültige ID');
+    Database::execute("UPDATE slogans SET active = 1 - active WHERE id=?", [$sid]);
+    ok('Gespeichert');break;
+
   case 'end_game':
     Database::execute("UPDATE games SET status='finished' WHERE id=?",[$gameId]);
     WebPush::sendToGame($gameId, true, '🏁 Spiel beendet!', 'Das Spiel ist vorbei — danke für eure Teilnahme!');

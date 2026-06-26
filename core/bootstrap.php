@@ -46,7 +46,6 @@ define('LOGIN_LOGO',         $_cfg['login_logo']         ?? '');
 define('MINI_LOGO',          $_cfg['mini_logo']          ?? '');
 define('ASSET_VERSION',      $_cfg['asset_version']      ?? '1');
 define('GAME_TIMEZONE',      $_cfg['game_timezone']      ?? 'Europe/Berlin');
-define('DAY_SLOGANS',        $_cfg['day_slogans']        ?? "30 Grad im Schatten im Dorf\nDie Hühner legen heute mehr als sonst\nDer Bürgermeister schläft schon wieder\nJemand hat die letzte Wurst geklaut\nDer Brunnen riecht heute komisch\nDas Bier im Wirtshaus ist schon alle\nDrei Krähen kreisen über dem Kirchturm\nDer Schmied hat sich wieder auf den Daumen verhauen\nDie Katze des Pfarrers ist seit gestern weg\nHeute gibt es Rübensuppe beim Wirt\nDie Wetterfahne dreht sich seltsam\nIrgendjemand hat die Scheunentür offengelassen\nDie alte Marie hat mal wieder komisch geschaut\nSeltsame Fußspuren im Morast hinter der Mühle\nDie Milch ist heute besonders sauer\nPfarrer Klemens hat die Predigt wieder verlängert\nIm Dorf herrscht trügerische Stille\nDas Kalb vom Bauern Huber hat dreimal gemuht\nDer Mond sah heute Nacht besonders groß aus\nDie Gänse sind nervöser als üblich");
 date_default_timezone_set(GAME_TIMEZONE);
 unset($_cfg);
 

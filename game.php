@@ -17,8 +17,14 @@ $myGP    = $gameId ? gamePlayer($gameId, $player['id']) : null;
 // Rolle des Spielers — null wenn noch keine vergeben oder Spiel in Lobby
 $myRole  = $myGP && $myGP['role_id'] ? role((int)$myGP['role_id']) : null;
 
-// Tages-Slogans aus DB: eine Zeile = ein Slogan (wird im Banner rotiert)
-$daySlogans = array_values(array_filter(array_map('trim', explode("\n", DAY_SLOGANS))));
+// Sprüche aus DB laden (Tag + Nacht, zufällige Reihenfolge, max. 20)
+try {
+    $daySlogans   = array_column(Database::query("SELECT text FROM slogans WHERE phase='day'   AND active=1 ORDER BY RAND() LIMIT 20"), 'text');
+    $nightSlogans = array_column(Database::query("SELECT text FROM slogans WHERE phase='night' AND active=1 ORDER BY RAND() LIMIT 20"), 'text');
+} catch (\Throwable $e) {
+    $daySlogans   = [];
+    $nightSlogans = [];
+}
 
 // Aktuelle Versammlungsanfrage laden
 $currentAssembly = null;
@@ -42,7 +48,7 @@ if ($gameId && ($game['status'] ?? '') === 'running') {
 $page = [
     'title'    => 'Spielfeld',
     'inline_js' => sprintf(
-        'const GAME_ID=%s,PLAYER_ID=%s,MY_ALIVE=%s,GAME_STATUS=%s,GAME_PHASE=%s,API_BASE=%s,DAY_SLOGANS=%s,MY_COOLDOWN_MINS=%s,MY_COOLDOWN_STARTED=%s,ASSEMBLY_DATA=%s;',
+        'const GAME_ID=%s,PLAYER_ID=%s,MY_ALIVE=%s,GAME_STATUS=%s,GAME_PHASE=%s,API_BASE=%s,DAY_SLOGANS=%s,NIGHT_SLOGANS=%s,MY_COOLDOWN_MINS=%s,MY_COOLDOWN_STARTED=%s,ASSEMBLY_DATA=%s;',
         json_encode($gameId),
         json_encode($player['id']),
         json_encode($myGP ? (bool)$myGP['is_alive'] : false),
@@ -50,6 +56,7 @@ $page = [
         json_encode($game['phase']  ?? null),
         json_encode(API_URL),
         json_encode($daySlogans),
+        json_encode($nightSlogans),
         json_encode($myRole ? (int)$myRole['cooldown'] : 0),
         json_encode($myGP['cooldown_started_at'] ?? null),
         json_encode($currentAssembly)
@@ -560,15 +567,17 @@ function _setBannerText(txt) {
 }
 
 function _nextSlogan() {
-  if (_bannerBeraet || !DAY_SLOGANS.length) return;
-  const s = DAY_SLOGANS[Math.floor(Math.random() * DAY_SLOGANS.length)];
-  _setBannerText('☀️ ' + s);
+  if (_bannerBeraet) return;
+  const arr  = GAME_PHASE === 'night' ? NIGHT_SLOGANS : DAY_SLOGANS;
+  if (!arr.length) return;
+  const icon = GAME_PHASE === 'night' ? '🌕' : '☀️';
+  _setBannerText(icon + ' ' + arr[Math.floor(Math.random() * arr.length)]);
 }
 
 function _startSloganRotation() {
-  if (GAME_PHASE !== 'day' || GAME_STATUS !== 'running') return;
+  if (GAME_STATUS !== 'running') return;
   _nextSlogan();
-  _sloganTimer = setInterval(_nextSlogan, 28000);
+  _sloganTimer = setInterval(_nextSlogan, 120000); // alle 2 Minuten
 }
 
 function _bannerSetBeraet() {
@@ -577,8 +586,7 @@ function _bannerSetBeraet() {
   _setBannerText('☀️ Tag — Das Dorf berät');
 }
 
-// Rotation starten wenn Tag + Spiel läuft und kein Spieler gewählt
-if (GAME_PHASE === 'day' && GAME_STATUS === 'running') {
+if (GAME_STATUS === 'running') {
   document.addEventListener('DOMContentLoaded', _startSloganRotation);
 }
 

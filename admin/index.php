@@ -185,6 +185,15 @@ require TEMPLATE_PATH . '/base.php';
     <div class="section-title">Verwaltung</div>
     <div class="admin-links">
 
+      <a href="<?= APP_URL ?>/admin/slogans.php" class="admin-link-card">
+        <span class="admin-link-card__icon">💬</span>
+        <div class="admin-link-card__text">
+          <div class="admin-link-card__title">Dorf-Sprüche</div>
+          <div class="admin-link-card__sub">Tag- &amp; Nacht-Sprüche verwalten</div>
+        </div>
+        <span class="admin-link-card__arrow">→</span>
+      </a>
+
       <a href="<?= APP_URL ?>/admin/roles.php" class="admin-link-card">
         <span class="admin-link-card__icon">🎭</span>
         <div class="admin-link-card__text">

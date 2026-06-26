@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'save')
         'background_music', 'default_role_icon', 'session_lifetime',
         'deaths_empty_title', 'deaths_empty_sub', 'deaths_peace_text',
         'login_logo', 'mini_logo', 'register_subtitle',
-        'game_timezone', 'day_slogans',
+        'game_timezone',
         'push_cooldown',
     ];
 
@@ -94,12 +94,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'save')
                     $errors[$key] = 'Ungültige Zeitzone (z.B. Europe/Berlin).'; continue 2;
                 }
                 break;
-            case 'day_slogans':
-                $v = trim($v);
-                if (mb_strlen($v) > 5000) {
-                    $errors[$key] = 'Slogans zu lang (max. 5000 Zeichen).'; continue 2;
-                }
-                break;
             case 'push_cooldown':
                 $v = (int)$v;
                 if ($v < 0 || $v > 1440) {
@@ -167,7 +161,6 @@ $defaults = [
     'login_logo'         => LOGIN_LOGO,
     'mini_logo'          => MINI_LOGO,
     'game_timezone'      => GAME_TIMEZONE,
-    'day_slogans'        => DAY_SLOGANS,
     'push_cooldown'      => '30',
 ];
 foreach ($defaults as $k => $def) {
@@ -326,16 +319,12 @@ require TEMPLATE_PATH . '/base.php';
                min="2" max="200" style="width:90px">
       </div>
 
-      <div class="settings-row" style="padding:.6rem 0;align-items:flex-start">
+      <div class="settings-row" style="padding:.6rem 0">
         <div>
-          <span class="settings-row__name">Tages-Slogans</span>
-          <div class="text-dim text-xs mt-1">Zufällige Sprüche im Banner solange kein Spieler angeklagt ist. Eine Zeile = ein Slogan.</div>
+          <span class="settings-row__name">Dorf-Sprüche</span>
+          <div class="text-dim text-xs mt-1">Tag- und Nacht-Sprüche werden in der Sprüche-Verwaltung gepflegt.</div>
         </div>
-        <div style="max-width:400px;width:100%">
-          <textarea class="form-input" name="day_slogans" rows="6"
-                    style="resize:vertical;font-size:.82rem;line-height:1.5"
-                    placeholder="Ein Slogan pro Zeile …"><?= e($cfg['day_slogans']['value'] ?? DAY_SLOGANS) ?></textarea>
-        </div>
+        <a href="<?= APP_URL ?>/admin/slogans.php" class="btn btn--ghost btn--sm">Sprüche verwalten →</a>
       </div>
     </div>
 
