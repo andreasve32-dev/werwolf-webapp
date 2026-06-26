@@ -1,5 +1,7 @@
 <?php
 // Copyright (c) 2026 Andreas Vetter
+// Logo-Upload: ersetzt das Login-Logo durch eine neue PNG-Datei.
+// Nur PNG erlaubt, da das Logo Transparenz nutzt.
 require_once dirname(__DIR__) . '/core/bootstrap.php';
 header('Content-Type: application/json; charset=utf-8');
 Auth::requireAdmin();

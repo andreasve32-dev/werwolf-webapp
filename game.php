@@ -1,10 +1,12 @@
 <?php
 // Copyright (c) 2026 Andreas Vetter
+// Spielfeld (Spieler-Ansicht): Rolle anzeigen, Tod melden, abstimmen, Nachrichten.
 require_once __DIR__ . '/core/bootstrap.php';
 Auth::requireLogin();
 
 $player  = Auth::player();
 $game    = currentGame();
+// Kein Spiel vorhanden → automatisch eine neue Lobby anlegen
 if (!$game) {
     Database::execute("INSERT INTO games (status) VALUES ('lobby')");
     $game = currentGame();
@@ -12,9 +14,10 @@ if (!$game) {
 $gameId  = $game['id'] ?? null;
 $myGP    = $gameId ? gamePlayer($gameId, $player['id']) : null;
 
-
+// Rolle des Spielers — null wenn noch keine vergeben oder Spiel in Lobby
 $myRole  = $myGP && $myGP['role_id'] ? role((int)$myGP['role_id']) : null;
 
+// Tages-Slogans aus DB: eine Zeile = ein Slogan (wird im Banner rotiert)
 $daySlogans = array_values(array_filter(array_map('trim', explode("\n", DAY_SLOGANS))));
 
 $page = [

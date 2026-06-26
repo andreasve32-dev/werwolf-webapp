@@ -1,5 +1,7 @@
 <?php
 // Copyright (c) 2026 Andreas Vetter
+// Öffentliche Rollengalerie: zeigt alle aktiven Rollen als Kacheln.
+// Kein is_killer, kein fill — nur das, was Spieler wissen dürfen.
 require_once __DIR__ . '/core/bootstrap.php';
 Auth::requireLogin();
 

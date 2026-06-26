@@ -1,5 +1,7 @@
 <?php
 // Copyright (c) 2026 Andreas Vetter
+// Favicon-Upload: tauscht das Browser-Tab-Icon (mini_logo.png) aus.
+// Nur PNG erlaubt — Transparenz ist für dunkle und helle Browser-Themes nötig.
 require_once dirname(__DIR__) . '/core/bootstrap.php';
 header('Content-Type: application/json; charset=utf-8');
 Auth::requireAdmin();

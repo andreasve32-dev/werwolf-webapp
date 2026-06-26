@@ -1,5 +1,7 @@
 <?php
 // Copyright (c) 2026 Andreas Vetter
+// FAQ & Rollenregeln: nur vom Admin veröffentlichte Antworten erscheinen hier.
+// Spieler stellen Fragen über das Nachrichtenformular auf game.php.
 require_once __DIR__ . '/core/bootstrap.php';
 Auth::requireLogin();
 

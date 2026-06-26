@@ -1,5 +1,7 @@
 <?php
 // Copyright (c) 2026 Andreas Vetter
+// Web-Push-API: VAPID-Schlüssel abrufen, Push-Abonnements speichern und entfernen.
+// Wird vom Browser nach der Bestätigung der Push-Benachrichtigungen aufgerufen.
 require_once dirname(__DIR__) . '/core/bootstrap.php';
 require_once CORE_PATH . '/WebPush.php';
 Auth::requireLogin();

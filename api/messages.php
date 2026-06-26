@@ -1,5 +1,7 @@
 <?php
 // Copyright (c) 2026 Andreas Vetter
+// Nachrichten-API: Spieler senden Fragen an den Spielleiter, Admin antwortet.
+// Veröffentlichte Antworten landen im öffentlichen FAQ (faq.php).
 require_once dirname(__DIR__) . '/core/bootstrap.php';
 Auth::requireLogin();
 

@@ -25,6 +25,8 @@ switch($action){
     echo json_encode(['ok'=>true,'message'=>'Beigetreten']);break;
 
   case 'get_players':
+    // Rollennamen und -Icons werden nur in drei Fällen herausgegeben:
+    // eigene Karte, toter Spieler (Rolle aufgedeckt) oder gleiche sichtbare Rolle.
     $players=Database::query(
       "SELECT gp.player_id, gp.is_alive, gp.role_id, p.display_name,
               r.name AS role_name, r.icon_path AS role_icon_path, r.sichtbar AS role_sichtbar
@@ -111,6 +113,7 @@ switch($action){
     echo json_encode(['ok'=>true,'started_at'=>$now]);break;
 
   case 'update_death_info':
+    // Todesort und -zeit nachtragen. Erlaubt für: Admin oder der Betroffene selbst.
     $deathId = (int)($input['death_id'] ?? 0);
     $ort  = trim($input['ort']  ?? '');
     $zeit = trim($input['zeit'] ?? '');
