@@ -17,7 +17,7 @@ $totals = Database::queryOne("
 ");
 
 $deathsByCause = Database::query(
-    "SELECT cause, COUNT(*) AS cnt FROM deaths GROUP BY cause ORDER BY cnt DESC"
+    "SELECT is_gehenkt, COUNT(*) AS cnt FROM deaths GROUP BY is_gehenkt ORDER BY cnt DESC"
 );
 $deathsByPhase = Database::query(
     "SELECT phase, COUNT(*) AS cnt FROM deaths GROUP BY phase ORDER BY cnt DESC"
@@ -56,10 +56,10 @@ $rolesByPlayer = Database::query("
 ");
 
 $deathsByPlayerCause = Database::query("
-    SELECT d.player_id, d.cause, COUNT(*) AS cnt
+    SELECT d.player_id, d.is_gehenkt, COUNT(*) AS cnt
     FROM deaths d
     JOIN games g ON g.id = d.game_id AND g.status = 'finished'
-    GROUP BY d.player_id, d.cause
+    GROUP BY d.player_id, d.is_gehenkt
 ");
 
 $votesGivenMap    = [];
@@ -71,7 +71,7 @@ foreach (Database::query("SELECT target_id AS pid, COUNT(*) AS cnt FROM votes GR
     $votesReceivedMap[(int)$r['pid']] = (int)$r['cnt'];
 }
 $hangedMap = [];
-foreach (Database::query("SELECT player_id AS pid, COUNT(*) AS cnt FROM deaths WHERE cause='vote' GROUP BY player_id") as $r) {
+foreach (Database::query("SELECT player_id AS pid, COUNT(*) AS cnt FROM deaths WHERE is_gehenkt=1 GROUP BY player_id") as $r) {
     $hangedMap[(int)$r['pid']] = (int)$r['cnt'];
 }
 
@@ -89,10 +89,8 @@ foreach ($deathsByPlayerCause as $r) {
     $deathsGrouped[(int)$r['player_id']][] = $r;
 }
 
-$causeLabels = ['wolves'=>'Von Wölfen','vote'=>'Gehenkt','hunter'=>'Jäger',
-                'witch'=>'Hexe','killer'=>'Killer','other'=>'Sonstiges'];
-$causeColors = ['wolves'=>'#ef4444','vote'=>'#f97316','hunter'=>'#22c55e',
-                'witch'=>'#a855f7','killer'=>'#ec4899','other'=>'#6b7280'];
+$causeLabels = [0 => 'Ermordet', 1 => 'Gehenkt'];
+$causeColors = [0 => '#ef4444',  1 => '#f97316'];
 
 $playerDetails = [];
 foreach ($allPlayers as $p) {
@@ -109,10 +107,11 @@ foreach ($allPlayers as $p) {
 
     $tod = [];
     foreach ($deathsGrouped[$pid] ?? [] as $r) {
+        $key  = (int)$r['is_gehenkt'];
         $tod[] = [
-            'label' => $causeLabels[$r['cause']] ?? $r['cause'],
+            'label' => $causeLabels[$key] ?? 'Unbekannt',
             'value' => (int)$r['cnt'],
-            'color' => $causeColors[$r['cause']] ?? '#6b7280',
+            'color' => $causeColors[$key] ?? '#6b7280',
         ];
     }
 
@@ -133,10 +132,11 @@ foreach ($allPlayers as $p) {
 
 $causePieData = [];
 foreach ($deathsByCause as $row) {
+    $key = (int)$row['is_gehenkt'];
     $causePieData[] = [
-        'label' => $causeLabels[$row['cause']] ?? $row['cause'],
+        'label' => $causeLabels[$key] ?? 'Unbekannt',
         'value' => (int)$row['cnt'],
-        'color' => $causeColors[$row['cause']] ?? '#6b7280',
+        'color' => $causeColors[$key] ?? '#6b7280',
     ];
 }
 $phasePieData = [];
