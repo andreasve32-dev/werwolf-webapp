@@ -58,6 +58,7 @@ CREATE TABLE roles (
 CREATE TABLE games (
   id         INT AUTO_INCREMENT PRIMARY KEY,
   status     ENUM('lobby','running','finished') NOT NULL DEFAULT 'lobby',
+  winner     ENUM('killer','citizen','dodo')    NULL DEFAULT NULL,
   phase      ENUM('day','night')                NOT NULL DEFAULT 'day',
   round      INT NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

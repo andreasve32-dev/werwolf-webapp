@@ -184,6 +184,9 @@ ALTER TABLE roles ADD COLUMN IF NOT EXISTS auto_eintrag TINYINT(1) NOT NULL DEFA
 ALTER TABLE roles ADD COLUMN IF NOT EXISTS is_killer    TINYINT(1) NOT NULL DEFAULT 0 AFTER auto_eintrag;
 UPDATE roles SET befragen=1    WHERE name='Nekromant' AND befragen=0;
 
+-- idempotente Migration: winner-Spalte in games
+ALTER TABLE games ADD COLUMN IF NOT EXISTS winner ENUM('killer','citizen','dodo') NULL DEFAULT NULL AFTER status;
+
 -- idempotente Migration: Push-Einstellungen (push_cooldown + push_last_sent)
 INSERT IGNORE INTO settings (`key`, value, type, label, description, sort_order) VALUES
 ('push_cooldown',  '30', 'int', 'Push-Cooldown (Min.)',          'Mindestwartezeit zwischen zwei Auto-Push-Benachrichtigungen.',    26),

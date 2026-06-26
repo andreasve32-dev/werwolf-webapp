@@ -18,6 +18,56 @@ $gameId=(int)($input['game_id']??0);
 
 require_once CORE_PATH . '/WebPush.php';
 
+/**
+ * Prüft Siegbedingungen; beendet das Spiel automatisch und sendet Push wenn nötig.
+ * Gibt den Sieger-Schlüssel zurück ('killer'|'citizen'|'dodo') oder null.
+ */
+function checkAndEndGame(int $gameId): ?string {
+    $g = Database::queryOne("SELECT status FROM games WHERE id=?", [$gameId]);
+    if (!$g || $g['status'] !== 'running') return null;
+
+    // 1. Dodo per Abstimmung gehenkt?
+    $dodoHanged = Database::queryOne(
+        "SELECT d.id FROM deaths d JOIN roles r ON r.id=d.role_id
+         WHERE d.game_id=? AND d.is_gehenkt=1 AND r.name='Dodo' LIMIT 1",
+        [$gameId]
+    );
+    if ($dodoHanged) {
+        Database::execute("UPDATE games SET status='finished', winner='dodo' WHERE id=?", [$gameId]);
+        WebPush::sendToGame($gameId, true, '🐦 Dodo hat gewonnen!', 'Er wurde vom Dorf erhängt — sein Plan ist aufgegangen. Spiel beendet.');
+        return 'dodo';
+    }
+
+    $aliveKillers = (int)(Database::queryOne(
+        "SELECT COUNT(*) AS cnt FROM game_players gp JOIN roles r ON r.id=gp.role_id
+         WHERE gp.game_id=? AND gp.is_alive=1 AND r.is_killer=1", [$gameId]
+    )['cnt'] ?? 0);
+    $aliveNonKillers = (int)(Database::queryOne(
+        "SELECT COUNT(*) AS cnt FROM game_players gp LEFT JOIN roles r ON r.id=gp.role_id
+         WHERE gp.game_id=? AND gp.is_alive=1 AND (r.is_killer=0 OR r.id IS NULL)", [$gameId]
+    )['cnt'] ?? 0);
+    $totalKillers = (int)(Database::queryOne(
+        "SELECT COUNT(*) AS cnt FROM game_players gp JOIN roles r ON r.id=gp.role_id
+         WHERE gp.game_id=? AND r.is_killer=1", [$gameId]
+    )['cnt'] ?? 0);
+
+    // 2. Bürger-Sieg: alle Killer tot
+    if ($totalKillers > 0 && $aliveKillers === 0) {
+        Database::execute("UPDATE games SET status='finished', winner='citizen' WHERE id=?", [$gameId]);
+        WebPush::sendToGame($gameId, true, '🏘️ Bürger haben gewonnen!', 'Alle Mörder sind tot — das Dorf ist gerettet! Spiel beendet.');
+        return 'citizen';
+    }
+
+    // 3. Mörder-Sieg: lebende Spieler ≤ 2× lebende Mörder
+    if ($aliveKillers > 0 && $aliveKillers >= $aliveNonKillers) {
+        Database::execute("UPDATE games SET status='finished', winner='killer' WHERE id=?", [$gameId]);
+        WebPush::sendToGame($gameId, true, '🔪 Mörder haben gewonnen!', "{$aliveKillers} Mörder, {$aliveNonKillers} Überlebende — das Dorf ist verloren. Spiel beendet.");
+        return 'killer';
+    }
+
+    return null;
+}
+
 // Dünne lokale Aliase um die zentralen Helper aus core/helpers.php —
 // vermeidet doppelte json_encode-Logik, behält aber die kurze
 // Schreibweise ok()/err() bei, die in dieser Datei an 25+ Stellen
@@ -112,8 +162,10 @@ switch($action){
     recordDeath($gameId,$pid,$g['round'],'day',null,true);
     Database::execute("DELETE FROM votes WHERE game_id=? AND round=?",[$gameId,$g['round']]);
     $n=Database::queryOne("SELECT display_name FROM players WHERE id=?",[$pid]);
-    WebPush::sendToGame($gameId,false,'⚖️ Hinrichtung!',($n['display_name']??'Jemand').' wurde vom Dorf gehenkt.');
-    ok("⚖️ {$n['display_name']} wurde gehenkt.");break;
+    $winner = checkAndEndGame($gameId);
+    if (!$winner) WebPush::sendToGame($gameId,false,'⚖️ Hinrichtung!',($n['display_name']??'Jemand').' wurde vom Dorf gehenkt.');
+    $winMsg = ['dodo'=>' 🐦 Dodo-Sieg!','citizen'=>' 🏘️ Bürger-Sieg!','killer'=>' 🔪 Mörder-Sieg!'];
+    ok("⚖️ {$n['display_name']} wurde gehenkt.".($winner ? $winMsg[$winner] : ''), ['game_ended' => (bool)$winner, 'winner' => $winner]);break;
 
   case 'free_accused':
     $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='running' AND phase='day'",[$gameId]);
@@ -128,7 +180,10 @@ switch($action){
     if(!$top){ok('Wölfe haben niemanden gewählt.');break;}
     recordDeath($gameId,$top['target_player_id'],$g['round'],'night');
     $n=Database::queryOne("SELECT username FROM players WHERE id=?",[$top['target_player_id']]);
-    ok("🐺 {$n['username']} wurde zerrissen!");break;
+    $winner = checkAndEndGame($gameId);
+    if (!$winner) WebPush::sendToGame($gameId,false,'💀 Ein Spieler ist tot',($n['username']??'Jemand').' wurde in der Nacht zerrissen.');
+    $winMsg = ['dodo'=>' 🐦 Dodo-Sieg!','citizen'=>' 🏘️ Bürger-Sieg!','killer'=>' 🔪 Mörder-Sieg!'];
+    ok("🐺 {$n['username']} wurde zerrissen!".($winner ? $winMsg[$winner] : ''), ['game_ended' => (bool)$winner, 'winner' => $winner]);break;
 
   case 'kill_player':
     $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='running'",[$gameId]);
@@ -137,8 +192,10 @@ switch($action){
     $isGehenkt = ($input['cause'] ?? '') === 'vote';
     recordDeath($gameId,$pid,$g['round'],$g['phase'],null,$isGehenkt);
     $kn=Database::queryOne("SELECT display_name FROM players WHERE id=?",[$pid]);
-    WebPush::sendToGame($gameId,false,'💀 Ein Spieler ist tot',($kn['display_name']??'Jemand').' ist aus dem Spiel ausgeschieden.');
-    ok('Spieler gestorben');break;
+    $winner = checkAndEndGame($gameId);
+    if (!$winner) WebPush::sendToGame($gameId,false,'💀 Ein Spieler ist tot',($kn['display_name']??'Jemand').' ist aus dem Spiel ausgeschieden.');
+    $winMsg = ['dodo'=>' 🐦 Dodo-Sieg!','citizen'=>' 🏘️ Bürger-Sieg!','killer'=>' 🔪 Mörder-Sieg!'];
+    ok('Spieler gestorben'.($winner ? $winMsg[$winner] : ''), ['game_ended' => (bool)$winner, 'winner' => $winner]);break;
 
   case 'add_player':
     $pid=(int)($input['player_id']??0);

@@ -37,11 +37,15 @@ $specialRoles = Database::query(
 $specialCount = array_sum(array_column($specialRoles, 'amount'));
 $fillCount    = max(0, $playerCount - $specialCount);
 
-// Gewinn-Bedingung prüfen (nur bei laufendem Spiel)
+// Gewinn-Bedingung: bei beendetem Spiel aus winner-Spalte, bei laufendem Spiel live prüfen
 $killerWin  = false;
 $citizenWin = false;
 $dodoWin    = false;
-if ($game['status'] === 'running') {
+if ($game['status'] === 'finished' && !empty($game['winner'])) {
+    $dodoWin    = $game['winner'] === 'dodo';
+    $citizenWin = $game['winner'] === 'citizen';
+    $killerWin  = $game['winner'] === 'killer';
+} elseif ($game['status'] === 'running') {
     $aliveKillers = (int)(Database::queryOne(
         "SELECT COUNT(*) AS cnt FROM game_players gp
          JOIN roles r ON r.id = gp.role_id
@@ -505,7 +509,14 @@ async function adminAction(action){
   el.innerHTML=r.ok
     ?`<div class="alert alert--success">${r.message||'OK'}</div>`
     :`<div class="alert alert--error">${r.error||'Fehler'}</div>`;
-  if(r.ok)setTimeout(()=>location.reload(),1200);
+  if(r.ok) setTimeout(()=>location.reload(), r.game_ended ? 2500 : 1200);
+}
+function _handleWinResponse(r, resultElId) {
+  const el = document.getElementById(resultElId);
+  if (!el) return;
+  if (!r.ok) { el.innerHTML=`<div class="alert alert--error">${r.error||'Fehler'}</div>`; return; }
+  el.innerHTML = `<div class="alert alert--success">${r.message||'OK'}</div>`;
+  setTimeout(() => location.reload(), r.game_ended ? 2500 : 1400);
 }
 async function addPlayer(pid,name){
   const r=await apiFetch(API_BASE+'/admin.php',{action:'add_player',game_id:GAME_ID,player_id:pid});
@@ -529,11 +540,7 @@ async function hangAccused(pid, name) {
   if (!confirm('⚖️ ' + name + ' wirklich hängen?')) return;
   const r = await apiFetch(API_BASE+'/admin.php', {action:'execute_vote', game_id:GAME_ID, player_id:pid});
   if (r.error === 'session_expired') return;
-  const el = document.getElementById('action-result-assembly');
-  if (el) el.innerHTML = r.ok
-    ? `<div class="alert alert--success">${r.message||'OK'}</div>`
-    : `<div class="alert alert--error">${r.error||'Fehler'}</div>`;
-  if (r.ok) setTimeout(() => location.reload(), 1400);
+  _handleWinResponse(r, 'action-result-assembly');
 }
 async function freeAccused(name) {
   if (!confirm('✓ ' + name + ' freisprechen? Alle Stimmen werden gelöscht.')) return;
@@ -550,7 +557,7 @@ async function killPlayer(pid,name){
   const cause=document.getElementById('kill-cause')?.value||'other';
   const r=await apiFetch(API_BASE+'/admin.php',{action:'kill_player',game_id:GAME_ID,player_id:pid,cause});
   if(r.error==='session_expired')return;
-  if(r.ok){showToast(name+' gestorben','success');setTimeout(()=>location.reload(),700);}
+  if(r.ok){showToast(r.message||(name+' gestorben'),'success');setTimeout(()=>location.reload(),r.game_ended?2500:700);}
   else showToast(r.error||'Fehler','error');
 }
 async function manualKill(){
@@ -559,7 +566,7 @@ async function manualKill(){
   if(!pid){showToast('Spieler wählen!','error');return;}
   const r=await apiFetch(API_BASE+'/admin.php',{action:'kill_player',game_id:GAME_ID,player_id:parseInt(pid),cause});
   if(r.error==='session_expired')return;
-  if(r.ok){showToast('Als tot markiert','success');setTimeout(()=>location.reload(),700);}
+  if(r.ok){showToast(r.message||'Als tot markiert','success');setTimeout(()=>location.reload(),r.game_ended?2500:700);}
   else showToast(r.error||'Fehler','error');
 }
 JS;
