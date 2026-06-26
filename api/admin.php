@@ -127,7 +127,8 @@ switch($action){
     $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='running'",[$gameId]);
     if(!$g)err('Spiel läuft nicht');
     $pid=(int)($input['player_id']??0);
-    recordDeath($gameId,$pid,$g['round'],$g['phase']);
+    $isGehenkt = ($input['cause'] ?? '') === 'vote';
+    recordDeath($gameId,$pid,$g['round'],$g['phase'],null,$isGehenkt);
     ok('Spieler gestorben');break;
 
   case 'add_player':

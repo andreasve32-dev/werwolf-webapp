@@ -106,8 +106,9 @@ function role(?int $roleId): array {
 function roleFallback(): array {
     return [
         'id' => null, 'name' => 'Unbekannt', 'cooldown' => 0,
-        'description' => '', 'rules' => '', 'active' => 0, 'amount' => 0,
-        'icon_path' => DEFAULT_ROLE_ICON, 'sichtbar' => 0, 'befragen' => 0, 'auto_eintrag' => 0, 'sort_order' => 999,
+        'description' => '', 'rules' => '', 'active' => 0, 'fill' => 0, 'amount' => 0,
+        'icon_path' => DEFAULT_ROLE_ICON, 'sichtbar' => 0, 'befragen' => 0,
+        'auto_eintrag' => 0, 'is_killer' => 0, 'sort_order' => 999,
     ];
 }
 
