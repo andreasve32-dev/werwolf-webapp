@@ -139,6 +139,7 @@ window.declineConsent = function () {
 <script>
 (function () {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  if (!window.isSecureContext) return; // kein HTTPS/localhost → kein Service Worker
   if (localStorage.getItem('ww_push_dismissed')) return;
 
   navigator.serviceWorker.register('/sw.js').then(async function (reg) {
