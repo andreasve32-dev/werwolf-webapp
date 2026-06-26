@@ -22,7 +22,7 @@ $daySlogans = array_values(array_filter(array_map('trim', explode("\n", DAY_SLOG
 
 // Aktuelle Versammlungsanfrage laden
 $currentAssembly = null;
-if ($gameId && $status === 'running') {
+if ($gameId && ($game['status'] ?? '') === 'running') {
     $row = Database::queryOne(
         "SELECT ar.scheduled_at, ar.notified, p.display_name AS caller
          FROM assembly_requests ar JOIN players p ON p.id=ar.player_id
