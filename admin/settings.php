@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'save')
         'deaths_empty_title', 'deaths_empty_sub', 'deaths_peace_text',
         'login_logo', 'mini_logo', 'register_subtitle',
         'game_timezone', 'day_slogans',
+        'push_cooldown',
     ];
 
     $body   = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -99,6 +100,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'save')
                     $errors[$key] = 'Slogans zu lang (max. 5000 Zeichen).'; continue 2;
                 }
                 break;
+            case 'push_cooldown':
+                $v = (int)$v;
+                if ($v < 0 || $v > 1440) {
+                    $errors[$key] = 'Push-Cooldown: 0–1440 Minuten.'; continue 2;
+                }
+                $v = (string)$v;
+                break;
         }
         $values[$key] = $v;
     }
@@ -160,6 +168,7 @@ $defaults = [
     'mini_logo'          => MINI_LOGO,
     'game_timezone'      => GAME_TIMEZONE,
     'day_slogans'        => DAY_SLOGANS,
+    'push_cooldown'      => '30',
 ];
 foreach ($defaults as $k => $def) {
     if (!isset($cfg[$k])) $cfg[$k] = ['key' => $k, 'value' => $def, 'type' => 'string', 'label' => $k, 'description' => ''];
@@ -326,6 +335,28 @@ require TEMPLATE_PATH . '/base.php';
           <textarea class="form-input" name="day_slogans" rows="6"
                     style="resize:vertical;font-size:.82rem;line-height:1.5"
                     placeholder="Ein Slogan pro Zeile …"><?= e($cfg['day_slogans']['value'] ?? DAY_SLOGANS) ?></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Push-Benachrichtigungen ─────────────────────────── -->
+    <div class="card animate-in mb-2" style="animation-delay:.07s">
+      <div class="section-title">🔔 Push-Benachrichtigungen</div>
+
+      <div class="settings-row" style="padding:.6rem 0">
+        <div>
+          <span class="settings-row__name">Cooldown (Minuten)</span>
+          <div class="text-dim text-xs mt-1">
+            Mindestwartezeit zwischen zwei automatischen Push-Nachrichten (Kill, Phasenwechsel).
+            Spielstart und Spielende ignorieren diesen Wert immer.
+            <strong>0 = kein Cooldown.</strong>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <input class="form-input" type="number" name="push_cooldown"
+                 value="<?= (int)($cfg['push_cooldown']['value'] ?? 30) ?>"
+                 min="0" max="1440" style="width:90px">
+          <span class="text-dim text-sm">Min.</span>
         </div>
       </div>
     </div>

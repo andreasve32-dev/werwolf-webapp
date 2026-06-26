@@ -235,7 +235,9 @@ INSERT INTO settings (`key`, value, type, label, description, sort_order) VALUES
 ('deaths_peace_text',  'Mögen sie in Frieden ruhen',      'string', 'Todesliste: Friedenstext','Text unter dem Friedhof-Bereich wenn Tote vorhanden sind.',      92),
 ('login_logo',         '',                                'string', 'Login-Logo',              'Pfad zum Bild auf der Anmeldeseite (leer = Wolf-Emoji 🐺).',       5),
 ('game_timezone',      'Europe/Berlin',                   'string', 'Zeitzone',                'PHP-Zeitzone des Servers (z.B. Europe/Berlin, UTC).',             20),
-('day_slogans',        '30 Grad im Schatten im Dorf',    'string', 'Tages-Slogans',           'Zufallssprüche im Tages-Banner (eine Zeile = ein Slogan).',       25);
+('day_slogans',        '30 Grad im Schatten im Dorf',    'string', 'Tages-Slogans',           'Zufallssprüche im Tages-Banner (eine Zeile = ein Slogan).',       25),
+('push_cooldown',      '30',                              'int',    'Push-Cooldown (Min.)',    'Mindestwartezeit zwischen zwei Auto-Push-Benachrichtigungen.',    26),
+('push_last_sent',     '0',                               'int',    'Push: letzter Versand (intern)', 'Unix-Timestamp des letzten gesendeten Pushes (intern).', 999);
 
 -- ── 12. Erstes Spiel anlegen ──────────────────────────────────────
 INSERT INTO games (id, status) VALUES (1, 'lobby');

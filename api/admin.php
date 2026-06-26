@@ -16,6 +16,8 @@ $input=jsonBody();
 $action=$input['action']??'';
 $gameId=(int)($input['game_id']??0);
 
+require_once CORE_PATH . '/WebPush.php';
+
 // Dünne lokale Aliase um die zentralen Helper aus core/helpers.php —
 // vermeidet doppelte json_encode-Logik, behält aber die kurze
 // Schreibweise ok()/err() bei, die in dieser Datei an 25+ Stellen
@@ -78,8 +80,7 @@ switch($action){
     // Spiel starten
     Database::execute("UPDATE games SET status='running',phase='day',round=1 WHERE id=?",[$gameId]);
 
-    require_once CORE_PATH . '/WebPush.php';
-    WebPush::sendToGame($gameId);
+    WebPush::sendToGame($gameId, true, '▶️ Spiel gestartet!', 'Das Spiel läuft — viel Erfolg!');
 
     $msg = "▶ Spiel gestartet! {$specialCount} Sonderrollen + {$remaining} ";
     $msg .= $fillRole ? $fillRole['name'] : 'ohne Rolle';
@@ -92,6 +93,11 @@ switch($action){
     $np=$g['phase']==='day'?'night':'day';
     $nr=$g['round']+($np==='day'?1:0);
     Database::execute("UPDATE games SET phase=?,round=? WHERE id=?",[$np,$nr,$gameId]);
+    if($np==='day'){
+        WebPush::sendToGame($gameId,false,'☀️ Bürgerversammlung!','Tag '.$nr.' beginnt — kommt zusammen und stimmt ab.');
+    } else {
+        WebPush::sendToGame($gameId,false,'🌕 Die Nacht bricht herein','Runde '.$g['round'].' — haltet die Augen offen.');
+    }
     ok($np==='night'?"🌕 Nacht {$g['round']} beginnt":"☀️ Tag {$nr} beginnt");break;
 
   case 'execute_vote':
@@ -106,6 +112,7 @@ switch($action){
     recordDeath($gameId,$pid,$g['round'],'day',null,true);
     Database::execute("DELETE FROM votes WHERE game_id=? AND round=?",[$gameId,$g['round']]);
     $n=Database::queryOne("SELECT display_name FROM players WHERE id=?",[$pid]);
+    WebPush::sendToGame($gameId,false,'⚖️ Hinrichtung!',($n['display_name']??'Jemand').' wurde vom Dorf gehenkt.');
     ok("⚖️ {$n['display_name']} wurde gehenkt.");break;
 
   case 'free_accused':
@@ -129,6 +136,8 @@ switch($action){
     $pid=(int)($input['player_id']??0);
     $isGehenkt = ($input['cause'] ?? '') === 'vote';
     recordDeath($gameId,$pid,$g['round'],$g['phase'],null,$isGehenkt);
+    $kn=Database::queryOne("SELECT display_name FROM players WHERE id=?",[$pid]);
+    WebPush::sendToGame($gameId,false,'💀 Ein Spieler ist tot',($kn['display_name']??'Jemand').' ist aus dem Spiel ausgeschieden.');
     ok('Spieler gestorben');break;
 
   case 'add_player':
@@ -153,6 +162,7 @@ switch($action){
 
   case 'end_game':
     Database::execute("UPDATE games SET status='finished' WHERE id=?",[$gameId]);
+    WebPush::sendToGame($gameId, true, '🏁 Spiel beendet!', 'Das Spiel ist vorbei — danke für eure Teilnahme!');
     ok('🏁 Spiel beendet');break;
 
   case 'reset_game':

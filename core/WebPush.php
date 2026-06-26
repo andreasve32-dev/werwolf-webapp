@@ -67,8 +67,15 @@ class WebPush {
         }
     }
 
-    /** Push an alle lebenden Spieler in einem Spiel senden. */
-    public static function sendToGame(int $gameId): void {
+    /**
+     * Push an alle Spieler in einem Spiel senden.
+     * $force = true: Cooldown wird übersprungen (z.B. Spielstart/-ende).
+     * $title / $body: optionaler Nachrichtentext (leer = generischer Fallback im SW).
+     */
+    public static function sendToGame(int $gameId, bool $force = false, string $title = '', string $body = ''): void {
+        if (!$force && !self::checkCooldown()) return;
+
+        self::updateLastSent();
         [$pub, $priv] = self::loadKeys();
         if (!$pub) return;
         $subs = Database::query(
@@ -78,12 +85,35 @@ class WebPush {
              WHERE gp.game_id = ?",
             [$gameId]
         );
+        $payload = ($title !== '') ? json_encode(['title' => $title, 'body' => $body, 'tag' => 'werwolf-event']) : '';
         foreach ($subs as $s) {
-            self::dispatch($s['endpoint'], $pub, $priv);
+            self::dispatch($s['endpoint'], $pub, $priv, $payload);
         }
     }
 
     // ── Intern ───────────────────────────────────────────────
+
+    /** Gibt true zurück wenn seit dem letzten Push genug Zeit vergangen ist. */
+    private static function checkCooldown(): bool {
+        $mins = (int)(Database::queryOne(
+            "SELECT value FROM settings WHERE `key`='push_cooldown'"
+        )['value'] ?? 30);
+        if ($mins <= 0) return true;
+        $last = (int)(Database::queryOne(
+            "SELECT value FROM settings WHERE `key`='push_last_sent'"
+        )['value'] ?? 0);
+        return (time() - $last) >= ($mins * 60);
+    }
+
+    /** Zeitstempel des letzten Versands in der DB aktualisieren. */
+    private static function updateLastSent(): void {
+        Database::execute(
+            "INSERT INTO settings (`key`,value,type,label,description,sort_order)
+             VALUES('push_last_sent',?,'int','Push: letzter Versand (intern)','',999)
+             ON DUPLICATE KEY UPDATE value=VALUES(value)",
+            [(string)time()]
+        );
+    }
 
     private static function loadKeys(): array {
         $rows = Database::query(
@@ -93,20 +123,27 @@ class WebPush {
         return [$map['vapid_public_key'] ?? '', $map['vapid_private_key'] ?? ''];
     }
 
-    private static function dispatch(string $endpoint, string $pubKey, string $privPem): void {
+    private static function dispatch(string $endpoint, string $pubKey, string $privPem, string $payload = ''): void {
         $p        = parse_url($endpoint);
         $audience = $p['scheme'] . '://' . $p['host'];
         $jwt      = self::createJwt($audience, $privPem);
 
+        $headers = [
+            'Authorization: vapid t=' . $jwt . ',k=' . $pubKey,
+            'TTL: 86400',
+        ];
+        if ($payload !== '') {
+            $headers[] = 'Content-Type: application/json';
+            $headers[] = 'Content-Length: ' . strlen($payload);
+        } else {
+            $headers[] = 'Content-Length: 0';
+        }
+
         $ch = curl_init($endpoint);
         curl_setopt_array($ch, [
             CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => '',
-            CURLOPT_HTTPHEADER     => [
-                'Authorization: vapid t=' . $jwt . ',k=' . $pubKey,
-                'TTL: 86400',
-                'Content-Length: 0',
-            ],
+            CURLOPT_POSTFIELDS     => $payload,
+            CURLOPT_HTTPHEADER     => $headers,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT        => 10,
             CURLOPT_SSL_VERIFYPEER => true,

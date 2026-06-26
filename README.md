@@ -96,7 +96,8 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 │   ├── migration_beta.sql          ← Beta-Modus-Einstellung
 │   ├── migration_remove_cause.sql  ← cause-Spalte entfernt, is_gehenkt + rolle_aufgedeckt ergänzt
 │   ├── migration_cooldown.sql      ← cooldown_started_at in game_players ergänzt
-│   └── migration_killer.sql        ← is_killer-Flag in roles ergänzt
+│   ├── migration_killer.sql        ← is_killer-Flag in roles ergänzt
+│   └── migration_push_cooldown.sql ← push_cooldown + push_last_sent in settings
 │
 ├── public/             ← Backups (ZIP-Dateien, nicht im Web zugänglich)
 │
@@ -389,9 +390,22 @@ werden dem Spieler per Badge und Toast-Meldung signalisiert.
 
 ### Web-Push-Benachrichtigungen
 
-Spieler können Push-Benachrichtigungen aktivieren. Der Admin kann Meldungen
-aus dem Admin-Bereich versenden (z. B. Phasenwechsel). Technisch über
-`core/WebPush.php` + `api/push.php` + `sw.js` (Service Worker).
+Spieler können Push-Benachrichtigungen aktivieren. Benachrichtigungen werden
+automatisch bei folgenden Ereignissen verschickt:
+
+| Ereignis | Methode | Cooldown |
+|---|---|---|
+| Spielstart | `start_game` | nein (immer) |
+| Spielende | `end_game` | nein (immer) |
+| Spieler getötet (`kill_player`) | `sendToGame()` | ja |
+| Hinrichtung per Abstimmung (`execute_vote`) | `sendToGame()` | ja |
+| Phasenwechsel Tag/Nacht (`switch_phase`) | `sendToGame()` | ja |
+
+**Cooldown:** Über *Admin → Einstellungen → Push-Cooldown* einstellbar (Standard 30 Min.).
+Verhindert Push-Spam bei schnell aufeinanderfolgenden Ereignissen. Spielstart und
+Spielende ignorieren den Cooldown.
+
+Technisch: `core/WebPush.php` + `api/push.php` + `sw.js` (Service Worker, VAPID).
 
 ### Rollen — vollständig datenbankgesteuert (Tabelle `roles`)
 

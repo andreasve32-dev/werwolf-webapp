@@ -184,6 +184,11 @@ ALTER TABLE roles ADD COLUMN IF NOT EXISTS auto_eintrag TINYINT(1) NOT NULL DEFA
 ALTER TABLE roles ADD COLUMN IF NOT EXISTS is_killer    TINYINT(1) NOT NULL DEFAULT 0 AFTER auto_eintrag;
 UPDATE roles SET befragen=1    WHERE name='Nekromant' AND befragen=0;
 
+-- idempotente Migration: Push-Einstellungen (push_cooldown + push_last_sent)
+INSERT IGNORE INTO settings (`key`, value, type, label, description, sort_order) VALUES
+('push_cooldown',  '30', 'int', 'Push-Cooldown (Min.)',          'Mindestwartezeit zwischen zwei Auto-Push-Benachrichtigungen.',    26),
+('push_last_sent', '0',  'int', 'Push: letzter Versand (intern)', 'Unix-Timestamp des letzten gesendeten Pushes (intern).',         999);
+
 -- idempotente Migration: deaths-Spalten nachrüsten
 ALTER TABLE deaths ADD COLUMN IF NOT EXISTS ort             VARCHAR(255) NULL DEFAULT NULL AFTER phase;
 ALTER TABLE deaths ADD COLUMN IF NOT EXISTS zeit            VARCHAR(50)  NULL DEFAULT NULL AFTER ort;
