@@ -291,6 +291,33 @@ crontab -e
 
 ---
 
+## ⚖️ Rechtliche Pflichtangaben (deutsches Recht)
+
+> **Wichtig:** Wer diese App öffentlich oder auch nur einem geschlossenen Nutzerkreis bereitstellt, ist nach deutschem Recht verpflichtet, die folgenden Seiten mit **eigenen echten Angaben** zu befüllen. Die Dateien enthalten Platzhalter, die **vor dem ersten echten Betrieb** ersetzt werden müssen.
+
+### Betroffene Dateien
+
+| Datei | Inhalt | Pflicht nach |
+|---|---|---|
+| `impressum.php` | Name, Adresse, E-Mail, ggf. Telefon des Betreibers | § 5 TMG |
+| `datenschutz.php` | Welche Daten gespeichert werden (Sessions, Logs, Push-Abos), Zweck, Speicherdauer, Kontakt | Art. 13 DSGVO |
+| `nutzungsbedingungen.php` | Regeln für die Nutzung der Plattform | Empfehlung |
+
+### Was eingetragen werden muss (Impressum)
+
+- Vor- und Nachname oder Firmenname des Betreibers
+- Vollständige Postanschrift (kein Postfach)
+- E-Mail-Adresse
+- Telefonnummer (bei gewerblichem Betrieb Pflicht, bei privatem empfohlen)
+
+### Hinweis zum Betrieb
+
+- **Nur privat im Heimnetz** (nicht von außen erreichbar): Impressumspflicht entfällt rechtlich, Datenschutzerklärung aber trotzdem empfohlen.
+- **Erreichbar über eine Domain / öffentlich**: Impressum + Datenschutzerklärung sind **Pflicht**, Fehlen kann abgemahnt werden.
+- Persönliche Daten (Name, Adresse) gehören **nicht ins GitHub-Repo** — nur lokal in den PHP-Dateien eintragen.
+
+---
+
 ## 🎨 Theme-System
 
 5 Themes, zentral definiert in `config/themes.php`:
