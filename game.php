@@ -23,18 +23,20 @@ $daySlogans = array_values(array_filter(array_map('trim', explode("\n", DAY_SLOG
 // Aktuelle Versammlungsanfrage laden
 $currentAssembly = null;
 if ($gameId && ($game['status'] ?? '') === 'running') {
-    $row = Database::queryOne(
-        "SELECT ar.scheduled_at, ar.notified, ar.player_id AS caller_id, p.display_name AS caller
-         FROM assembly_requests ar JOIN players p ON p.id=ar.player_id
-         WHERE ar.game_id=? AND ar.ended_at IS NULL ORDER BY ar.scheduled_at DESC LIMIT 1",
-        [$gameId]
-    );
-    if ($row) {
-        $currentAssembly = ['scheduled_at'=>(int)$row['scheduled_at'],
-                            'notified'=>(bool)(int)$row['notified'],
-                            'caller'=>$row['caller'],
-                            'caller_id'=>(int)$row['caller_id']];
-    }
+    try {
+        $row = Database::queryOne(
+            "SELECT ar.scheduled_at, ar.notified, ar.player_id AS caller_id, p.display_name AS caller
+             FROM assembly_requests ar JOIN players p ON p.id=ar.player_id
+             WHERE ar.game_id=? AND ar.ended_at IS NULL ORDER BY ar.scheduled_at DESC LIMIT 1",
+            [$gameId]
+        );
+        if ($row) {
+            $currentAssembly = ['scheduled_at'=>(int)$row['scheduled_at'],
+                                'notified'=>(bool)(int)$row['notified'],
+                                'caller'=>$row['caller'],
+                                'caller_id'=>(int)$row['caller_id']];
+        }
+    } catch (\Throwable $e) { /* Tabelle noch nicht migriert */ }
 }
 
 $page = [
