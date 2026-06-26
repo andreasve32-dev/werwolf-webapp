@@ -88,12 +88,6 @@ switch($action){
     if(!$ort){http_response_code(400);echo json_encode(['error'=>'Bitte den Todesort angeben.']);exit;}
     if(mb_strlen($ort)>200){http_response_code(400);echo json_encode(['error'=>'Ort zu lang (max. 200 Zeichen)']);exit;}
     recordDeath($gameId,$playerId,(int)$g['round'],$g['phase'],$ort);
-    // Star-Rolle: Zeit sofort automatisch eintragen
-    $myRole = Database::queryOne("SELECT r.auto_eintrag FROM game_players gp LEFT JOIN roles r ON r.id=gp.role_id WHERE gp.game_id=? AND gp.player_id=?",[$gameId,$playerId]);
-    if(!empty($myRole['auto_eintrag'])){
-        $death = Database::queryOne("SELECT id FROM deaths WHERE game_id=? AND player_id=? ORDER BY id DESC LIMIT 1",[$gameId,$playerId]);
-        if($death) Database::execute("UPDATE deaths SET zeit=? WHERE id=?",[date('H:i'),$death['id']]);
-    }
     echo json_encode(['ok'=>true,'message'=>'Du wurdest als tot gemeldet.']);break;
 
   case 'start_cooldown':

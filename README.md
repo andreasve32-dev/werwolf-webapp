@@ -1,5 +1,7 @@
 # 🐺 Werwolf — Web-App
 
+![Werwolf Login-Vorschau](.github/preview.png)
+
 Browserbasiertes Werwolf-Spiel. PHP + MySQL + Apache 2.
 Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unterordner nötig).
 

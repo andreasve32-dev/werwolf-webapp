@@ -178,17 +178,22 @@ function gamePlayer(int $gameId, int $playerId): array|false {
 /** Tod aufzeichnen */
 function recordDeath(int $gameId, int $playerId, int $round, string $phase, ?string $ort = null, bool $isGehenkt = false): void {
     $gp = Database::queryOne(
-        "SELECT role_id, is_alive FROM game_players WHERE game_id = ? AND player_id = ?",
+        "SELECT gp.role_id, gp.is_alive, r.auto_eintrag
+         FROM game_players gp
+         LEFT JOIN roles r ON r.id = gp.role_id
+         WHERE gp.game_id = ? AND gp.player_id = ?",
         [$gameId, $playerId]
     );
     if (!$gp || !$gp['is_alive']) return;
+    $autoEintrag = !empty($gp['auto_eintrag']) ? 1 : 0;
     Database::execute(
         "UPDATE game_players SET is_alive = 0 WHERE game_id = ? AND player_id = ?",
         [$gameId, $playerId]
     );
+    $zeit = $autoEintrag ? date('H:i') : null;
     Database::execute(
-        "INSERT INTO deaths (game_id, player_id, role_id, round, phase, is_gehenkt, ort) VALUES (?,?,?,?,?,?,?)",
-        [$gameId, $playerId, $gp['role_id'] ?? null, $round, $phase, $isGehenkt ? 1 : 0, $ort ?: null]
+        "INSERT INTO deaths (game_id, player_id, role_id, round, phase, is_gehenkt, ort, rolle_aufgedeckt, zeit) VALUES (?,?,?,?,?,?,?,?,?)",
+        [$gameId, $playerId, $gp['role_id'] ?? null, $round, $phase, $isGehenkt ? 1 : 0, $ort ?: null, $autoEintrag, $zeit]
     );
     // Stirbt ein Spieler, wird seine laufende Anklage sofort ungültig
     Database::execute(
