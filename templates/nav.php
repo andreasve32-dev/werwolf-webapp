@@ -263,6 +263,11 @@ $hasMusic    = defined('BACKGROUND_MUSIC') && BACKGROUND_MUSIC;
     <span class="tabbar__icon">❓</span>
     <span class="tabbar__label">FAQ</span>
   </a>
+  <a href="<?= APP_URL ?>/docs/"
+     class="tabbar__item <?= strpos($_SERVER['REQUEST_URI'],'/docs') !== false ? 'active' : '' ?>">
+    <span class="tabbar__icon">📖</span>
+    <span class="tabbar__label">Hilfe</span>
+  </a>
   <?php if ($player['is_admin']): ?>
   <a href="<?= APP_URL ?>/admin/"
      class="tabbar__item">
