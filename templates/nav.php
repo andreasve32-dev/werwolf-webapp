@@ -378,8 +378,7 @@ function openSettingsSheet() {
 
   // Atmosphäre-Toggle
   const dnEl = document.getElementById('set-daynight');
-  const isDay = document.documentElement.getAttribute('data-daynight') === 'day';
-  if (dnEl) { dnEl.checked = isDay; }
+  if (dnEl) { dnEl.checked = localStorage.getItem('ww_atmosphere') !== '0'; }
 
 
   document.getElementById('settings-sheet').classList.add('open');
@@ -413,9 +412,14 @@ function settingToggle(key, val) {
 }
 
 // ── Atmosphäre-Toggle (rein visuell) ─────────────────────────
-function toggleDayNight(isDay) {
-  localStorage.setItem('ww_daynight', isDay ? 'day' : 'night');
-  document.documentElement.setAttribute('data-daynight', isDay ? 'day' : 'night');
+function toggleDayNight(on) {
+  localStorage.setItem('ww_atmosphere', on ? '1' : '0');
+  if (on) {
+    var h = new Date().getHours();
+    document.documentElement.setAttribute('data-daynight', (h >= 6 && h < 22) ? 'day' : 'night');
+  } else {
+    document.documentElement.removeAttribute('data-daynight');
+  }
 }
 
 // ── Lautstärke ändern & speichern ───────────────────────────

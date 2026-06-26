@@ -46,12 +46,12 @@ $showNav = $page['nav'] ?? true;
   <link rel="icon" type="image/png" href="<?= e(assetUrl(MINI_LOGO)) ?>">
   <?php endif; ?>
 
-  <!-- Atmosphäre-Modus: gespeicherte Einstellung laden, Fallback = Ortszeit -->
+  <!-- Atmosphäre: nur setzen wenn Funktion aktiviert (ww_atmosphere !== '0') -->
   <script>
   (function(){
-    var saved = localStorage.getItem('ww_daynight');
-    var dn = saved || ((new Date().getHours() >= 6 && new Date().getHours() < 22) ? 'day' : 'night');
-    document.documentElement.setAttribute('data-daynight', dn);
+    if (localStorage.getItem('ww_atmosphere') === '0') return;
+    var h = new Date().getHours();
+    document.documentElement.setAttribute('data-daynight', (h >= 6 && h < 22) ? 'day' : 'night');
   })();
   </script>
 
