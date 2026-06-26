@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Copyright (c) 2026 Andreas Vetter
 require_once __DIR__ . '/core/bootstrap.php';
 
@@ -14,9 +14,9 @@ require TEMPLATE_PATH . '/base.php';
     <section class="mb-3">
       <h2 class="section-title">Angaben gemäß § 18 Abs. 2 MStV</h2>
       <p class="text-sm" style="line-height:1.8">
-        <strong>Ihr Name</strong><br>
-        Ihre Straße und Hausnummer<br>
-        Ihre PLZ und Ort<br>
+        <strong>Andreas Vetter</strong><br>
+        Otto-Hahn-Platz 2<br>
+        69126 Heidelberg<br>
         Deutschland
       </p>
     </section>
@@ -24,7 +24,7 @@ require TEMPLATE_PATH . '/base.php';
     <section class="mb-3">
       <h2 class="section-title">Kontakt</h2>
       <p class="text-sm" style="line-height:1.8">
-        E-Mail: <a href="mailto:ihre@email.de">ihre@email.de</a>
+        E-Mail: <a href="mailto:andy.ve@outlook.de">andy.ve@outlook.de</a>
       </p>
     </section>
 
@@ -62,13 +62,24 @@ require TEMPLATE_PATH . '/base.php';
       </p>
     </section>
 
-    <section>
+    <section class="mb-3">
       <h2 class="section-title">Urheberrecht</h2>
       <p class="text-sm text-dim" style="line-height:1.7">
         Die durch den Betreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem
         deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der
         Verwertung außerhalb der Grenzen des Urheberrechts bedürfen der schriftlichen Zustimmung
         des jeweiligen Autors bzw. Erstellers.
+      </p>
+    </section>
+
+    <section>
+      <h2 class="section-title">Urheberrecht Dritter — Charakterbilder</h2>
+      <p class="text-sm text-dim" style="line-height:1.7">
+        Die in der App verwendeten Charakterbilder wurden mit KI-Tools erstellt und sind
+        von Charakteren aus <em>FINAL FANTASY XIV</em> inspiriert.
+        <em>FINAL FANTASY XIV</em> ist ein eingetragenes Warenzeichen von
+        <strong>Square Enix Co., Ltd.</strong> © SQUARE ENIX CO., LTD. Alle Rechte vorbehalten.
+        Die Bilder werden ausschließlich privat und nicht-kommerziell verwendet.
       </p>
     </section>
   </div>

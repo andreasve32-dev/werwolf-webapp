@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Copyright (c) 2026 Andreas Vetter
 require_once __DIR__ . '/core/bootstrap.php';
 
@@ -20,10 +20,10 @@ require TEMPLATE_PATH . '/base.php';
     <section class="mb-3">
       <h2 class="section-title">1. Verantwortlicher (Art. 13 Abs. 1 lit. a DSGVO)</h2>
       <p class="text-sm" style="line-height:1.8">
-        <strong>Ihr Name</strong><br>
-        Ihre Straße und Hausnummer<br>
-        Ihre PLZ und Ort, Deutschland<br>
-        E-Mail: <a href="mailto:ihre@email.de">ihre@email.de</a>
+        <strong>Andreas Vetter</strong><br>
+        Otto-Hahn-Platz 2<br>
+        69126 Heidelberg, Deutschland<br>
+        E-Mail: <a href="mailto:andy.ve@outlook.de">andy.ve@outlook.de</a>
       </p>
     </section>
 
@@ -87,6 +87,8 @@ require TEMPLATE_PATH . '/base.php';
             <tr><td><code>ww_fx_vol</code></td><td>Effekt-Lautstärke</td></tr>
             <tr><td><code>ww_consent</code></td><td>Zustimmung zu Nutzungsbedingungen und Datenschutz</td></tr>
             <tr><td><code>ww_push_dismissed</code></td><td>Entscheidung zum Push-Hinweis</td></tr>
+            <tr><td><code>ww_atmosphere</code></td><td>Tag/Nacht-Atmosphäre aktiviert (1) oder deaktiviert (0)</td></tr>
+            <tr><td><code>ww_last_phase</code></td><td>Zuletzt angezeigte Spielphase für Übergangsanimation</td></tr>
           </tbody>
         </table>
       </div>
@@ -156,7 +158,7 @@ require TEMPLATE_PATH . '/base.php';
       </ul>
       <p class="text-sm text-dim mt-1" style="line-height:1.7">
         Zur Ausübung dieser Rechte wende dich an:
-        <a href="mailto:ihre@email.de">ihre@email.de</a>
+        <a href="mailto:andy.ve@outlook.de">andy.ve@outlook.de</a>
       </p>
     </section>
 
