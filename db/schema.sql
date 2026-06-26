@@ -155,57 +155,57 @@ CREATE TABLE push_subscriptions (
 -- cooldown: Abklingzeit in Minuten (0 = keine)
 -- sichtbar=1: Spieler mit dieser Rolle erkennen sich beim Spielstart gegenseitig
 --
-INSERT INTO roles (id, name, cooldown, description, rules, active, fill, amount, icon_path, sichtbar, is_killer, sort_order) VALUES
+INSERT INTO roles (id, name, cooldown, description, rules, active, fill, amount, icon_path, sichtbar, befragen, auto_eintrag, is_killer, sort_order) VALUES
 (1,  'Bürger',      0,
   'Einfacher Bürger ohne besondere Fähigkeiten.',
   'Finde die Mörder durch Beobachten und Abstimmen. Berufe Versammlungen ein.',
-  1, 1, 0, 'assets/icons/roles/buerger.png', 0, 0, 10),
+  1, 1, 0, 'assets/icons/roles/buerger.png', 0, 0, 0, 0, 10),
 
 (2,  'Mörder',      30,
   'Kann andere Spieler mit der Mordwaffe töten. Abklingzeit: 30 Minuten.',
   'Zeige einem anderen Spieler die Mordwaffe — dieser ist sofort tot und trägt sich in die Todesliste ein. Die Mordwaffe hat 30 Minuten Abklingzeit. Arbeite mit dem anderen Mörder zusammen.',
-  1, 0, 2, 'assets/icons/roles/moerder.png', 1, 1, 20),
+  1, 0, 2, 'assets/icons/roles/moerder.png', 1, 0, 0, 1, 20),
 
 (3,  'Nekromant',   0,
   'Kann tote Spieler befragen, indem er ihnen seine Karte zeigt.',
   'Zeige einem toten Spieler deine Karte. Dieser trägt Todeszeitpunkt und -ort in die Todesliste ein und gibt so mehr Informationen preis.',
-  1, 0, 1, 'assets/icons/roles/nekromant.png', 0, 0, 30),
+  1, 0, 1, 'assets/icons/roles/nekromant.png', 0, 1, 0, 0, 30),
 
 (4,  'Hellseherin', 30,
   'Kann alle 30 Minuten einen Spieler zwingen, seine Rolle aufzudecken.',
   'Zeige einem Spieler deine Karte — er muss dir seine Rolle zeigen. Abklingzeit: 30 Minuten.',
-  1, 0, 1, 'assets/icons/roles/hellseherin.png', 0, 0, 40),
+  1, 0, 1, 'assets/icons/roles/hellseherin.png', 0, 0, 0, 0, 40),
 
 (5,  'Detektiv',    0,
   'Kann Spieler durchsuchen. Trägt der Mörder die Waffe, ist er entlarvt.',
   'Durchsuche einen Spieler. Trägt er die Mordwaffe, muss er sie abgeben. Stirbt der Detektiv danach, kann die Waffe vom zweiten Mörder zurückgeholt werden. Alternativ wird die Waffe als Beweis öffentlich abgelegt.',
-  1, 0, 1, 'assets/icons/roles/detektiv.png', 0, 0, 50),
+  1, 0, 1, 'assets/icons/roles/detektiv.png', 0, 0, 0, 0, 50),
 
 (6,  'Das Paar',    0,
   '2 Spieler bilden ein Paar und kennen sich von Beginn an.',
   'Öffne beim Spielstart die Augen wenn das Paar aufgerufen wird — ihr kennt euren Partner. Stirbt dein Partner, nimmst du dir das Leben sobald du seinen Tod bemerkst.',
-  1, 0, 2, 'assets/icons/roles/das-paar.png', 1, 0, 60),
+  1, 0, 2, 'assets/icons/roles/das-paar.png', 1, 0, 0, 0, 60),
 
 (7,  'Dodo',        0,
   'Gewinnt das Spiel, indem er von der Gruppe erhängt wird.',
   'Du gewinnst, wenn die Versammlung dich erhängt. Wirst du von einem Mörder getötet, hat deine Rolle keine Auswirkung. Du darfst KEINE Mordwaffe bei dir tragen.',
-  1, 0, 1, 'assets/icons/roles/dodo.png', 0, 0, 70),
+  1, 0, 1, 'assets/icons/roles/dodo.png', 0, 0, 0, 0, 70),
 
 -- Optionale Zusatzrollen (standardmäßig deaktiviert)
 (8,  'Celebrity',   0,
   'Sein Tod fällt sofort auf — er trägt direkt Todeszeitpunkt und Ort ein.',
   'Du bist allgemein bekannt. Stirbst du, trägst du sofort Zeitpunkt und Ort in die Todesliste ein.',
-  1, 0, 1, 'assets/icons/roles/celebrity.png', 0, 0, 80),
+  1, 0, 1, 'assets/icons/roles/celebrity.png', 0, 0, 1, 0, 80),
 
 (9,  'Gunslinger',  0,
   'Trägt selbst eine Waffe und kann einmalig pro Spiel einen Spieler erschießen.',
   'Du hast eine Waffe und kannst einmalig einen Spieler erschießen. Du stehst auf Seite der Bürger. Wirst du ermordet, darfst du nicht mehr schießen.',
-  1, 0, 1, 'assets/icons/roles/gunslinger.png', 0, 0, 90),
+  1, 0, 1, 'assets/icons/roles/gunslinger.png', 0, 0, 0, 0, 90),
 
 (10, 'Sheriff',     0,
   'Kann unbegrenzt Spieler erschießen — tötet er jedoch einen Unschuldigen, stirbt er selbst.',
   'Du kannst so viele Spieler erschießen wie du willst. Tötest du jedoch nicht den Dodo oder einen Mörder, stirbst du selbst.',
-  1, 0, 1, 'assets/icons/roles/sheriff.png', 0, 0, 100);
+  1, 0, 1, 'assets/icons/roles/sheriff.png', 0, 0, 0, 0, 100);
 
 -- ── 11. App-Einstellungen (DB-konfigurierbar) ─────────────────────
 CREATE TABLE settings (
