@@ -40,6 +40,7 @@ $fillCount    = max(0, $playerCount - $specialCount);
 // Gewinn-Bedingung prüfen (nur bei laufendem Spiel)
 $killerWin  = false;
 $citizenWin = false;
+$dodoWin    = false;
 if ($game['status'] === 'running') {
     $aliveKillers = (int)(Database::queryOne(
         "SELECT COUNT(*) AS cnt FROM game_players gp
@@ -59,9 +60,23 @@ if ($game['status'] === 'running') {
          WHERE gp.game_id = ? AND r.is_killer = 1",
         [$gameId]
     )['cnt'] ?? 0);
-    if ($totalKillers > 0 && $aliveKillers === 0) {
+
+    // Dodo-Sieg: wurde der Dodo per Abstimmung gehenkt?
+    $dodoHanged = Database::queryOne(
+        "SELECT d.id FROM deaths d
+         JOIN roles r ON r.id = d.role_id
+         WHERE d.game_id = ? AND d.is_gehenkt = 1 AND r.name = 'Dodo'
+         LIMIT 1",
+        [$gameId]
+    );
+    if ($dodoHanged) {
+        $dodoWin = true;
+    } elseif ($totalKillers > 0 && $aliveKillers === 0) {
+        // Bürger-Sieg: alle Killer tot
         $citizenWin = true;
     } elseif ($aliveKillers > 0 && $aliveKillers >= $aliveNonKillers) {
+        // Mörder-Sieg: Lebende Spieler ≤ doppelte Anzahl lebender Mörder
+        // (aliveKillers >= aliveNonKillers bedeutet: aliveTotal <= aliveKillers * 2)
         $killerWin = true;
     }
 }
@@ -92,15 +107,23 @@ require TEMPLATE_PATH . '/base.php';
     </p>
   </div>
 
-  <?php if ($killerWin): ?>
+  <?php if ($dodoWin): ?>
+  <div class="alert animate-in" style="font-size:1.05rem;font-family:var(--font-display);text-align:center;padding:1.2rem;background:rgba(168,85,247,.18);border-color:rgba(168,85,247,.4);color:#d8b4fe">
+    🐦 <strong>Der Dodo hat gewonnen!</strong><br>
+    <span style="font-size:.85rem;font-weight:400">Der Dodo wurde vom Dorf erhängt — sein Plan ist aufgegangen.</span>
+  </div>
+  <?php elseif ($killerWin): ?>
   <div class="alert alert--error animate-in" style="font-size:1.05rem;font-family:var(--font-display);text-align:center;padding:1.2rem">
-    🔪 <strong>Die Killer haben gewonnen!</strong><br>
-    <span style="font-size:.85rem;font-weight:400">Die Killer sind mindestens so viele wie die Überlebenden — das Dorf ist verloren.</span>
+    🔪 <strong>Die Mörder haben gewonnen!</strong><br>
+    <span style="font-size:.85rem;font-weight:400">
+      <?= $aliveKillers ?> Mörder, <?= $aliveNonKillers ?> Überlebende —
+      das Dorf kann die Mörder nicht mehr überführen.
+    </span>
   </div>
   <?php elseif ($citizenWin): ?>
   <div class="alert alert--success animate-in" style="font-size:1.05rem;font-family:var(--font-display);text-align:center;padding:1.2rem">
     🏘️ <strong>Die Bürger haben gewonnen!</strong><br>
-    <span style="font-size:.85rem;font-weight:400">Alle Killer sind tot — das Dorf ist gerettet.</span>
+    <span style="font-size:.85rem;font-weight:400">Alle Mörder sind tot — das Dorf ist gerettet.</span>
   </div>
   <?php endif; ?>
 
