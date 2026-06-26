@@ -99,7 +99,6 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 │   ├── migration_killer.sql        ← is_killer-Flag in roles ergänzt
 │   └── migration_push_cooldown.sql ← push_cooldown + push_last_sent in settings
 │
-├── public/             ← Backups (ZIP-Dateien, nicht im Web zugänglich)
 │
 ├── .htaccess           ← schützt config/core/templates/db vor Web-Zugriff
 └── README.md           ← diese Datei
@@ -458,13 +457,13 @@ Hochgeladene Dateien landen unter `assets/icons/roles/`. Max. Upload: 2 MB.
 
 ## 🔄 Backup & Versionierung
 
-Backups liegen unter `public/` und folgen dem Schema `werwolf-vX.X.X.zip`.
+Backups liegen lokal auf dem Server (außerhalb des Projektordners) und folgen dem Schema `werwolf-vX.X.X.zip`.
 Jedes Backup entspricht einer Versionserhöhung um 0.0.1.
 
 Vor jedem Backup:
 1. `app_version` in `db/schema.sql` und per `admin/settings.php` hochzählen
 2. `CHANGELOG.md` mit den Änderungen seit dem letzten Backup ergänzen
-3. ZIP mit 7-Zip erstellen (alle Dateien außer `public/`)
+3. ZIP mit 7-Zip erstellen
 
 ---
 
