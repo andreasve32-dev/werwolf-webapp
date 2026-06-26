@@ -80,7 +80,7 @@ $hasMusic    = defined('BACKGROUND_MUSIC') && BACKGROUND_MUSIC;
     <div class="settings-label">🌤️ Atmosphäre</div>
     <div class="settings-row">
       <div>
-        <span class="settings-row__name" id="daynight-label">🌙 Nachtmodus</span>
+        <span class="settings-row__name">🌤️ Tag/Nacht-Atmosphäre</span>
         <div class="text-dim text-xs" style="margin-top:.15rem">Nur Optik — kein Spieleffekt</div>
       </div>
       <label class="toggle-switch">
@@ -379,7 +379,7 @@ function openSettingsSheet() {
   // Atmosphäre-Toggle
   const dnEl = document.getElementById('set-daynight');
   const isDay = document.documentElement.getAttribute('data-daynight') === 'day';
-  if (dnEl) { dnEl.checked = isDay; _updateDaynightLabel(isDay); }
+  if (dnEl) { dnEl.checked = isDay; }
 
 
   document.getElementById('settings-sheet').classList.add('open');
@@ -413,14 +413,9 @@ function settingToggle(key, val) {
 }
 
 // ── Atmosphäre-Toggle (rein visuell) ─────────────────────────
-function _updateDaynightLabel(isDay) {
-  const el = document.getElementById('daynight-label');
-  if (el) el.textContent = isDay ? '☀️ Tagmodus' : '🌙 Nachtmodus';
-}
 function toggleDayNight(isDay) {
   localStorage.setItem('ww_daynight', isDay ? 'day' : 'night');
   document.documentElement.setAttribute('data-daynight', isDay ? 'day' : 'night');
-  _updateDaynightLabel(isDay);
 }
 
 // ── Lautstärke ändern & speichern ───────────────────────────
