@@ -117,13 +117,8 @@ switch($action){
     $deathId = (int)($input['death_id'] ?? 0);
     $ort     = trim($input['ort']  ?? '');
     $zeit    = trim($input['zeit'] ?? '');
-    $roleId  = !empty($input['role_id']) ? (int)$input['role_id'] : null;
     if (mb_strlen($ort) > 200) { http_response_code(400); echo json_encode(['error'=>'Ort zu lang']); exit; }
     if (mb_strlen($zeit) > 20)  { http_response_code(400); echo json_encode(['error'=>'Zeit zu lang']);  exit; }
-    if ($roleId !== null) {
-        $roleOk = Database::queryOne("SELECT id FROM roles WHERE id=?", [$roleId]);
-        if (!$roleOk) $roleId = null;
-    }
     $isAdmin = (bool)Auth::player()['is_admin'];
     $death = Database::queryOne("SELECT * FROM deaths WHERE id=?", [$deathId]);
     if (!$death) { http_response_code(404); echo json_encode(['error'=>'Nicht gefunden']); exit; }
@@ -132,8 +127,8 @@ switch($action){
     }
     try {
         Database::execute(
-            "UPDATE deaths SET ort=?, zeit=?, role_id=COALESCE(?,role_id), rolle_aufgedeckt=1 WHERE id=?",
-            [$ort ?: null, $zeit ?: null, $roleId, $deathId]
+            "UPDATE deaths SET ort=?, zeit=?, rolle_aufgedeckt=1 WHERE id=?",
+            [$ort ?: null, $zeit ?: null, $deathId]
         );
     } catch (\Throwable $ex) {
         http_response_code(500);

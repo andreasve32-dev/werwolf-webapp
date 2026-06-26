@@ -42,8 +42,6 @@ $showEintragenCol = $amDead && $hasBefragenRole;
 // Button selbst: nur wenn der eigene Eintrag noch nicht aufgedeckt ist
 $canEintragen     = $showEintragenCol && !empty($myDeath) && empty($myDeath['rolle_aufgedeckt']);
 
-$allRoles = allRoles();
-
 $page = ['title' => 'Gräber'];
 require TEMPLATE_PATH . '/base.php';
 ?>
@@ -123,7 +121,7 @@ require TEMPLATE_PATH . '/base.php';
                       data-death-id="<?= (int)$d['id'] ?>"
                       data-ort="<?= e($dOrt ?? '') ?>"
                       data-zeit="<?= e($defaultZeit) ?>"
-                      data-rolle-id="<?= (int)($d['role_id'] ?? 0) ?>"
+                      data-rolle-name="<?= e($r['name']) ?>"
                       onclick="openEintragen(this)"
                       style="font-size:.8rem">
                 📋 Eintragen
@@ -210,19 +208,12 @@ require TEMPLATE_PATH . '/base.php';
                     text-transform:uppercase;color:var(--text-dim);margin-bottom:.45rem">
         Rolle
       </label>
-      <select id="ei-rolle-id"
-              style="width:100%;box-sizing:border-box;
-                     background:rgba(255,255,255,.06);border:1px solid var(--border);
-                     border-radius:10px;padding:.7rem 1rem;font-size:.95rem;
-                     color:var(--text);font-family:inherit;outline:none;
-                     transition:border-color .15s;appearance:auto"
-              onfocus="this.style.borderColor='var(--accent)'"
-              onblur="this.style.borderColor='var(--border)'">
-        <option value="">— Unbekannt —</option>
-        <?php foreach ($allRoles as $ar): ?>
-        <option value="<?= (int)$ar['id'] ?>"><?= e($ar['name']) ?></option>
-        <?php endforeach; ?>
-      </select>
+      <div id="ei-rolle-anzeige"
+           style="width:100%;box-sizing:border-box;
+                  background:rgba(255,255,255,.03);border:1px solid var(--border);
+                  border-radius:10px;padding:.7rem 1rem;font-size:.95rem;
+                  color:var(--text-dim);font-family:inherit;opacity:.75;
+                  user-select:none">—</div>
     </div>
 
     <div style="margin-bottom:1.1rem">
@@ -279,10 +270,10 @@ function openEintragen(btn) {
   document.getElementById('ei-death-id').value  = btn.dataset.deathId;
   document.getElementById('ei-ort').value        = btn.dataset.ort   || '';
   document.getElementById('ei-zeit').value       = btn.dataset.zeit  || '';
-  document.getElementById('ei-rolle-id').value   = btn.dataset.rolleId || '';
+  document.getElementById('ei-rolle-anzeige').textContent = btn.dataset.rolleName || '—';
   document.getElementById('ei-error').style.display = 'none';
   document.getElementById('eintragen-modal').style.display = 'flex';
-  setTimeout(() => document.getElementById('ei-rolle-id').focus(), 80);
+  setTimeout(() => document.getElementById('ei-ort').focus(), 80);
 }
 function closeEintragen() {
   document.getElementById('eintragen-modal').style.display = 'none';
@@ -291,7 +282,6 @@ async function saveEintragen() {
   const deathId = document.getElementById('ei-death-id').value;
   const ort     = document.getElementById('ei-ort').value.trim();
   const zeit    = document.getElementById('ei-zeit').value.trim();
-  const rolleId = parseInt(document.getElementById('ei-rolle-id').value) || null;
   const savBtn  = document.getElementById('ei-save');
   const err     = document.getElementById('ei-error');
   savBtn.disabled = true;
@@ -300,7 +290,7 @@ async function saveEintragen() {
     const res  = await fetch('/api/game.php', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({action:'update_death_info', game_id:{$gameIdJs}, death_id:parseInt(deathId), ort, zeit, role_id:rolleId})
+      body: JSON.stringify({action:'update_death_info', game_id:{$gameIdJs}, death_id:parseInt(deathId), ort, zeit})
     });
     const text = await res.text();
     let data;
