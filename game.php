@@ -48,7 +48,7 @@ if ($gameId && ($game['status'] ?? '') === 'running') {
 $page = [
     'title'    => 'Spielfeld',
     'inline_js' => sprintf(
-        'const GAME_ID=%s,PLAYER_ID=%s,MY_ALIVE=%s,GAME_STATUS=%s,GAME_PHASE=%s,API_BASE=%s,DAY_SLOGANS=%s,NIGHT_SLOGANS=%s,MY_COOLDOWN_MINS=%s,MY_COOLDOWN_STARTED=%s,ASSEMBLY_DATA=%s;',
+        'const GAME_ID=%s,PLAYER_ID=%s,MY_ALIVE=%s,GAME_STATUS=%s,GAME_PHASE=%s,API_BASE=%s,DAY_SLOGANS=%s,NIGHT_SLOGANS=%s,MY_COOLDOWN_MINS=%s,MY_COOLDOWN_STARTED=%s,ASSEMBLY_DATA=%s,MY_IS_ADMIN=%s;',
         json_encode($gameId),
         json_encode($player['id']),
         json_encode($myGP ? (bool)$myGP['is_alive'] : false),
@@ -59,7 +59,8 @@ $page = [
         json_encode($nightSlogans),
         json_encode($myRole ? (int)$myRole['cooldown'] : 0),
         json_encode($myGP['cooldown_started_at'] ?? null),
-        json_encode($currentAssembly)
+        json_encode($currentAssembly),
+        json_encode((bool)$player['is_admin'])
     ),
 ];
 require TEMPLATE_PATH . '/base.php';
@@ -632,7 +633,7 @@ function _assemblyRender() {
   const runningSection   = document.getElementById('assembly-running-section');
   if (!countdownSection) return;
 
-  const canEnd = _assemblyData && (PLAYER_ID === _assemblyData.caller_id || <?= json_encode((bool)$player['is_admin']) ?>);
+  const canEnd = _assemblyData && (PLAYER_ID === _assemblyData.caller_id || MY_IS_ADMIN);
 
   if (!_assemblyData || !_assemblyData.scheduled_at) {
     if (callSection) callSection.style.display = '';
