@@ -39,7 +39,7 @@ if ($gameId && ($game['status'] ?? '') === 'running') {
 $page = [
     'title'    => 'Spielfeld',
     'inline_js' => sprintf(
-        'const GAME_ID=%s,PLAYER_ID=%s,MY_ALIVE=%s,GAME_STATUS=%s,GAME_PHASE=%s,API_BASE=%s,DAY_SLOGANS=%s,MY_COOLDOWN_MINS=%s,MY_COOLDOWN_STARTED=%s;',
+        'const GAME_ID=%s,PLAYER_ID=%s,MY_ALIVE=%s,GAME_STATUS=%s,GAME_PHASE=%s,API_BASE=%s,DAY_SLOGANS=%s,MY_COOLDOWN_MINS=%s,MY_COOLDOWN_STARTED=%s,ASSEMBLY_DATA=%s;',
         json_encode($gameId),
         json_encode($player['id']),
         json_encode($myGP ? (bool)$myGP['is_alive'] : false),
@@ -48,8 +48,9 @@ $page = [
         json_encode(API_URL),
         json_encode($daySlogans),
         json_encode($myRole ? (int)$myRole['cooldown'] : 0),
-        json_encode($myGP['cooldown_started_at'] ?? null)
-    ) . sprintf(',ASSEMBLY_DATA=%s;', json_encode($currentAssembly)),
+        json_encode($myGP['cooldown_started_at'] ?? null),
+        json_encode($currentAssembly)
+    ),
 ];
 require TEMPLATE_PATH . '/base.php';
 ?>
