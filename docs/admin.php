@@ -337,6 +337,57 @@ require TEMPLATE_PATH . '/base.php';
     damit du nicht betrügst. Tote Spieler kannst du im Admin-Panel einsehen.
   </div>
 
+  <!-- ═══════════════════════════════════════════
+       9. Spieler-Nachrichten
+  ═══════════════════════════════════════════ -->
+  <div class="section-sep"><span>Spieler-Nachrichten</span></div>
+
+  <div class="step-card animate-in" style="animation-delay:.21s">
+    <div class="step-num">10</div>
+    <h3>Fragen beantworten</h3>
+    <p>
+      Spieler können im Spielfenster Fragen direkt an dich stellen, ohne dass andere es sehen.
+      Eingehende Fragen erkennst du an einem roten Badge im Admin-Panel-Menü unter
+      <a href="<?= APP_URL ?>/admin/messages.php" style="color:var(--accent)">💬 Nachrichten</a>.
+      Dort siehst du alle Fragen mit Absender-Name und kannst direkt antworten.
+      Der Spieler sieht deine Antwort sofort in seinem Posteingang (inkl. Toast-Benachrichtigung).
+    </p>
+    <div class="tip-box" style="margin-top:.75rem">
+      <strong>Tipp:</strong> Nutze Spieler-Nachrichten für Rollenfragen in der Nacht —
+      statt zu flüstern kannst du z.B. der Hellseherin das Ergebnis als Nachricht schicken.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       10. Diagnose
+  ═══════════════════════════════════════════ -->
+  <div class="section-sep"><span>Diagnose &amp; Hilfe</span></div>
+
+  <div class="card animate-in" style="animation-delay:.22s">
+    <div class="section-title">🔬 System-Diagnose</div>
+    <p class="text-dim text-sm" style="line-height:1.6;margin-bottom:.75rem">
+      Unter
+      <a href="<?= APP_URL ?>/admin/diagnostics.php" style="color:var(--accent)">Admin → Diagnose</a>
+      findest du eine Übersicht über PHP-Version, DB-Tabellen, alle Projektdateien und
+      VAPID-Schlüssel-Status. Bei einem Fehler kannst du dort einen <em>KI-Fehlerbericht</em>
+      kopieren — dieser enthält alle relevanten Systeminfos für die Problemanalyse.
+    </p>
+    <div class="nav-grid">
+      <div class="nav-card" style="text-align:left;font-size:.8rem;padding:.65rem .9rem">
+        <span style="font-weight:600;color:var(--text)">🧪 Testspieler</span><br>
+        <span class="text-dim" style="font-size:.75rem">Schnell 5–10 Dummykonten anlegen ohne Registrierung</span>
+      </div>
+      <div class="nav-card" style="text-align:left;font-size:.8rem;padding:.65rem .9rem">
+        <span style="font-weight:600;color:var(--text)">🔬 Diagnose</span><br>
+        <span class="text-dim" style="font-size:.75rem">PHP, DB, Dateien, URL-Test, KI-Fehlerbericht</span>
+      </div>
+      <div class="nav-card" style="text-align:left;font-size:.8rem;padding:.65rem .9rem">
+        <span style="font-weight:600;color:var(--text)">⚙️ Setup-Wizard</span><br>
+        <span class="text-dim" style="font-size:.75rem">DB komplett neu einrichten (löscht alle Daten!)</span>
+      </div>
+    </div>
+  </div>
+
   <div style="text-align:center;margin-top:2rem;padding-bottom:1rem;display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap" class="no-print">
     <a href="<?= APP_URL ?>/docs/" class="btn btn--ghost">← Übersicht</a>
     <button onclick="window.print()" class="btn btn--ghost">🖨️ Als PDF speichern</button>

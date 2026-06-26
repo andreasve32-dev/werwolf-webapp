@@ -353,7 +353,54 @@ require TEMPLATE_PATH . '/base.php';
 
 
   <!-- ═══════════════════════════════════════════
-       7. Benachrichtigungen
+       7. Nachrichten
+  ═══════════════════════════════════════════ -->
+  <div class="section-sep"><span>Nachrichten</span></div>
+
+  <div class="step-card animate-in" style="animation-delay:.205s">
+    <div class="step-num">7</div>
+    <h3>Fragen an den Spielleiter</h3>
+    <p>
+      Im Spielfenster gibt es zwei Buttons: <strong>„Frage stellen"</strong> öffnet ein
+      Eingabefeld — deine Frage geht direkt an den Admin, ohne dass andere Spieler sie sehen.
+      Unter <strong>„Posteingang"</strong> siehst du alle deine bisherigen Fragen und die
+      Antworten des Admins. Neue Antworten werden dir per Badge und Toast-Meldung signalisiert.
+    </p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       8. Optionen
+  ═══════════════════════════════════════════ -->
+  <div class="section-sep"><span>Optionen</span></div>
+
+  <div class="card animate-in" style="animation-delay:.21s">
+    <div class="section-title">⚙️ Deine Einstellungen</div>
+    <p class="text-dim text-sm" style="margin-bottom:.75rem;line-height:1.6">
+      Über den <strong>⚙️ Optionen</strong>-Tab erreichst du deine persönlichen Einstellungen.
+      Alle Werte werden lokal auf deinem Gerät gespeichert — keine Auswirkung auf andere Spieler.
+    </p>
+    <div style="display:grid;gap:.5rem">
+      <div style="padding:.6rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md)">
+        <div class="text-sm" style="font-weight:600;margin-bottom:.2rem">🎨 Theme</div>
+        <div class="text-dim text-xs">5 Designs zur Auswahl: Gothic, Vista, Mittelalter, Minimal, Crystal.</div>
+      </div>
+      <div style="padding:.6rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md)">
+        <div class="text-sm" style="font-weight:600;margin-bottom:.2rem">🌤️ Tag/Nacht-Atmosphäre</div>
+        <div class="text-dim text-xs">An/Aus — passt den Hintergrund automatisch der Tageszeit an. Nur optisch, kein Einfluss auf das Spiel.</div>
+      </div>
+      <div style="padding:.6rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md)">
+        <div class="text-sm" style="font-weight:600;margin-bottom:.2rem">✨ Visuelle Effekte</div>
+        <div class="text-dim text-xs">Partikel, Nebel, Phasen-Überblendung, Karten-Flammeneffekt, Schädelregen — alle einzeln ein-/ausschaltbar.</div>
+      </div>
+      <div style="padding:.6rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md)">
+        <div class="text-sm" style="font-weight:600;margin-bottom:.2rem">🎵 Hintergrundmusik</div>
+        <div class="text-dim text-xs">Falls vom Admin aktiviert: Play/Stop-Buttons erscheinen im Spielfenster unten links.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       9. Benachrichtigungen
   ═══════════════════════════════════════════ -->
   <div class="section-sep"><span>Benachrichtigungen</span></div>
 
