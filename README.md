@@ -78,26 +78,8 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 ├── audio/              ← Hintergrundmusik (MP3)
 │
 ├── db/
-│   ├── schema.sql          ← Quelle für setup.php (DROP + CREATE, sauberer Reset)
-│   ├── init.sql            ← Alternative für CLI (CREATE IF NOT EXISTS, kein Reset)
-│   ├── migration_roles.sql         ← Rollen-Tabellen-Erweiterungen
-│   ├── migration_settings.sql      ← settings-Tabelle nachrüsten
-│   ├── migration_messages.sql      ← Nachrichten-System
-│   ├── migration_push.sql          ← Web-Push-Abonnements
-│   ├── migration_slogans.sql       ← Tages-Slogans-Einstellung
-│   ├── migration_timezone.sql      ← Zeitzone-Einstellung
-│   ├── migration_zeit.sql          ← Todesuhrzeit in Todesliste
-│   ├── migration_befragen.sql      ← Nekromant-Befragen-Funktion
-│   ├── migration_faq.sql           ← FAQ-Seite
-│   ├── migration_star.sql          ← Star-Rolle (auto_eintrag-Spalte)
-│   ├── migration_superstar.sql     ← Superstar-Rolle
-│   ├── migration_rename_icons.sql  ← Icon-Pfade umbenennen
-│   ├── migration_fix_logo_path.sql ← Logo-Pfad korrigieren
-│   ├── migration_beta.sql          ← Beta-Modus-Einstellung
-│   ├── migration_remove_cause.sql  ← cause-Spalte entfernt, is_gehenkt + rolle_aufgedeckt ergänzt
-│   ├── migration_cooldown.sql      ← cooldown_started_at in game_players ergänzt
-│   ├── migration_killer.sql        ← is_killer-Flag in roles ergänzt
-│   └── migration_push_cooldown.sql ← push_cooldown + push_last_sent in settings
+│   ├── schema.sql   ← Vollständiges Schema (DROP + CREATE) — für setup.php und Neuinstallation
+│   └── init.sql     ← Nicht-destruktive Variante (CREATE IF NOT EXISTS) — für CLI-Updates
 │
 │
 ├── .htaccess           ← schützt config/core/templates/db vor Web-Zugriff
@@ -490,8 +472,8 @@ Vor jedem Backup:
   leitet automatisch zum Login weiter.
 - **`recordDeath()`** in `core/helpers.php` ist die zentrale Sterben-Funktion — hier
   alle Nebeneffekte (Todeslisten-Eintrag, Vote-Löschung etc.) eintragen, nicht verstreut.
-- **Migrations-Dateien** in `db/` nachrüsten wenn neue Spalten/Tabellen zur bestehenden
-  Installation hinzukommen — `schema.sql` ist nur für Neuinstallationen via Setup-Wizard.
+- **Datenbankänderungen** immer in beiden Dateien eintragen: `db/schema.sql` (vollständige
+  Definition) und `db/init.sql` (idempotente ALTER TABLE / INSERT IGNORE für bestehende Installs).
 - **Diagnose:** `/admin/diagnostics.php` zeigt PHP-Extensions, DB-Tabellen, alle
   Projektdateien und ermöglicht URL-Tests. Enthält einen kopierbaren KI-Fehlerbericht.
 
