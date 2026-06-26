@@ -24,15 +24,16 @@ $daySlogans = array_values(array_filter(array_map('trim', explode("\n", DAY_SLOG
 $currentAssembly = null;
 if ($gameId && ($game['status'] ?? '') === 'running') {
     $row = Database::queryOne(
-        "SELECT ar.scheduled_at, ar.notified, p.display_name AS caller
+        "SELECT ar.scheduled_at, ar.notified, ar.player_id AS caller_id, p.display_name AS caller
          FROM assembly_requests ar JOIN players p ON p.id=ar.player_id
-         WHERE ar.game_id=? ORDER BY ar.scheduled_at DESC LIMIT 1",
+         WHERE ar.game_id=? AND ar.ended_at IS NULL ORDER BY ar.scheduled_at DESC LIMIT 1",
         [$gameId]
     );
     if ($row) {
         $currentAssembly = ['scheduled_at'=>(int)$row['scheduled_at'],
                             'notified'=>(bool)(int)$row['notified'],
-                            'caller'=>$row['caller']];
+                            'caller'=>$row['caller'],
+                            'caller_id'=>(int)$row['caller_id']];
     }
 }
 
@@ -245,14 +246,20 @@ require TEMPLATE_PATH . '/base.php';
           <div style="margin-top:.9rem;font-size:2rem;font-weight:700;color:var(--accent);
                       font-variant-numeric:tabular-nums;letter-spacing:.04em" id="assembly-countdown">--:--</div>
           <div class="text-xs text-dim mt-1">verbleibend</div>
+          <button class="btn btn--ghost btn--sm mt-2" id="assembly-end-btn-countdown" onclick="endAssembly()" style="display:none">
+            ✖ Versammlung abbrechen
+          </button>
         </div>
 
         <!-- Versammlung läuft! -->
         <div id="assembly-running-section" style="display:none">
-          <div class="alert alert--success" style="text-align:center">
+          <div class="alert alert--success" style="text-align:center;margin-bottom:.75rem">
             🏛️ <strong>Die Versammlung läuft!</strong><br>
-            <span class="text-sm">Kommt zusammen und beratet.</span>
+            <span class="text-sm" id="assembly-running-caller"></span>
           </div>
+          <button class="btn btn--danger btn--full" id="assembly-end-btn-running" onclick="endAssembly()" style="display:none">
+            🏛️ Versammlung beenden
+          </button>
         </div>
       </div>
       <?php endif; ?>
@@ -613,10 +620,12 @@ function _assemblyRender() {
   const callSection      = document.getElementById('assembly-call-section');
   const countdownSection = document.getElementById('assembly-countdown-section');
   const runningSection   = document.getElementById('assembly-running-section');
-  if (!countdownSection) return; // Karte nicht sichtbar (z.B. Spiel nicht läuft)
+  if (!countdownSection) return;
+
+  const canEnd = _assemblyData && (PLAYER_ID === _assemblyData.caller_id || <?= json_encode((bool)$player['is_admin']) ?>);
 
   if (!_assemblyData || !_assemblyData.scheduled_at) {
-    if (callSection)      callSection.style.display      = '';
+    if (callSection) callSection.style.display = '';
     countdownSection.style.display = 'none';
     runningSection.style.display   = 'none';
     return;
@@ -628,8 +637,7 @@ function _assemblyRender() {
     .toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
 
   if (diff > 0) {
-    // Countdown läuft
-    if (callSection)      callSection.style.display      = 'none';
+    if (callSection) callSection.style.display = 'none';
     countdownSection.style.display = '';
     runningSection.style.display   = 'none';
     document.getElementById('assembly-time-label').textContent = 'Versammlung um ' + timeLabel + ' Uhr';
@@ -637,11 +645,27 @@ function _assemblyRender() {
     const m = Math.floor(diff / 60), s = diff % 60;
     document.getElementById('assembly-countdown').textContent =
       String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    const endBtn = document.getElementById('assembly-end-btn-countdown');
+    if (endBtn) endBtn.style.display = canEnd ? '' : 'none';
   } else {
-    // Zeit abgelaufen → Versammlung läuft
-    if (callSection)      callSection.style.display      = 'none';
+    if (callSection) callSection.style.display = 'none';
     countdownSection.style.display = 'none';
     runningSection.style.display   = '';
+    const callerEl = document.getElementById('assembly-running-caller');
+    if (callerEl) callerEl.textContent = 'Einberufen von ' + (_assemblyData.caller || '');
+    const endBtn = document.getElementById('assembly-end-btn-running');
+    if (endBtn) endBtn.style.display = canEnd ? '' : 'none';
+  }
+}
+
+async function endAssembly() {
+  const r = await apiFetch(API_BASE+'/game.php', {action:'end_assembly', game_id:GAME_ID});
+  if (r.error === 'session_expired') return;
+  if (r.ok) {
+    _assemblyData = null;
+    _assemblyRender();
+  } else {
+    showToast(r.error || 'Fehler', 'error');
   }
 }
 

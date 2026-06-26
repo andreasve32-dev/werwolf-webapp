@@ -142,12 +142,12 @@ switch($action){
     if (!$g) { http_response_code(400); echo json_encode(['error'=>'Spiel läuft nicht']); exit; }
     $me = Database::queryOne("SELECT * FROM game_players WHERE game_id=? AND player_id=? AND is_alive=1", [$gameId, $playerId]);
     if (!$me) { http_response_code(400); echo json_encode(['error'=>'Du bist nicht im Spiel oder bereits tot']); exit; }
-    // Bereits eine offene Anfrage?
+    // Bereits eine aktive Anfrage (Countdown oder laufend)?
     $existing = Database::queryOne(
-        "SELECT * FROM assembly_requests WHERE game_id=? AND scheduled_at>?", [$gameId, time()]
+        "SELECT * FROM assembly_requests WHERE game_id=? AND ended_at IS NULL", [$gameId]
     );
     if ($existing) {
-        echo json_encode(['ok'=>false,'error'=>'Es ist bereits eine Versammlung einberufen','scheduled_at'=>(int)$existing['scheduled_at']]);
+        echo json_encode(['ok'=>false,'error'=>'Es ist bereits eine Versammlung aktiv','scheduled_at'=>(int)$existing['scheduled_at']]);
         exit;
     }
     // Nächste volle Stunde berechnen
@@ -184,14 +184,27 @@ switch($action){
         Database::execute("UPDATE assembly_requests SET notified=1 WHERE id=?", [$due['id']]);
     }
     $assembly = Database::queryOne(
-        "SELECT ar.scheduled_at, ar.notified, ar.called_at, p.display_name AS caller
+        "SELECT ar.scheduled_at, ar.notified, p.display_name AS caller
          FROM assembly_requests ar JOIN players p ON p.id=ar.player_id
-         WHERE ar.game_id=?
+         WHERE ar.game_id=? AND ar.ended_at IS NULL
          ORDER BY ar.scheduled_at DESC LIMIT 1",
         [$gameId]
     );
     echo json_encode(['assembly'=> $assembly ? ['scheduled_at'=>(int)$assembly['scheduled_at'],
         'notified'=>(bool)$assembly['notified'],'caller'=>$assembly['caller']] : null]);
+    break;
+
+  case 'end_assembly':
+    $assembly = Database::queryOne(
+        "SELECT * FROM assembly_requests WHERE game_id=? AND ended_at IS NULL ORDER BY scheduled_at DESC LIMIT 1",
+        [$gameId]
+    );
+    if (!$assembly) { http_response_code(400); echo json_encode(['error'=>'Keine aktive Versammlung']); exit; }
+    $isAdmin  = (bool)Auth::player()['is_admin'];
+    $isCaller = (int)$assembly['player_id'] === (int)$playerId;
+    if (!$isAdmin && !$isCaller) { http_response_code(403); echo json_encode(['error'=>'Nur der Einberufer oder Admin kann beenden']); exit; }
+    Database::execute("UPDATE assembly_requests SET ended_at=NOW() WHERE id=?", [$assembly['id']]);
+    echo json_encode(['ok'=>true]);
     break;
 
   case 'get_log':

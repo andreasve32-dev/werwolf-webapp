@@ -127,9 +127,13 @@ CREATE TABLE IF NOT EXISTS assembly_requests (
   scheduled_at INT NOT NULL,
   notified     TINYINT(1) NOT NULL DEFAULT 0,
   called_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  ended_at     TIMESTAMP NULL DEFAULT NULL,
   FOREIGN KEY (game_id)   REFERENCES games(id)   ON DELETE CASCADE,
   FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- ended_at nachrüsten falls Tabelle bereits existiert
+ALTER TABLE assembly_requests ADD COLUMN IF NOT EXISTS ended_at TIMESTAMP NULL DEFAULT NULL AFTER called_at;
 
 CREATE TABLE IF NOT EXISTS push_subscriptions (
   id         INT AUTO_INCREMENT PRIMARY KEY,

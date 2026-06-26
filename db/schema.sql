@@ -155,9 +155,10 @@ CREATE TABLE assembly_requests (
   id           INT AUTO_INCREMENT PRIMARY KEY,
   game_id      INT NOT NULL,
   player_id    INT NOT NULL,
-  scheduled_at INT NOT NULL,              -- Unix-Timestamp der nächsten vollen Stunde
-  notified     TINYINT(1) NOT NULL DEFAULT 0, -- 1 = Erinnerungs-Push gesendet
+  scheduled_at INT NOT NULL,
+  notified     TINYINT(1) NOT NULL DEFAULT 0,
   called_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  ended_at     TIMESTAMP NULL DEFAULT NULL, -- NULL = aktiv, gesetzt = vom Admin beendet
   FOREIGN KEY (game_id)   REFERENCES games(id)   ON DELETE CASCADE,
   FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;

@@ -98,7 +98,7 @@ if ($game['status'] === 'running') {
         $pendingAssembly = Database::queryOne(
             "SELECT ar.scheduled_at, ar.notified, p.display_name AS caller
              FROM assembly_requests ar JOIN players p ON p.id=ar.player_id
-             WHERE ar.game_id=? ORDER BY ar.scheduled_at DESC LIMIT 1",
+             WHERE ar.game_id=? AND ar.ended_at IS NULL ORDER BY ar.scheduled_at DESC LIMIT 1",
             [$gameId]
         );
     } catch (Throwable $e) {}
@@ -149,7 +149,7 @@ require TEMPLATE_PATH . '/base.php';
   <div class="alert animate-in" style="display:flex;align-items:center;gap:.8rem;padding:.9rem 1rem;
        background:rgba(99,102,241,.14);border-color:rgba(99,102,241,.4);color:#c7d2fe;font-size:.9rem">
     <span style="font-size:1.5rem">🏛️</span>
-    <div>
+    <div style="flex:1">
       <strong><?= e($pendingAssembly['caller']) ?></strong> hat eine Versammlung einberufen
       <?php if ($aTime > time()): ?>
         — Termin: <strong><?= $aLabel ?> Uhr</strong>
@@ -158,6 +158,9 @@ require TEMPLATE_PATH . '/base.php';
         — <strong>Versammlung läuft jetzt!</strong>
       <?php endif; ?>
     </div>
+    <button class="btn btn--danger btn--sm" onclick="endAssemblyAdmin()" style="white-space:nowrap">
+      ✖ Beenden
+    </button>
   </div>
   <?php endif; ?>
 
@@ -602,6 +605,14 @@ async function manualKill(){
 JS;
 
 $page['inline_js'] .= <<<'JS'
+
+// ── Versammlung beenden (Admin) ──────────────────────────────
+async function endAssemblyAdmin() {
+  const r = await apiFetch(API_BASE+'/game.php', {action:'end_assembly', game_id:GAME_ID});
+  if (r.error === 'session_expired') return;
+  if (r.ok) location.reload();
+  else showToast(r.error||'Fehler','error');
+}
 
 // ── Versammlungs-Countdown im Admin-Banner ───────────────────
 (function(){
