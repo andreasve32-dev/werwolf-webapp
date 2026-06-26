@@ -46,11 +46,12 @@ $showNav = $page['nav'] ?? true;
   <link rel="icon" type="image/png" href="<?= e(assetUrl(MINI_LOGO)) ?>">
   <?php endif; ?>
 
-  <!-- Tag/Nacht-Modus nach Ortszeit (6–22 Uhr = Tag), verhindert Flash -->
+  <!-- Atmosphäre-Modus: gespeicherte Einstellung laden, Fallback = Ortszeit -->
   <script>
   (function(){
-    var h = new Date().getHours();
-    document.documentElement.setAttribute('data-daynight', (h >= 6 && h < 22) ? 'day' : 'night');
+    var saved = localStorage.getItem('ww_daynight');
+    var dn = saved || ((new Date().getHours() >= 6 && new Date().getHours() < 22) ? 'day' : 'night');
+    document.documentElement.setAttribute('data-daynight', dn);
   })();
   </script>
 
