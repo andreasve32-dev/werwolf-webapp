@@ -444,10 +444,6 @@ async function joinGame() {
 function renderRoleIcon(iconPath){
   const base = API_BASE.replace('/api','');
   const fullUrl = base + '/' + iconPath + '?v=' + ASSET_VER;
-  const isSvg = iconPath.toLowerCase().endsWith('.svg');
-  if(isSvg){
-    return `<span class="player-card__icon-mask" style="-webkit-mask-image:url('${fullUrl}');mask-image:url('${fullUrl}')"></span>`;
-  }
   return `<span class="player-card__icon-photo" style="background-image:url('${fullUrl}')"></span>`;
 }
 

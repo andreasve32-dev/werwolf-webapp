@@ -40,7 +40,7 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 │   ├── admin.php           ← Spielsteuerung + Rollen-CRUD
 │   ├── messages.php        ← Spieler-Fragen senden/empfangen + Admin-Antworten
 │   ├── push.php            ← Web-Push-Abonnement verwalten + Benachrichtigungen senden
-│   ├── upload_role_icon.php    ← Icon-Upload + PNG/JPG→SVG-Konvertierung
+│   ├── upload_role_icon.php    ← Rollen-Icon-Upload (PNG/JPG, max. 2 MB)
 │   ├── upload_logo.php         ← Login-Logo hochladen
 │   └── upload_favicon.php      ← Browser-Favicon hochladen
 │
@@ -73,7 +73,7 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 │   ├── js/
 │   │   ├── app.js          ← API-Helper, Toast, LocalStorage, Theme-Switch
 │   │   └── effects.js      ← Visuelle Effekte (Partikel, Nebel, Phasenübergänge)
-│   └── icons/roles/        ← Rollen-Icons (SVG/PNG), inkl. .htaccess-Schutz
+│   └── icons/roles/        ← Rollen-Icons (PNG/JPG), inkl. .htaccess-Schutz
 │
 ├── audio/              ← Hintergrundmusik (MP3)
 │
@@ -429,11 +429,9 @@ Aktivieren/Deaktivieren, Löschen, alles per Formular.
 
 Im Formular „Rollen verwalten" gibt es einen Bild-Uploader:
 
-- **SVG** → wird bereinigt (keine Scripts/Event-Handler) und direkt übernommen.
-- **PNG/JPG + „In SVG umwandeln"** → wird als Base64 in eine `.svg`-Datei eingebettet.
-- **PNG/JPG ohne Häkchen** → wird unverändert gespeichert.
-
-Hochgeladene Dateien landen unter `assets/icons/roles/`. Max. Upload: 2 MB.
+- Erlaubte Formate: **PNG** oder **JPG**
+- Max. Upload: **2 MB**
+- Dateien landen unter `assets/icons/roles/`
 
 ---
 
