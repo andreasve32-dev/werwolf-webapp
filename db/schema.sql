@@ -198,8 +198,8 @@ INSERT INTO roles (id, name, cooldown, description, rules, active, fill, amount,
   1, 0, 1, 'assets/icons/roles/celebrity.png', 0, 0, 1, 0, 80),
 
 (9,  'Gunslinger',  0,
-  'Trägt selbst eine Waffe und kann einmalig pro Spiel einen Spieler erschießen.',
-  'Du hast eine Waffe und kannst einmalig einen Spieler erschießen. Du stehst auf Seite der Bürger. Wirst du ermordet, darfst du nicht mehr schießen.',
+  'Kann beliebig oft schießen. Trifft er einen Killer, überlebt er. Trifft er einen Unschuldigen, stirbt er selbst.',
+  'Du hast eine Waffe ohne Schussbegrenzung. Schießt du auf einen Killer (z. B. Mörder), lebst du weiter und kannst erneut schießen. Triffst du einen Unschuldigen, stirbst du selbst. Du stehst auf Seite der Bürger.',
   1, 0, 1, 'assets/icons/roles/gunslinger.png', 0, 0, 0, 0, 90),
 
 (10, 'Sheriff',     0,
