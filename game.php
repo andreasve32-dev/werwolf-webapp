@@ -20,6 +20,22 @@ $myRole  = $myGP && $myGP['role_id'] ? role((int)$myGP['role_id']) : null;
 // Tages-Slogans aus DB: eine Zeile = ein Slogan (wird im Banner rotiert)
 $daySlogans = array_values(array_filter(array_map('trim', explode("\n", DAY_SLOGANS))));
 
+// Aktuelle Versammlungsanfrage laden
+$currentAssembly = null;
+if ($gameId && $status === 'running') {
+    $row = Database::queryOne(
+        "SELECT ar.scheduled_at, ar.notified, p.display_name AS caller
+         FROM assembly_requests ar JOIN players p ON p.id=ar.player_id
+         WHERE ar.game_id=? ORDER BY ar.scheduled_at DESC LIMIT 1",
+        [$gameId]
+    );
+    if ($row) {
+        $currentAssembly = ['scheduled_at'=>(int)$row['scheduled_at'],
+                            'notified'=>(bool)(int)$row['notified'],
+                            'caller'=>$row['caller']];
+    }
+}
+
 $page = [
     'title'    => 'Spielfeld',
     'inline_js' => sprintf(
@@ -33,7 +49,7 @@ $page = [
         json_encode($daySlogans),
         json_encode($myRole ? (int)$myRole['cooldown'] : 0),
         json_encode($myGP['cooldown_started_at'] ?? null)
-    ),
+    ) . sprintf(',ASSEMBLY_DATA=%s;', json_encode($currentAssembly)),
 ];
 require TEMPLATE_PATH . '/base.php';
 ?>
@@ -201,10 +217,49 @@ require TEMPLATE_PATH . '/base.php';
         <?php endif; ?>
       </div>
 
-      <!-- Bürgerversammlung (nur tagsüber, lebendig) -->
-      <?php if ($status === 'running' && $phase === 'day' && $myGP && $myGP['is_alive']): ?>
-      <div class="card animate-in mt-2" style="animation-delay:.1s" id="assembly-card">
+      <!-- ── Versammlungs-Karte (immer sichtbar wenn Spiel läuft) ── -->
+      <?php if ($status === 'running'): ?>
+      <div class="card animate-in mt-2" style="animation-delay:.1s" id="assembly-schedule-card">
         <div class="section-title">🏛️ Bürgerversammlung</div>
+
+        <!-- Einberufen-Button: nur für lebende Spieler, nur wenn keine läuft -->
+        <?php if ($myGP && $myGP['is_alive']): ?>
+        <div id="assembly-call-section">
+          <p class="text-dim text-sm mb-2">
+            Berufe eine Versammlung ein — sie findet zur nächsten vollen Stunde statt.
+            Alle Spieler werden per Push benachrichtigt.
+          </p>
+          <button class="btn btn--primary btn--full" id="assembly-call-btn" onclick="callAssembly()">
+            📣 Versammlung einberufen
+          </button>
+          <div id="assembly-call-result" class="mt-1"></div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Countdown: via JS befüllt, anfangs versteckt -->
+        <div id="assembly-countdown-section" style="display:none;text-align:center;padding:.25rem 0">
+          <div style="font-size:1.8rem;margin-bottom:.3rem">🏛️</div>
+          <div style="font-family:var(--font-display);font-size:1.15rem;color:var(--text-bright)" id="assembly-time-label"></div>
+          <div class="text-dim text-xs mt-1" id="assembly-caller-label"></div>
+          <div style="margin-top:.9rem;font-size:2rem;font-weight:700;color:var(--accent);
+                      font-variant-numeric:tabular-nums;letter-spacing:.04em" id="assembly-countdown">--:--</div>
+          <div class="text-xs text-dim mt-1">verbleibend</div>
+        </div>
+
+        <!-- Versammlung läuft! -->
+        <div id="assembly-running-section" style="display:none">
+          <div class="alert alert--success" style="text-align:center">
+            🏛️ <strong>Die Versammlung läuft!</strong><br>
+            <span class="text-sm">Kommt zusammen und beratet.</span>
+          </div>
+        </div>
+      </div>
+      <?php endif; ?>
+
+      <!-- Anklagen (nur tagsüber, lebendig) -->
+      <?php if ($status === 'running' && $phase === 'day' && $myGP && $myGP['is_alive']): ?>
+      <div class="card animate-in mt-2" style="animation-delay:.12s" id="assembly-card">
+        <div class="section-title">⚖️ Anklagen</div>
         <p class="text-dim text-sm mb-2">
           Wähle einen Spieler aus der Liste aus und klag ihn vor der Versammlung an.
           Der Admin entscheidet über das Urteil.
@@ -547,6 +602,77 @@ async function castVote() {
   } else {
     el.innerHTML = `<div class="alert alert--error">${escHtml(r.error||'Fehler')}</div>`;
   }
+}
+
+// ── Bürgerversammlung einberufen ────────────────────────────────
+let _assemblyData = ASSEMBLY_DATA; // aus PHP: {scheduled_at, notified, caller} | null
+let _assemblyCountdownTimer = null;
+
+function _assemblyRender() {
+  const callSection      = document.getElementById('assembly-call-section');
+  const countdownSection = document.getElementById('assembly-countdown-section');
+  const runningSection   = document.getElementById('assembly-running-section');
+  if (!countdownSection) return; // Karte nicht sichtbar (z.B. Spiel nicht läuft)
+
+  if (!_assemblyData || !_assemblyData.scheduled_at) {
+    if (callSection)      callSection.style.display      = '';
+    countdownSection.style.display = 'none';
+    runningSection.style.display   = 'none';
+    return;
+  }
+
+  const now  = Math.floor(Date.now() / 1000);
+  const diff = _assemblyData.scheduled_at - now;
+  const timeLabel = new Date(_assemblyData.scheduled_at * 1000)
+    .toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+
+  if (diff > 0) {
+    // Countdown läuft
+    if (callSection)      callSection.style.display      = 'none';
+    countdownSection.style.display = '';
+    runningSection.style.display   = 'none';
+    document.getElementById('assembly-time-label').textContent = 'Versammlung um ' + timeLabel + ' Uhr';
+    document.getElementById('assembly-caller-label').textContent = 'Einberufen von ' + (_assemblyData.caller || '');
+    const m = Math.floor(diff / 60), s = diff % 60;
+    document.getElementById('assembly-countdown').textContent =
+      String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  } else {
+    // Zeit abgelaufen → Versammlung läuft
+    if (callSection)      callSection.style.display      = 'none';
+    countdownSection.style.display = 'none';
+    runningSection.style.display   = '';
+  }
+}
+
+async function callAssembly() {
+  const btn = document.getElementById('assembly-call-btn');
+  if (btn) btn.disabled = true;
+  const r = await apiFetch(API_BASE+'/game.php', {action:'call_assembly', game_id:GAME_ID});
+  if (r.error === 'session_expired') return;
+  const resultEl = document.getElementById('assembly-call-result');
+  if (r.ok) {
+    _assemblyData = {scheduled_at: r.scheduled_at, notified: false, caller: r.caller};
+    _assemblyRender();
+    if (resultEl) resultEl.innerHTML = '';
+  } else {
+    if (btn) btn.disabled = false;
+    if (resultEl) resultEl.innerHTML = `<div class="alert alert--error mt-1">${escHtml(r.error||'Fehler')}</div>`;
+  }
+}
+
+async function _assemblyPoll() {
+  const r = await apiFetch(API_BASE+'/game.php', {action:'get_assembly', game_id:GAME_ID});
+  if (r && r.assembly) {
+    _assemblyData = r.assembly;
+    _assemblyRender();
+  }
+}
+
+// Initialer Render + Ticker + Polling alle 45 s
+if (GAME_STATUS === 'running') {
+  _assemblyRender();
+  setInterval(_assemblyRender, 1000);
+  setInterval(_assemblyPoll, 45000);
 }
 
 

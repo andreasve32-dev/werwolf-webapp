@@ -137,6 +137,63 @@ switch($action){
     }
     echo json_encode(['ok'=>true]); break;
 
+  case 'call_assembly':
+    $g = Database::queryOne("SELECT * FROM games WHERE id=? AND status='running'", [$gameId]);
+    if (!$g) { http_response_code(400); echo json_encode(['error'=>'Spiel läuft nicht']); exit; }
+    $me = Database::queryOne("SELECT * FROM game_players WHERE game_id=? AND player_id=? AND is_alive=1", [$gameId, $playerId]);
+    if (!$me) { http_response_code(400); echo json_encode(['error'=>'Du bist nicht im Spiel oder bereits tot']); exit; }
+    // Bereits eine offene Anfrage?
+    $existing = Database::queryOne(
+        "SELECT * FROM assembly_requests WHERE game_id=? AND scheduled_at>?", [$gameId, time()]
+    );
+    if ($existing) {
+        echo json_encode(['ok'=>false,'error'=>'Es ist bereits eine Versammlung einberufen','scheduled_at'=>(int)$existing['scheduled_at']]);
+        exit;
+    }
+    // Nächste volle Stunde berechnen
+    $nextHour = (int)((floor(time() / 3600) + 1) * 3600);
+    $caller = Database::queryOne("SELECT display_name FROM players WHERE id=?", [$playerId]);
+    $callerName = $caller['display_name'] ?? 'Ein Spieler';
+    $timeStr = date('H:i', $nextHour);
+    Database::execute(
+        "INSERT INTO assembly_requests (game_id, player_id, scheduled_at) VALUES (?,?,?)",
+        [$gameId, $playerId, $nextHour]
+    );
+    require_once dirname(__DIR__) . '/core/WebPush.php';
+    WebPush::sendToGame($gameId, true, '🏛️ Versammlung einberufen!',
+        $callerName . ' ruft zur Bürgerversammlung — Treffen um ' . $timeStr . ' Uhr.');
+    echo json_encode(['ok'=>true,'scheduled_at'=>$nextHour,'caller'=>$callerName,
+                      'message'=>'Versammlung um '.$timeStr.' Uhr einberufen.']);
+    break;
+
+  case 'get_assembly':
+    $g = Database::queryOne("SELECT status FROM games WHERE id=?", [$gameId]);
+    if (!$g || $g['status'] !== 'running') { echo json_encode(['assembly'=>null]); break; }
+    $now = time();
+    // Fällige Erinnerung versenden (lazy check)
+    $due = Database::queryOne(
+        "SELECT ar.id FROM assembly_requests ar
+         WHERE ar.game_id=? AND ar.notified=0 AND ar.scheduled_at<=?
+         ORDER BY ar.scheduled_at LIMIT 1",
+        [$gameId, $now]
+    );
+    if ($due) {
+        require_once dirname(__DIR__) . '/core/WebPush.php';
+        WebPush::sendToGame($gameId, true, '🏛️ Jetzt: Bürgerversammlung!',
+            'Die Versammlung beginnt — kommt zusammen und beratet!');
+        Database::execute("UPDATE assembly_requests SET notified=1 WHERE id=?", [$due['id']]);
+    }
+    $assembly = Database::queryOne(
+        "SELECT ar.scheduled_at, ar.notified, ar.called_at, p.display_name AS caller
+         FROM assembly_requests ar JOIN players p ON p.id=ar.player_id
+         WHERE ar.game_id=?
+         ORDER BY ar.scheduled_at DESC LIMIT 1",
+        [$gameId]
+    );
+    echo json_encode(['assembly'=> $assembly ? ['scheduled_at'=>(int)$assembly['scheduled_at'],
+        'notified'=>(bool)$assembly['notified'],'caller'=>$assembly['caller']] : null]);
+    break;
+
   case 'get_log':
     $deaths=Database::query(
       "SELECT d.died_at, d.round, d.phase, p.display_name AS username

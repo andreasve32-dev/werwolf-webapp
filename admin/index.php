@@ -91,6 +91,19 @@ try {
     $_navMsgPending = (int)($row['cnt'] ?? 0);
 } catch (Throwable $e) {}
 
+// Aktuelle Versammlungsanfrage
+$pendingAssembly = null;
+if ($game['status'] === 'running') {
+    try {
+        $pendingAssembly = Database::queryOne(
+            "SELECT ar.scheduled_at, ar.notified, p.display_name AS caller
+             FROM assembly_requests ar JOIN players p ON p.id=ar.player_id
+             WHERE ar.game_id=? ORDER BY ar.scheduled_at DESC LIMIT 1",
+            [$gameId]
+        );
+    } catch (Throwable $e) {}
+}
+
 $page = ['title' => 'Admin'];
 require TEMPLATE_PATH . '/base.php';
 ?>
@@ -128,6 +141,23 @@ require TEMPLATE_PATH . '/base.php';
   <div class="alert alert--success animate-in" style="font-size:1.05rem;font-family:var(--font-display);text-align:center;padding:1.2rem">
     🏘️ <strong>Die Bürger haben gewonnen!</strong><br>
     <span style="font-size:.85rem;font-weight:400">Alle Mörder sind tot — das Dorf ist gerettet.</span>
+  </div>
+  <?php endif; ?>
+
+  <?php if ($pendingAssembly): ?>
+  <?php $aTime = (int)$pendingAssembly['scheduled_at']; $aLabel = date('H:i', $aTime); ?>
+  <div class="alert animate-in" style="display:flex;align-items:center;gap:.8rem;padding:.9rem 1rem;
+       background:rgba(99,102,241,.14);border-color:rgba(99,102,241,.4);color:#c7d2fe;font-size:.9rem">
+    <span style="font-size:1.5rem">🏛️</span>
+    <div>
+      <strong><?= e($pendingAssembly['caller']) ?></strong> hat eine Versammlung einberufen
+      <?php if ($aTime > time()): ?>
+        — Termin: <strong><?= $aLabel ?> Uhr</strong>
+        <span class="text-xs" style="opacity:.7;margin-left:.4rem" id="admin-assembly-countdown"></span>
+      <?php else: ?>
+        — <strong>Versammlung läuft jetzt!</strong>
+      <?php endif; ?>
+    </div>
   </div>
   <?php endif; ?>
 
@@ -499,7 +529,10 @@ require TEMPLATE_PATH . '/base.php';
 </style>
 
 <?php
-$page['inline_js'] = sprintf('const GAME_ID=%s,API_BASE=%s;', json_encode($gameId), json_encode(API_URL));
+$page['inline_js'] = sprintf('const GAME_ID=%s,API_BASE=%s,ASSEMBLY_TS=%s;',
+    json_encode($gameId), json_encode(API_URL),
+    json_encode($pendingAssembly ? (int)$pendingAssembly['scheduled_at'] : 0)
+);
 $page['inline_js'] .= <<<'JS'
 async function adminAction(action){
   const r=await apiFetch(API_BASE+'/admin.php',{action,game_id:GAME_ID});
@@ -572,6 +605,20 @@ async function manualKill(){
 JS;
 
 $page['inline_js'] .= <<<'JS'
+
+// ── Versammlungs-Countdown im Admin-Banner ───────────────────
+(function(){
+  const el = document.getElementById('admin-assembly-countdown');
+  if (!el || !ASSEMBLY_TS) return;
+  function tick() {
+    const diff = ASSEMBLY_TS - Math.floor(Date.now()/1000);
+    if (diff <= 0) { el.textContent = ''; return; }
+    const m = Math.floor(diff/60), s = diff%60;
+    el.textContent = '(noch ' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0') + ')';
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
 
 // ── Spielerliste ein-/ausklappen ─────────────────────────────
 function togglePlayers() {

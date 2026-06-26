@@ -12,6 +12,7 @@
 -- ============================================================
 
 -- ── 1. Alte Tabellen entfernen (Reihenfolge wegen FKs) ────────
+DROP TABLE IF EXISTS assembly_requests;
 DROP TABLE IF EXISTS push_subscriptions;
 DROP TABLE IF EXISTS messages;
 DROP TABLE IF EXISTS votes;
@@ -148,6 +149,18 @@ CREATE TABLE push_subscriptions (
   UNIQUE KEY uq_player_endpoint (player_id, endpoint(191)),
   FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ── 9b. Versammlungsanfragen ─────────────────────────────────────
+CREATE TABLE assembly_requests (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  game_id      INT NOT NULL,
+  player_id    INT NOT NULL,
+  scheduled_at INT NOT NULL,              -- Unix-Timestamp der nächsten vollen Stunde
+  notified     TINYINT(1) NOT NULL DEFAULT 0, -- 1 = Erinnerungs-Push gesendet
+  called_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (game_id)   REFERENCES games(id)   ON DELETE CASCADE,
+  FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
 
 -- ── 10. Rollen (Seed-Daten basierend auf dem echten Regelwerk) ──
 -- fill=1: Bürger ist die Auffüll-Rolle — Spieler, die keine Sonderrolle

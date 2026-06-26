@@ -120,6 +120,17 @@ CREATE TABLE IF NOT EXISTS messages (
   FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS assembly_requests (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  game_id      INT NOT NULL,
+  player_id    INT NOT NULL,
+  scheduled_at INT NOT NULL,
+  notified     TINYINT(1) NOT NULL DEFAULT 0,
+  called_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (game_id)   REFERENCES games(id)   ON DELETE CASCADE,
+  FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS push_subscriptions (
   id         INT AUTO_INCREMENT PRIMARY KEY,
   player_id  INT NOT NULL,
