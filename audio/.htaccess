@@ -1,0 +1,4 @@
+Options -Indexes
+<FilesMatch "\.mp3$">
+    Allow from all
+</FilesMatch>

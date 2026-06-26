@@ -1,0 +1,15 @@
+# Alle Textdateien im Repo mit LF speichern (Linux-Server)
+* text=auto eol=lf
+
+# Binärdateien nie konvertieren
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text eol=lf
+*.zip binary
+*.pdf binary
+*.mp3 binary
+*.ogg binary
+*.wav binary

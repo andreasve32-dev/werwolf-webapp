@@ -1,0 +1,881 @@
+<?php
+// Copyright (c) 2026 Andreas Vetter
+require_once __DIR__ . '/core/bootstrap.php';
+Auth::requireLogin();
+
+$player  = Auth::player();
+$game    = currentGame();
+if (!$game) {
+    Database::execute("INSERT INTO games (status) VALUES ('lobby')");
+    $game = currentGame();
+}
+$gameId  = $game['id'] ?? null;
+$myGP    = $gameId ? gamePlayer($gameId, $player['id']) : null;
+
+
+$myRole  = $myGP && $myGP['role_id'] ? role((int)$myGP['role_id']) : null;
+
+$daySlogans = array_values(array_filter(array_map('trim', explode("\n", DAY_SLOGANS))));
+
+$page = [
+    'title'    => 'Spielfeld',
+    'inline_js' => sprintf(
+        'const GAME_ID=%s,PLAYER_ID=%s,MY_ALIVE=%s,GAME_STATUS=%s,GAME_PHASE=%s,API_BASE=%s,DAY_SLOGANS=%s,MY_COOLDOWN_MINS=%s,MY_COOLDOWN_STARTED=%s;',
+        json_encode($gameId),
+        json_encode($player['id']),
+        json_encode($myGP ? (bool)$myGP['is_alive'] : false),
+        json_encode($game['status'] ?? null),
+        json_encode($game['phase']  ?? null),
+        json_encode(API_URL),
+        json_encode($daySlogans),
+        json_encode($myRole ? (int)$myRole['cooldown'] : 0),
+        json_encode($myGP['cooldown_started_at'] ?? null)
+    ),
+];
+require TEMPLATE_PATH . '/base.php';
+?>
+
+<div class="container page-wrap">
+
+  <!-- Beta-Hinweis -->
+  <?php if (BETA_MODE): ?>
+  <div class="alert alert--info" style="margin-bottom:.75rem;font-size:.85rem;text-align:center">
+    🧪 <strong>Beta</strong> — Diese Version ist noch in der Entwicklung. Fehler können auftreten.
+  </div>
+  <?php endif; ?>
+
+  <!-- Phase Banner -->
+  <?php
+  $phase = $game['phase'] ?? 'lobby';
+  $status = $game['status'] ?? null;
+  ?>
+  <div class="phase-banner phase-banner--<?= $status === 'running' ? $phase : 'lobby' ?>" id="phase-banner">
+    <span id="phase-banner-text">
+    <?php if ($status === 'lobby'): ?>
+      🏰 Warte auf Spielstart
+    <?php elseif ($phase === 'day'): ?>
+      ☀️ Tag — Das Dorf berät
+    <?php else: ?>
+      🌕 Nacht — Die Wölfe erwachen
+    <?php endif; ?>
+    </span>
+  </div>
+
+  <div class="grid-2 game-layout" style="gap:1.5rem;align-items:start">
+    <div>
+      <div class="card card--glow animate-in">
+        <div class="section-title">Mein Status</div>
+        <div class="flex gap-md mb-2">
+          <?php if ($myRole): ?>
+            <div class="role-fx" id="role-fx-wrap">
+              <?= roleIconHtml($myRole, 'xl') ?>
+            </div>
+          <?php else: ?>
+            <span style="font-size:2.4rem">👤</span>
+          <?php endif; ?>
+          <div>
+            <div class="bold text-bright"><?= e($player['display_name']) ?></div>
+            <?php if ($myGP && $myRole): ?>
+              <div class="role-badge role-badge--glow mt-1">
+                <?= e($myRole['name']) ?>
+              </div>
+              <div class="mt-1">
+                <?php if ($myGP['is_alive']): ?>
+                  <span class="tag tag--alive">✓ Am Leben</span>
+                <?php else: ?>
+                  <span class="tag tag--dead">☠ Gestorben</span>
+                <?php endif; ?>
+              </div>
+            <?php elseif ($myGP): ?>
+              <span class="tag tag--lobby mt-1">Noch keine Rolle zugewiesen</span>
+            <?php else: ?>
+              <span class="tag tag--lobby mt-1">Nicht im Spiel</span>
+            <?php endif; ?>
+          </div>
+        </div>
+
+        <?php if ($myGP): ?>
+        <button class="btn btn--ghost btn--full btn--sm" style="margin-bottom:.6rem" onclick="openRoleCard()">
+          🃏 Meine Karte anzeigen
+        </button>
+        <?php endif; ?>
+
+        <div class="flex gap-xs" style="margin-bottom:.6rem">
+          <button class="btn btn--ghost btn--sm" style="flex:1" onclick="openAskModal()">
+            ✉️ Frage stellen
+          </button>
+          <button class="btn btn--ghost btn--sm" style="flex:1;position:relative" id="inbox-btn" onclick="openInboxModal()">
+            📬 Posteingang
+            <span id="msg-badge"
+                  style="display:none;position:absolute;top:-6px;right:-6px;
+                         background:var(--accent);color:var(--bg,#000);
+                         border-radius:99px;font-size:.6rem;font-weight:700;
+                         padding:1px 5px;min-width:16px;text-align:center;line-height:1.5">
+            </span>
+          </button>
+        </div>
+
+        <?php if ($player['is_admin']): ?>
+        <a href="<?= APP_URL ?>/admin/messages.php" id="admin-pending-hint"
+           style="display:none;align-items:center;gap:.6rem;margin-bottom:.5rem;
+                  padding:.55rem .8rem;border-radius:8px;
+                  background:var(--alert-info-bg,rgba(96,165,250,.12));
+                  border:1px solid var(--alert-info-border,rgba(96,165,250,.35));
+                  color:var(--alert-info-text,#93c5fd);
+                  font-size:.82rem;text-decoration:none;
+                  transition:border-color .18s">
+          <span>✉️</span>
+          <span><strong id="admin-pending-count">0</strong> unbeantwortete Spielerfragen</span>
+          <span style="margin-left:auto;opacity:.6">→</span>
+        </a>
+        <?php endif; ?>
+
+        <?php if ($status === 'lobby'): ?>
+          <?php if (!$myGP): ?>
+            <button class="btn btn--primary btn--full" onclick="joinGame()">
+              🚪 Dem Spiel beitreten
+            </button>
+          <?php else: ?>
+            <div class="alert alert--info">Du bist beigetreten. Warte auf Spielstart.</div>
+          <?php endif; ?>
+
+        <?php elseif ($status === 'running' && !$myGP): ?>
+          <div class="alert alert--warn">⚠️ Das Spiel läuft bereits — du kannst nicht mehr beitreten.</div>
+
+        <?php elseif ($status === 'running' && $myGP && !$myGP['is_alive']): ?>
+          <div class="alert alert--error">☠ Du bist tot. Beobachte das Geschehen.</div>
+
+        <?php endif; ?>
+
+        <!-- Tot-Melden-Button (nur wenn Spiel läuft und Spieler noch lebt) -->
+        <?php if ($status === 'running' && $myGP && $myGP['is_alive']): ?>
+        <button class="btn btn--danger btn--full mt-2" onclick="openDeathModal()"
+                style="border-style:dashed;opacity:.85">
+          ☠️ Meinen Tod melden
+        </button>
+        <?php endif; ?>
+
+        <!-- Rollenbeschreibung & Regeln -->
+        <?php if ($myRole && $myGP && $myGP['is_alive'] && $status === 'running'): ?>
+          <?php if (!empty($myRole['sichtbar'])): ?>
+          <div class="alert alert--info mt-2">
+            👁️ Spieler mit derselben Rolle (<?= e($myRole['name']) ?>) erkennst du in der Spielerliste.
+          </div>
+          <?php endif; ?>
+          <?php if ($myRole['description']): ?>
+          <div class="panel mt-2 text-sm">
+            <strong class="text-accent">Deine Rolle:</strong> <?= e($myRole['description']) ?>
+            <?php if ($myRole['rules']): ?>
+              <div class="text-dim mt-1 italic">📜 <?= e($myRole['rules']) ?></div>
+            <?php endif; ?>
+            <?php if ($myRole['cooldown'] > 0): ?>
+              <div class="mt-2" id="cooldown-block">
+                <button class="btn btn--primary btn--full" id="cd-btn" onclick="startCooldown()">
+                  ⏱ Fähigkeit aktivieren (Cooldown starten)
+                </button>
+                <div id="cd-status" class="text-center text-dim text-sm mt-1" style="display:none">
+                  ⏳ Cooldown läuft — noch <strong id="cd-remaining">--:--</strong>
+                  <div class="text-xs mt-1" style="opacity:.65">Dauer: <?= (int)$myRole['cooldown'] ?> Minuten</div>
+                </div>
+                <div class="text-xs text-dim text-center mt-1" style="opacity:.55">
+                  Drücke den Button sobald du deine Fähigkeit eingesetzt hast.
+                </div>
+              </div>
+            <?php endif; ?>
+          </div>
+          <?php endif; ?>
+        <?php endif; ?>
+
+        <?php if (BACKGROUND_MUSIC): ?>
+        <!-- Musik-Steuerung -->
+        <div class="flex-between mt-2 pt-1" style="border-top:1px solid var(--border);align-items:center">
+          <span class="text-dim text-sm">🎵 Musik</span>
+          <div class="flex gap-xs">
+            <button class="btn btn--ghost btn--sm" id="music-btn-play" onclick="musicPlay()">▶ Play</button>
+            <button class="btn btn--ghost btn--sm" id="music-btn-stop" onclick="musicStop()" disabled>⏹ Stop</button>
+          </div>
+        </div>
+        <?php endif; ?>
+      </div>
+
+      <!-- Bürgerversammlung (nur tagsüber, lebendig) -->
+      <?php if ($status === 'running' && $phase === 'day' && $myGP && $myGP['is_alive']): ?>
+      <div class="card animate-in mt-2" style="animation-delay:.1s" id="assembly-card">
+        <div class="section-title">🏛️ Bürgerversammlung</div>
+        <p class="text-dim text-sm mb-2">
+          Wähle einen Spieler aus der Liste aus und klag ihn vor der Versammlung an.
+          Der Admin entscheidet über das Urteil.
+        </p>
+        <div id="accuse-target-display"
+             style="display:flex;align-items:center;gap:.6rem;min-height:2.4rem;padding:.5rem .75rem;
+                    border-radius:8px;border:1px solid var(--border);background:var(--panel-bg);margin-bottom:.75rem">
+          <span id="accuse-icon" style="font-size:1.2rem">👤</span>
+          <span id="accuse-name" class="text-dim text-sm italic">Spieler aus der Liste auswählen …</span>
+        </div>
+        <button class="btn btn--danger btn--full" id="vote-btn" disabled onclick="castVote()">
+          ⚖️ Anklagen
+        </button>
+        <div id="vote-result" class="mt-1"></div>
+      </div>
+      <?php endif; ?>
+    </div>
+
+    <!-- ── Rechte Spalte: Spielerliste ── -->
+    <div class="card animate-in" style="animation-delay:.12s">
+      <div class="section-title">Dorfbewohner</div>
+      <div id="player-list" class="player-grid">
+        <div class="flex-center" style="padding:2rem;grid-column:1/-1">
+          <div class="spinner"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+</div>
+
+<!-- ── Tod-Melden Modal ──────────────────────────────────────── -->
+<div id="death-overlay" style="display:none;position:fixed;inset:0;z-index:600;
+     align-items:center;justify-content:center;padding:1.25rem;
+     background:rgba(0,0,0,.65);backdrop-filter:blur(12px)">
+  <div id="death-modal" style="background:var(--card-bg);border:1px solid var(--danger-border,#7f1d1d);
+       border-radius:20px;padding:2rem 1.75rem 1.5rem;max-width:380px;width:100%;
+       box-shadow:0 12px 56px rgba(0,0,0,.7);transform:scale(.88);opacity:0;
+       transition:transform .26s cubic-bezier(.34,1.4,.64,1),opacity .2s ease">
+    <div style="text-align:center;margin-bottom:1.25rem">
+      <div style="font-size:3rem;line-height:1;margin-bottom:.6rem">☠️</div>
+      <div style="font-family:var(--font-display);font-size:1.5rem;color:var(--text-bright)">Ich bin tot</div>
+      <p class="text-dim text-sm mt-1">
+        Dein Tod wird in der Chronik vermerkt.<br>
+        Diese Aktion kann nicht rückgängig gemacht werden.
+      </p>
+    </div>
+
+    <div class="form-group" id="death-ort-group">
+      <label class="form-label" for="death-ort">
+        📍 Wo bist du gestorben? *
+      </label>
+      <input class="form-input" type="text" id="death-ort" maxlength="200" required
+             placeholder="z.B. Hinter der Scheune, Am Brunnen …">
+      <small class="text-dim text-xs">
+        Pflichtfeld — nur Rollen mit Befragungsrecht sehen diesen Ort.
+      </small>
+    </div>
+
+    <div id="death-modal-result" style="margin-bottom:.75rem"></div>
+
+    <div class="flex gap-sm">
+      <button class="btn btn--danger" style="flex:1" onclick="confirmDeath()" id="death-confirm-btn">
+        ☠️ Bestätigen
+      </button>
+      <button class="btn btn--ghost" style="flex:1" onclick="closeDeathModal()">
+        Abbrechen
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+.player-card__icon-mask { display:inline-block; width:1.5rem; height:1.5rem; margin:0 auto .35rem; background-color: var(--accent); -webkit-mask-size:contain; -webkit-mask-repeat:no-repeat; -webkit-mask-position:center; mask-size:contain; mask-repeat:no-repeat; mask-position:center; }
+.player-card__icon-photo { display:inline-block; width:1.5rem; height:1.5rem; margin:0 auto .35rem; background-size:contain; background-repeat:no-repeat; background-position:center; border-radius:3px; }
+
+/* Rollen-Effekte → app.css */
+
+/* ── Rollen-Karte Modal ─────────────────────────────────── */
+#role-card-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1.25rem;
+  background: rgba(0,0,0,0);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  opacity: 0; pointer-events: none;
+  transition: opacity .22s ease, backdrop-filter .22s ease, background .22s ease;
+}
+#role-card-overlay.open {
+  opacity: 1; pointer-events: auto;
+  background: rgba(0,0,0,.58);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.role-card-modal {
+  background: var(--card-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: 20px;
+  padding: 2rem 1.75rem 1.5rem;
+  max-width: 360px; width: 100%;
+  text-align: center;
+  box-shadow: 0 12px 56px rgba(0,0,0,.65), 0 0 0 1px var(--accent-border);
+  cursor: pointer;
+  transform: scale(.84); opacity: 0;
+  transition: transform .28s cubic-bezier(.34,1.4,.64,1), opacity .22s ease;
+  user-select: none;
+}
+#role-card-overlay.open .role-card-modal {
+  transform: scale(1); opacity: 1;
+}
+.role-card-modal__icon {
+  width: 100%; height: 300px;
+  margin: 0 0 1.1rem;
+  background-size: contain; background-repeat: no-repeat; background-position: center;
+  border-radius: 16px;
+  background-color: var(--panel-bg);
+  padding: 10px; box-sizing: border-box;
+}
+.role-card-modal__title {
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  color: var(--accent);
+  letter-spacing: .06em;
+  margin-bottom: .5rem;
+}
+.role-card-modal__badge {
+  display: inline-block;
+  font-size: .78rem;
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+  border-radius: 99px;
+  padding: .2rem .75rem;
+  margin-bottom: .75rem;
+}
+.role-card-modal__desc {
+  color: var(--text-bright);
+  font-size: .92rem;
+  line-height: 1.55;
+  margin-bottom: .65rem;
+}
+.role-card-modal__rules {
+  color: var(--text-dim);
+  font-size: .82rem;
+  font-style: italic;
+  line-height: 1.5;
+  border-top: 1px solid var(--border);
+  padding-top: .65rem;
+  margin-top: .5rem;
+}
+.role-card-modal__cooldown {
+  color: var(--text-dim);
+  font-size: .8rem;
+  margin-top: .5rem;
+}
+.role-card-modal__hint {
+  color: var(--text-dim);
+  font-size: .72rem;
+  margin-top: 1.1rem;
+  opacity: .6;
+  letter-spacing: .04em;
+}
+</style>
+
+<!-- ── Frage stellen Modal ───────────────────────────────── -->
+<div id="ask-overlay" onclick="closeAskModal()"
+     style="position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;
+            padding:1.25rem;background:rgba(0,0,0,0);backdrop-filter:blur(0px);
+            opacity:0;pointer-events:none;transition:opacity .22s ease,backdrop-filter .22s ease,background .22s ease">
+  <div class="role-card-modal" onclick="event.stopPropagation()" style="max-width:380px;text-align:left;cursor:default">
+    <div class="role-card-modal__title" style="font-size:1.25rem;margin-bottom:1rem">✉️ Frage an den Spielleiter</div>
+    <textarea id="ask-text" class="form-input"
+              placeholder="Deine Frage …" rows="4" maxlength="500"
+              style="width:100%;font-size:.9rem;resize:vertical;margin-bottom:.75rem;box-sizing:border-box"></textarea>
+    <div class="flex gap-sm">
+      <button class="btn btn--primary" style="flex:1" onclick="sendAsk()">Senden</button>
+      <button class="btn btn--ghost"   style="flex:1" onclick="closeAskModal()">Abbrechen</button>
+    </div>
+    <div id="ask-result" style="margin-top:.6rem"></div>
+  </div>
+</div>
+
+<!-- ── Posteingang Modal ─────────────────────────────────── -->
+<div id="inbox-overlay" onclick="closeInboxModal()"
+     style="position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;
+            padding:1.25rem;background:rgba(0,0,0,0);backdrop-filter:blur(0px);
+            opacity:0;pointer-events:none;transition:opacity .22s ease,backdrop-filter .22s ease,background .22s ease">
+  <div class="role-card-modal" onclick="event.stopPropagation()"
+       style="max-width:440px;text-align:left;cursor:default;max-height:80vh;overflow-y:auto">
+    <div class="role-card-modal__title" style="font-size:1.25rem;margin-bottom:1rem">📬 Posteingang</div>
+    <div id="inbox-list">
+      <div class="flex-center" style="padding:1.5rem"><div class="spinner"></div></div>
+    </div>
+    <button class="btn btn--ghost btn--full btn--sm mt-2" onclick="closeInboxModal()">Schließen</button>
+  </div>
+</div>
+
+<?php if ($myGP): ?>
+<?php $cardRole = $myRole ?? ['name' => 'Noch keine Rolle', 'icon_path' => DEFAULT_ROLE_ICON, 'sichtbar' => 0, 'description' => 'Dir wurde noch keine Rolle zugewiesen.', 'rules' => '', 'cooldown' => 0]; ?>
+<div id="role-card-overlay" onclick="closeRoleCard()" role="dialog" aria-modal="true">
+  <div class="role-card-modal">
+    <div class="role-fx role-fx--modal" id="role-fx-modal">
+      <div class="role-card-modal__icon"
+           style="background-image:url('<?= e(roleIconUrl($cardRole)) ?>')"></div>
+    </div>
+    <div class="role-card-modal__title role-badge--glow"><?= e($cardRole['name']) ?></div>
+    <?php if (!empty($cardRole['sichtbar'])): ?>
+      <div class="role-card-modal__badge">👁️ Ihr erkennt euch untereinander</div>
+    <?php endif; ?>
+    <?php if ($cardRole['description']): ?>
+      <p class="role-card-modal__desc"><?= e($cardRole['description']) ?></p>
+    <?php endif; ?>
+    <?php if ($cardRole['rules']): ?>
+      <div class="role-card-modal__rules">📜 <?= e($cardRole['rules']) ?></div>
+    <?php endif; ?>
+    <?php if ((int)($cardRole['cooldown'] ?? 0) > 0): ?>
+      <div class="role-card-modal__cooldown">⏳ Cooldown: alle <?= (int)$cardRole['cooldown'] + 1 ?> Nächte</div>
+    <?php endif; ?>
+    <div class="role-card-modal__hint">Tippen zum Schließen</div>
+  </div>
+</div>
+<?php endif; ?>
+
+<?php
+$page['inline_js'] .= <<<'JS'
+let selectedTarget = null;
+
+async function joinGame() {
+  if (!GAME_ID) { showToast('Kein aktives Spiel vorhanden.', 'error'); return; }
+  const r = await apiFetch(API_BASE+'/game.php',{action:'join',game_id:GAME_ID});
+  if(r.error==='session_expired')return;
+  if(r.ok){showToast('Beigetreten!','success');setTimeout(()=>location.reload(),700);}
+  else showToast(r.error||'Fehler','error');
+}
+
+function renderRoleIcon(iconPath){
+  const base = API_BASE.replace('/api','');
+  const fullUrl = base + '/' + iconPath + '?v=' + ASSET_VER;
+  const isSvg = iconPath.toLowerCase().endsWith('.svg');
+  if(isSvg){
+    return `<span class="player-card__icon-mask" style="-webkit-mask-image:url('${fullUrl}');mask-image:url('${fullUrl}')"></span>`;
+  }
+  return `<span class="player-card__icon-photo" style="background-image:url('${fullUrl}')"></span>`;
+}
+
+async function loadPlayers() {
+  if(!GAME_ID){
+    document.getElementById('player-list').innerHTML='<p class="text-dim" style="grid-column:1/-1;padding:1rem">Kein Spiel aktiv.</p>';
+    return;
+  }
+  const r = await apiFetch(API_BASE+'/game.php',{action:'get_players',game_id:GAME_ID});
+  if(!r.players){
+    if(r.error !== 'session_expired')
+      document.getElementById('player-list').innerHTML='<p class="text-dim" style="grid-column:1/-1;padding:1rem">Spieler konnten nicht geladen werden.</p>';
+    return;
+  }
+  if(r.players.length===0){
+    document.getElementById('player-list').innerHTML='<p class="text-dim" style="grid-column:1/-1;padding:1rem">Noch keine Spieler im Spiel.</p>';
+    return;
+  }
+  const list=document.getElementById('player-list');
+  list.innerHTML=r.players.map(p=>{
+    const dead=!p.is_alive;
+    const canSel=!dead&&p.player_id!=PLAYER_ID&&MY_ALIVE&&GAME_STATUS==='running';
+    const pName=p.display_name;
+    const roleHtml = !dead && p.role_name
+      ? `<div class="player-card__role">${escHtml(p.role_name)}</div>` : '';
+    const iconHtml = !dead && p.role_icon_path
+      ? renderRoleIcon(p.role_icon_path)
+      : `<span class="player-card__icon">${dead?'🕯️':'👤'}</span>`;
+    return `<div class="player-card${dead?' player-card--dead':''}" id="pc-${p.player_id}"
+      onclick="${canSel?`selectTarget(${p.player_id},'${escHtml(pName)}')`:''}" >
+      ${dead?'<span class="player-card__skull">💀</span>':''}
+      ${iconHtml}
+      <div class="player-card__name">${escHtml(p.display_name)}</div>
+      ${roleHtml}
+    </div>`;
+  }).join('');
+}
+
+// ── Banner-Slogan-Rotation ───────────────────────────────────
+let _bannerBeraet = false;
+let _sloganTimer  = null;
+
+function _setBannerText(txt) {
+  const el = document.getElementById('phase-banner-text');
+  if (!el) return;
+  el.style.transition = 'opacity .35s';
+  el.style.opacity = '0';
+  setTimeout(() => { el.textContent = txt; el.style.opacity = '1'; }, 350);
+}
+
+function _nextSlogan() {
+  if (_bannerBeraet || !DAY_SLOGANS.length) return;
+  const s = DAY_SLOGANS[Math.floor(Math.random() * DAY_SLOGANS.length)];
+  _setBannerText('☀️ ' + s);
+}
+
+function _startSloganRotation() {
+  if (GAME_PHASE !== 'day' || GAME_STATUS !== 'running') return;
+  _nextSlogan();
+  _sloganTimer = setInterval(_nextSlogan, 28000);
+}
+
+function _bannerSetBeraet() {
+  _bannerBeraet = true;
+  clearInterval(_sloganTimer);
+  _setBannerText('☀️ Tag — Das Dorf berät');
+}
+
+// Rotation starten wenn Tag + Spiel läuft und kein Spieler gewählt
+if (GAME_PHASE === 'day' && GAME_STATUS === 'running') {
+  document.addEventListener('DOMContentLoaded', _startSloganRotation);
+}
+
+function selectTarget(id, name) {
+  selectedTarget = id;
+  document.querySelectorAll('.player-card').forEach(c => c.classList.remove('selected'));
+  const c = document.getElementById('pc-' + id);
+  if (c) c.classList.add('selected');
+
+  const nameEl = document.getElementById('accuse-name');
+  const iconEl = document.getElementById('accuse-icon');
+  if (nameEl) { nameEl.textContent = name; nameEl.style.color = 'var(--text-bright)'; nameEl.style.fontStyle = 'normal'; }
+  if (iconEl) iconEl.textContent = '🎯';
+
+  const btn = document.getElementById('vote-btn');
+  if (btn) btn.disabled = false;
+
+  // Banner auf "Das Dorf berät" umschalten
+  _bannerSetBeraet();
+}
+
+async function castVote() {
+  if (!selectedTarget) return;
+  const r = await apiFetch(API_BASE+'/game.php', {action:'vote', game_id:GAME_ID, target_id:selectedTarget});
+  if (r.error === 'session_expired') return;
+  const el = document.getElementById('vote-result');
+  if (r.ok) {
+    el.innerHTML = '<div class="alert alert--success">⚖️ Anklage eingereicht!</div>';
+    document.getElementById('vote-btn').disabled = true;
+    document.getElementById('vote-btn').textContent = '✓ Anklage eingereicht';
+  } else {
+    el.innerHTML = `<div class="alert alert--error">${escHtml(r.error||'Fehler')}</div>`;
+  }
+}
+
+
+
+// phase-change effect + Effekte auf aktuelle Phase setzen
+(function () {
+  const stored = localStorage.getItem('ww_last_phase');
+  if (stored && stored !== GAME_PHASE && GAME_STATUS === 'running') {
+    triggerPhaseTransition(GAME_PHASE);
+  }
+  if (GAME_STATUS === 'running') localStorage.setItem('ww_last_phase', GAME_PHASE);
+  else localStorage.removeItem('ww_last_phase');
+  // Nebel + Partikelfarbe sofort auf aktuelle Phase setzen
+  if (window.FX && GAME_STATUS === 'running') FX.updateForPhase(GAME_PHASE);
+})();
+
+// ── Karten-Effekte: Body-Klassen nach Settings setzen ───────
+if (localStorage.getItem('ww_fx_rolecard') === 'false') {
+  document.body.classList.add('fx-rolecard-off');
+}
+if (localStorage.getItem('ww_fx_rolename') === 'false') {
+  document.body.classList.add('fx-rolename-off');
+}
+
+// ── Rollen-Funken Helper ─────────────────────────────────────
+function _spawnSpark(wrap) {
+  if (document.body.classList.contains('fx-rolecard-off')) return;
+  const w = wrap.offsetWidth, h = wrap.offsetHeight;
+  const s = document.createElement('span');
+  s.className = 'role-spark';
+  const sx  = Math.random() * (w + 20) - 10;
+  const sy  = h - Math.random() * 10;
+  const tx  = (Math.random() - .5) * 40;
+  const ty  = -(30 + Math.random() * 40);
+  const dur = (.8 + Math.random() * .9).toFixed(2) + 's';
+  const sz  = (3 + Math.random() * 4).toFixed(1) + 'px';
+  s.style.cssText = `--x:${sx.toFixed(1)}px;--y:${sy.toFixed(1)}px;--tx:${tx.toFixed(1)}px;--ty:${ty.toFixed(1)}px;--dur:${dur};--delay:0s;width:${sz};height:${sz}`;
+  wrap.appendChild(s);
+  setTimeout(() => s.remove(), parseFloat(dur) * 1000 + 50);
+}
+
+// Status-Karte: dauerhaft Funken
+(function() {
+  const wrap = document.getElementById('role-fx-wrap');
+  if (!wrap) return;
+  setInterval(() => _spawnSpark(wrap), 220);
+})();
+
+// Modal: Funken nur solange offen
+let _modalSparkTimer = null;
+
+loadPlayers();
+setInterval(()=>{loadPlayers();},6000);
+
+function openRoleCard() {
+  const el = document.getElementById('role-card-overlay');
+  if (el) el.classList.add('open');
+  const wrap = document.getElementById('role-fx-modal');
+  if (wrap) _modalSparkTimer = setInterval(() => _spawnSpark(wrap), 180);
+}
+function closeRoleCard() {
+  const el = document.getElementById('role-card-overlay');
+  if (el) el.classList.remove('open');
+  clearInterval(_modalSparkTimer);
+  _modalSparkTimer = null;
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeRoleCard(); closeAskModal(); closeInboxModal(); }
+});
+JS;
+
+$page['inline_js'] .= sprintf("\nconst MSG_API = %s;\n", json_encode(API_URL . '/messages.php'));
+$page['inline_js'] .= <<<'MSGJS'
+
+// ── Nachrichten ──────────────────────────────────────────────
+function _openOverlay(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.opacity = '0';
+  el.style.pointerEvents = 'auto';
+  el.style.background = 'rgba(0,0,0,.58)';
+  el.style.backdropFilter = 'blur(14px)';
+  el.style.webkitBackdropFilter = 'blur(14px)';
+  requestAnimationFrame(() => { el.style.transition='opacity .22s ease,backdrop-filter .22s ease,background .22s ease'; el.style.opacity='1'; });
+  const card = el.querySelector('.role-card-modal');
+  if (card) { card.style.transform='scale(.84)'; card.style.opacity='0'; requestAnimationFrame(()=>{ card.style.transition='transform .28s cubic-bezier(.34,1.4,.64,1),opacity .22s ease'; card.style.transform='scale(1)'; card.style.opacity='1'; }); }
+}
+function _closeOverlay(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.opacity = '0';
+  el.style.background = 'rgba(0,0,0,0)';
+  el.style.backdropFilter = 'blur(0px)';
+  el.style.webkitBackdropFilter = 'blur(0px)';
+  setTimeout(() => { el.style.pointerEvents = 'none'; }, 250);
+}
+
+// ── Frage stellen ────────────────────────────────────────────
+function openAskModal() {
+  document.getElementById('ask-result').innerHTML = '';
+  document.getElementById('ask-text').value = '';
+  _openOverlay('ask-overlay');
+  setTimeout(() => document.getElementById('ask-text').focus(), 260);
+}
+function closeAskModal() { _closeOverlay('ask-overlay'); }
+
+async function sendAsk() {
+  const ta  = document.getElementById('ask-text');
+  const rd  = document.getElementById('ask-result');
+  const msg = ta.value.trim();
+  if (msg.length < 3) { rd.innerHTML='<div class="alert alert--error">Bitte mindestens 3 Zeichen eingeben.</div>'; return; }
+  const r = await apiFetch(MSG_API, {action:'send', message:msg});
+  if (r.error === 'session_expired') return;
+  if (r.ok) {
+    rd.innerHTML = '<div class="alert alert--success">✓ Frage gesendet — der Spielleiter antwortet dir bald.</div>';
+    ta.value = '';
+    setTimeout(closeAskModal, 1800);
+  } else {
+    rd.innerHTML = '<div class="alert alert--error">'+escHtml(r.error||'Fehler')+'</div>';
+  }
+}
+
+// ── Posteingang ──────────────────────────────────────────────
+async function openInboxModal() {
+  _openOverlay('inbox-overlay');
+  await loadInbox();
+}
+function closeInboxModal() { _closeOverlay('inbox-overlay'); }
+
+async function loadInbox() {
+  const list = document.getElementById('inbox-list');
+  if (!list) return;
+  list.innerHTML = '<div class="flex-center" style="padding:1.5rem"><div class="spinner"></div></div>';
+  const r = await apiFetch(MSG_API, {action:'get_my'});
+  if (r.error === 'session_expired') return;
+  if (!r.messages) { list.innerHTML='<p class="text-dim text-center" style="padding:1rem">Fehler beim Laden.</p>'; return; }
+
+  // Badge zurücksetzen (wurden beim get_my als gelesen markiert)
+  const badge = document.getElementById('msg-badge');
+  if (badge) badge.style.display = 'none';
+
+  if (r.messages.length === 0) {
+    list.innerHTML = '<p class="text-dim text-center" style="padding:1rem;font-size:.9rem">Noch keine Nachrichten gesendet.</p>';
+    return;
+  }
+  list.innerHTML = r.messages.map(m => {
+    const date = new Date(m.created_at).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const replyHtml = m.reply
+      ? `<div style="border-left:2px solid var(--accent-border);padding:.5rem .75rem;margin-top:.5rem;
+                     font-size:.85rem;line-height:1.5;background:var(--panel-bg);border-radius:0 6px 6px 0">
+           <div class="text-dim text-xs mb-1">Antwort des Spielleiters</div>
+           <span style="color:var(--text-bright)">${escHtml(m.reply)}</span>
+         </div>`
+      : `<div class="text-dim text-xs mt-1" style="font-style:italic">⏳ Warte auf Antwort …</div>`;
+    return `<div style="padding:.7rem 0;border-bottom:1px solid var(--border)">
+      <div class="text-dim text-xs mb-1">${escHtml(date)}</div>
+      <div style="font-size:.9rem;line-height:1.5">${escHtml(m.message)}</div>
+      ${replyHtml}
+    </div>`;
+  }).join('');
+}
+
+// ── Ungelesene Badge + Toast beim Laden / Polling ────────────
+let _lastUnread = -1; // -1 = erster Aufruf → kein Toast beim Seitenstart
+
+async function checkUnread() {
+  const r = await apiFetch(MSG_API, {action:'unread_count'});
+  if (r.error || r.unread === undefined) return;
+  const badge = document.getElementById('msg-badge');
+  if (badge) {
+    if (r.unread > 0) { badge.textContent = r.unread; badge.style.display = 'inline-block'; }
+    else              { badge.style.display = 'none'; }
+  }
+  if (_lastUnread >= 0 && r.unread > _lastUnread) {
+    showToast('📬 Der Spielleiter hat dir geantwortet!', 'info', 5000);
+  }
+  _lastUnread = r.unread;
+}
+
+checkUnread();
+setInterval(checkUnread, 30000);
+MSGJS;
+
+if ($player['is_admin']) {
+    $page['inline_js'] .= <<<'ADMJS'
+
+// ── Admin: unbeantwortete Fragen ─────────────────────────────
+let _lastAdminPending = -1;
+
+async function checkAdminPending() {
+  const r = await apiFetch(MSG_API, {action:'pending_count'});
+  if (r.error || r.pending === undefined) return;
+  const hint  = document.getElementById('admin-pending-hint');
+  const count = document.getElementById('admin-pending-count');
+  if (hint)  hint.style.display  = r.pending > 0 ? 'flex' : 'none';
+  if (count) count.textContent   = r.pending;
+  if (_lastAdminPending >= 0 && r.pending > _lastAdminPending) {
+    showToast('✉️ Neue Spielerfrage eingegangen!', 'info', 5000);
+  }
+  _lastAdminPending = r.pending;
+}
+
+checkAdminPending();
+setInterval(checkAdminPending, 30000);
+ADMJS;
+}
+
+// ── Tod-Melden ───────────────────────────────────────────────
+$page['inline_js'] .= <<<'DEATHJS'
+
+function openDeathModal() {
+  const overlay = document.getElementById('death-overlay');
+  const modal   = document.getElementById('death-modal');
+  overlay.style.display = 'flex';
+  document.getElementById('death-ort').value = '';
+  document.getElementById('death-modal-result').innerHTML = '';
+  document.getElementById('death-confirm-btn').disabled = false;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    modal.style.transform = 'scale(1)';
+    modal.style.opacity   = '1';
+  }));
+}
+
+function closeDeathModal() {
+  const overlay = document.getElementById('death-overlay');
+  const modal   = document.getElementById('death-modal');
+  modal.style.transform = 'scale(.88)';
+  modal.style.opacity   = '0';
+  setTimeout(() => { overlay.style.display = 'none'; }, 220);
+}
+
+async function confirmDeath() {
+  const btn = document.getElementById('death-confirm-btn');
+  const res = document.getElementById('death-modal-result');
+  const ort = document.getElementById('death-ort').value.trim();
+  btn.disabled = true;
+  res.innerHTML = '<span class="text-dim text-sm">Wird gemeldet…</span>';
+  const r = await apiFetch(API_BASE + '/game.php', {
+    action: 'self_report_death',
+    game_id: GAME_ID,
+    ort: ort,
+  });
+  if (r.ok) {
+    res.innerHTML = '<div class="alert alert--success">☠️ Du wurdest als tot eingetragen.</div>';
+    setTimeout(() => location.reload(), 1200);
+  } else {
+    res.innerHTML = `<div class="alert alert--error">${escHtml(r.error || 'Fehler')}</div>`;
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('death-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeDeathModal();
+});
+DEATHJS;
+
+$page['inline_js'] .= <<<'CDJS'
+
+// ── Cooldown ─────────────────────────────────────────────────
+(function initCooldown() {
+  if (!MY_COOLDOWN_MINS || MY_COOLDOWN_MINS <= 0) return;
+  const btn       = document.getElementById('cd-btn');
+  const statusEl  = document.getElementById('cd-status');
+  const remaining = document.getElementById('cd-remaining');
+  if (!btn) return;
+
+  const totalSecs = MY_COOLDOWN_MINS * 60;
+  let startedAt   = MY_COOLDOWN_STARTED ? new Date(MY_COOLDOWN_STARTED).getTime() : null;
+
+  function tick() {
+    if (!startedAt) {
+      btn.disabled           = false;
+      btn.textContent        = '⏱ Fähigkeit aktivieren (Cooldown starten)';
+      statusEl.style.display = 'none';
+      return;
+    }
+    const elapsed = (Date.now() - startedAt) / 1000;
+    const left    = totalSecs - elapsed;
+    if (left <= 0) {
+      startedAt              = null;
+      btn.disabled           = false;
+      btn.textContent        = '⏱ Fähigkeit aktivieren (Cooldown starten)';
+      statusEl.style.display = 'none';
+      return;
+    }
+    btn.disabled           = true;
+    btn.textContent        = '⏱ Cooldown läuft …';
+    statusEl.style.display = '';
+    const m = Math.floor(left / 60);
+    const s = Math.floor(left % 60);
+    remaining.textContent  = m + ':' + String(s).padStart(2, '0');
+  }
+
+  tick();
+  setInterval(tick, 1000);
+
+  window._setCooldownStarted = function(iso) {
+    startedAt = new Date(iso).getTime();
+    tick();
+  };
+})();
+
+function startCooldown() {
+  const btn = document.getElementById('cd-btn');
+  if (!btn || btn.disabled) return;
+  btn.disabled    = true;
+  btn.textContent = '…';
+  fetch(API_BASE + '/game.php', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({action:'start_cooldown', game_id: GAME_ID})
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.ok) {
+      if (window._setCooldownStarted) window._setCooldownStarted(d.started_at);
+    } else {
+      alert(d.error || 'Fehler beim Starten des Cooldowns');
+      btn.disabled    = false;
+      btn.textContent = '⏱ Fähigkeit aktivieren (Cooldown starten)';
+    }
+  })
+  .catch(() => {
+    btn.disabled    = false;
+    btn.textContent = '⏱ Fähigkeit aktivieren (Cooldown starten)';
+  });
+}
+CDJS;
+
+require TEMPLATE_PATH . '/base_end.php';
+?>

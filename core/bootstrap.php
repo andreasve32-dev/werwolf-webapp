@@ -1,0 +1,64 @@
+<?php
+// Copyright (c) 2026 Andreas Vetter
+/**
+ * ============================================================
+ *  WERWOLF — bootstrap.php
+ * ============================================================
+ *  Wird auf JEDER Seite als erstes eingebunden.
+ *  Lädt Konfiguration, Klassen, Hilfsfunktionen.
+ *
+ *  Verwendung:  require_once dirname(__DIR__) . '/core/bootstrap.php';
+ * ============================================================
+ */
+
+// Fehlerreporting — wird nach dem DB-Laden von APP_DEBUG gesteuert
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+
+// 1. Konfiguration (DB-Zugangsdaten, Pfade, SESSION_NAME)
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../config/themes.php';
+
+// 2. Database-Klasse laden
+require_once __DIR__ . '/Database.php';
+
+// 3. Einstellungen aus DB laden und Konstanten definieren.
+//    trySettings() gibt [] zurück wenn DB oder settings-Tabelle fehlen
+//    (z. B. vor dem ersten Setup) → Fallback-Werte greifen.
+$_cfg = Database::trySettings();
+define('APP_NAME',           $_cfg['app_name']          ?? 'Werwolf');
+define('APP_VERSION',        $_cfg['app_version']       ?? '0.0.1');
+define('BETA_MODE',          filter_var($_cfg['beta_mode'] ?? '1', FILTER_VALIDATE_BOOLEAN));
+define('APP_DEBUG',          filter_var($_cfg['app_debug'] ?? '1', FILTER_VALIDATE_BOOLEAN));
+define('DEFAULT_THEME',      $_cfg['default_theme']     ?? 'gothic');
+define('SESSION_LIFETIME',   (int)($_cfg['session_lifetime'] ?? 604800));
+define('MIN_PLAYERS',        (int)($_cfg['min_players']      ?? 4));
+define('MAX_PLAYERS',        (int)($_cfg['max_players']      ?? 30));
+define('DEFAULT_ROLE_ICON',  $_cfg['default_role_icon'] ?? 'assets/icons/roles/_default.png');
+define('BACKGROUND_MUSIC',   $_cfg['background_music']  ?? 'background.mp3');
+define('LOGIN_TITLE',        $_cfg['login_title']       ?? 'Willkommen zurück');
+define('LOGIN_SUBTITLE',     $_cfg['login_subtitle']    ?? 'Das Dorf schläft … doch die Wölfe nicht.');
+define('REGISTER_SUBTITLE',  $_cfg['register_subtitle'] ?? 'Tritt dem Dorf bei');
+define('DEATHS_EMPTY_TITLE', $_cfg['deaths_empty_title'] ?? 'Noch niemand gestorben');
+define('DEATHS_EMPTY_SUB',   $_cfg['deaths_empty_sub']   ?? 'Das Dorf ist in Frieden … noch.');
+define('DEATHS_PEACE_TEXT',  $_cfg['deaths_peace_text']  ?? 'Mögen sie in Frieden ruhen');
+define('LOGIN_LOGO',         $_cfg['login_logo']         ?? '');
+define('MINI_LOGO',          $_cfg['mini_logo']          ?? '');
+define('ASSET_VERSION',      $_cfg['asset_version']      ?? '1');
+define('GAME_TIMEZONE',      $_cfg['game_timezone']      ?? 'Europe/Berlin');
+define('DAY_SLOGANS',        $_cfg['day_slogans']        ?? "30 Grad im Schatten im Dorf\nDie Hühner legen heute mehr als sonst\nDer Bürgermeister schläft schon wieder\nJemand hat die letzte Wurst geklaut\nDer Brunnen riecht heute komisch\nDas Bier im Wirtshaus ist schon alle\nDrei Krähen kreisen über dem Kirchturm\nDer Schmied hat sich wieder auf den Daumen verhauen\nDie Katze des Pfarrers ist seit gestern weg\nHeute gibt es Rübensuppe beim Wirt\nDie Wetterfahne dreht sich seltsam\nIrgendjemand hat die Scheunentür offengelassen\nDie alte Marie hat mal wieder komisch geschaut\nSeltsame Fußspuren im Morast hinter der Mühle\nDie Milch ist heute besonders sauer\nPfarrer Klemens hat die Predigt wieder verlängert\nIm Dorf herrscht trügerische Stille\nDas Kalb vom Bauern Huber hat dreimal gemuht\nDer Mond sah heute Nacht besonders groß aus\nDie Gänse sind nervöser als üblich");
+date_default_timezone_set(GAME_TIMEZONE);
+unset($_cfg);
+
+// 4. Fehlerreporting gemäß APP_DEBUG
+if (!APP_DEBUG) {
+    ini_set('display_errors', '0');
+    error_reporting(0);
+}
+
+// 5. Weitere Kern-Klassen und Hilfsfunktionen
+require_once __DIR__ . '/Auth.php';
+require_once __DIR__ . '/helpers.php';
+
+// 6. Session starten
+Auth::start();

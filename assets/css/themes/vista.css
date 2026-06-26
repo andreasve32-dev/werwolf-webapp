@@ -1,0 +1,117 @@
+/* ============================================================
+   THEME: Vista — Windows Aero Glassmorphism, Königsblau
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --font-display: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --font-body:    'Inter', 'Segoe UI', system-ui, sans-serif;
+  --radius:    8px;
+  --radius-lg: 14px;
+
+  --bg-deep:  #0d1b3e;
+  --nav-bg:   rgba(13,27,62,.82);
+
+  --card-bg:  rgba(20,50,110,.55);
+  --panel-bg: rgba(20,50,110,.35);
+
+  --border:        rgba(100,150,255,.25);
+  --border-subtle: rgba(100,150,255,.12);
+  --accent-border: rgba(100,160,255,.5);
+
+  --accent:        #60a5fa;
+  --accent-bright: #93c5fd;
+  --accent-glow:   rgba(96,165,250,.35);
+
+  --text-main:   #c8d8f8;
+  --text-dim:    #5575a8;
+  --text-bright: #e8f0ff;
+  --label-color: #7090c0;
+
+  --hover-bg:    rgba(60,100,220,.2);
+  --selected-bg: rgba(96,165,250,.12);
+  --focus-ring:  rgba(96,165,250,.3);
+  --role-bg:     rgba(30,60,150,.4);
+
+  --card-shadow: 0 8px 32px rgba(0,0,50,.5), inset 0 1px 0 rgba(255,255,255,.12);
+
+  --input-bg:     rgba(10,30,80,.6);
+  --input-border: rgba(80,130,240,.35);
+
+  --btn-primary-bg:          linear-gradient(160deg,#3b82f6,#1d4ed8);
+  --btn-primary-hover:       linear-gradient(160deg,#60a5fa,#3b82f6);
+  --btn-primary-text:        #fff;
+  --btn-primary-shadow:      0 2px 16px rgba(59,130,246,.5);
+  --btn-primary-shadow-hover:0 4px 24px rgba(96,165,250,.65);
+  --btn-secondary-bg:        rgba(30,60,140,.4);
+  --btn-secondary-text:      var(--text-dim);
+
+  --danger-text:      #f87171;
+  --danger-bright:    #fca5a5;
+  --danger-bg:        rgba(127,29,29,.35);
+  --danger-bg-strong: linear-gradient(135deg,#991b1b,#7f1d1d);
+  --danger-border:    rgba(239,68,68,.4);
+
+  --alert-error-bg:      rgba(127,29,29,.3);   --alert-error-border:   rgba(239,68,68,.4);  --alert-error-text:   #fca5a5;
+  --alert-success-bg:    rgba(6,78,59,.3);     --alert-success-border: rgba(52,211,153,.35);--alert-success-text: #6ee7b7;
+  --alert-info-bg:       rgba(30,60,150,.3);   --alert-info-border:    rgba(96,165,250,.4); --alert-info-text:    #93c5fd;
+  --alert-warn-bg:       rgba(120,80,0,.25);   --alert-warn-border:    rgba(251,191,36,.35);--alert-warn-text:    #fcd34d;
+
+  --tag-alive-bg:rgba(6,78,59,.35); --tag-alive-text:#34d399; --tag-alive-border:rgba(52,211,153,.3);
+  --tag-dead-bg:rgba(127,29,29,.3); --tag-dead-text:#fca5a5;  --tag-dead-border:rgba(239,68,68,.35);
+  --tag-day-bg:rgba(120,80,0,.25);  --tag-day-text:#fcd34d;   --tag-day-border:rgba(251,191,36,.3);
+  --tag-night-bg:rgba(15,23,42,.6); --tag-night-text:#93c5fd; --tag-night-border:rgba(96,165,250,.35);
+
+  --phase-day-bg:   linear-gradient(135deg,rgba(251,191,36,.15),rgba(251,191,36,.05));
+  --phase-day-border: rgba(251,191,36,.3); --phase-day-text: #fcd34d;
+  --phase-night-bg: linear-gradient(135deg,rgba(30,58,138,.3),rgba(15,23,42,.4));
+  --phase-night-border: rgba(96,165,250,.35); --phase-night-text: #93c5fd;
+}
+
+/* Aero glass background */
+body.theme-vista {
+  background: radial-gradient(ellipse 110% 80% at 50% 0%, #1e3a8a 0%, #0d1b3e 60%, #060e22 100%);
+  min-height:100vh;
+}
+body.theme-vista::before {
+  content:'';
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    radial-gradient(circle 500px at 80% 20%, rgba(59,130,246,.18) 0%,transparent 70%),
+    radial-gradient(circle 400px at 20% 80%, rgba(30,64,175,.2) 0%,transparent 70%),
+    radial-gradient(circle 300px at 50% 50%, rgba(37,99,235,.08) 0%,transparent 100%);
+}
+body.theme-vista>*{position:relative;z-index:1}
+
+/* Vista-style glass card */
+body.theme-vista .card {
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid rgba(150,200,255,.2);
+  box-shadow: 0 8px 32px rgba(0,0,60,.5), inset 0 1px 0 rgba(255,255,255,.1);
+}
+body.theme-vista .panel {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+body.theme-vista .nav {
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow: 0 1px 0 rgba(100,160,255,.15), 0 4px 24px rgba(0,0,40,.4);
+}
+
+/* Vista title bar style on auth card */
+body.theme-vista .auth-card .card {
+  border-top: 3px solid #3b82f6;
+}
+body.theme-vista h1,
+body.theme-vista h2,
+body.theme-vista h3 {
+  font-weight: 600;
+  letter-spacing: -.01em;
+  color: var(--text-bright);
+}
+body.theme-vista .auth-logo__title {
+  color: #93c5fd;
+  font-weight: 700;
+}

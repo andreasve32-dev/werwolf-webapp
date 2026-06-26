@@ -1,0 +1,157 @@
+<?php
+// Copyright (c) 2026 Andreas Vetter
+/**
+ * Natives Web Push ohne externe Bibliothek.
+ * Sendet leere Pushes (kein Payload) — der Service Worker
+ * zeigt dann eine generische Benachrichtigung.
+ */
+
+class WebPush {
+
+    // ── Schlüsselverwaltung ───────────────────────────────────
+
+    /** VAPID-Schlüssel erzeugen (einmalig) und in settings speichern. */
+    public static function ensureKeys(): bool {
+        $exists = Database::queryOne(
+            "SELECT value FROM settings WHERE `key` = 'vapid_public_key'"
+        );
+        if ($exists && $exists['value']) return true;
+
+        // openssl.cnf fehlt oft im PHP-Docker-Container
+        if (!getenv('OPENSSL_CONF')) {
+            foreach (['/etc/ssl/openssl.cnf', '/usr/lib/ssl/openssl.cnf', '/usr/local/ssl/openssl.cnf'] as $cnf) {
+                if (file_exists($cnf)) { putenv('OPENSSL_CONF=' . $cnf); break; }
+            }
+        }
+
+        $key = openssl_pkey_new([
+            'curve_name'       => 'prime256v1',
+            'private_key_type' => OPENSSL_KEYTYPE_EC,
+        ]);
+        if (!$key) return false;
+
+        openssl_pkey_export($key, $privPem);
+        $det = openssl_pkey_get_details($key);
+        $x   = str_pad($det['ec']['x'], 32, "\x00", STR_PAD_LEFT);
+        $y   = str_pad($det['ec']['y'], 32, "\x00", STR_PAD_LEFT);
+        $pub = self::b64u("\x04" . $x . $y);
+
+        foreach (['vapid_public_key' => $pub, 'vapid_private_key' => $privPem] as $k => $v) {
+            Database::execute(
+                "INSERT INTO settings (`key`, value, type, label, description, sort_order)
+                 VALUES (?, ?, 'string', ?, '', 999)
+                 ON DUPLICATE KEY UPDATE value = VALUES(value)",
+                [$k, $v, $k === 'vapid_public_key' ? 'VAPID Public Key' : 'VAPID Private Key']
+            );
+        }
+        return true;
+    }
+
+    public static function getPublicKey(): string {
+        $row = Database::queryOne("SELECT value FROM settings WHERE `key` = 'vapid_public_key'");
+        return $row['value'] ?? '';
+    }
+
+    // ── Versand ───────────────────────────────────────────────
+
+    /** Push an einen einzelnen Spieler senden. */
+    public static function sendToPlayer(int $playerId): void {
+        [$pub, $priv] = self::loadKeys();
+        if (!$pub) return;
+        $subs = Database::query(
+            "SELECT endpoint FROM push_subscriptions WHERE player_id = ?",
+            [$playerId]
+        );
+        foreach ($subs as $s) {
+            self::dispatch($s['endpoint'], $pub, $priv);
+        }
+    }
+
+    /** Push an alle lebenden Spieler in einem Spiel senden. */
+    public static function sendToGame(int $gameId): void {
+        [$pub, $priv] = self::loadKeys();
+        if (!$pub) return;
+        $subs = Database::query(
+            "SELECT DISTINCT ps.endpoint
+             FROM push_subscriptions ps
+             JOIN game_players gp ON gp.player_id = ps.player_id
+             WHERE gp.game_id = ?",
+            [$gameId]
+        );
+        foreach ($subs as $s) {
+            self::dispatch($s['endpoint'], $pub, $priv);
+        }
+    }
+
+    // ── Intern ───────────────────────────────────────────────
+
+    private static function loadKeys(): array {
+        $rows = Database::query(
+            "SELECT `key`, value FROM settings WHERE `key` IN ('vapid_public_key','vapid_private_key')"
+        );
+        $map = array_column($rows, 'value', 'key');
+        return [$map['vapid_public_key'] ?? '', $map['vapid_private_key'] ?? ''];
+    }
+
+    private static function dispatch(string $endpoint, string $pubKey, string $privPem): void {
+        $p        = parse_url($endpoint);
+        $audience = $p['scheme'] . '://' . $p['host'];
+        $jwt      = self::createJwt($audience, $privPem);
+
+        $ch = curl_init($endpoint);
+        curl_setopt_array($ch, [
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => '',
+            CURLOPT_HTTPHEADER     => [
+                'Authorization: vapid t=' . $jwt . ',k=' . $pubKey,
+                'TTL: 86400',
+                'Content-Length: 0',
+            ],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($code === 410 || $code === 404) {
+            Database::execute(
+                "DELETE FROM push_subscriptions WHERE endpoint = ?",
+                [$endpoint]
+            );
+        }
+    }
+
+    private static function createJwt(string $audience, string $privPem): string {
+        $header  = self::b64u('{"typ":"JWT","alg":"ES256"}');
+        $payload = self::b64u(json_encode([
+            'aud' => $audience,
+            'exp' => time() + 43200,
+            'sub' => 'mailto:noreply@werwolf.local',
+        ]));
+        $data = "$header.$payload";
+        openssl_sign($data, $der, $privPem, OPENSSL_ALGO_SHA256);
+        return "$data." . self::b64u(self::derToRS($der));
+    }
+
+    /** DER-kodierte ECDSA-Signatur → rohe 64-Byte-Form (r||s) */
+    private static function derToRS(string $der): string {
+        $i = 2;          // SEQUENCE tag (0x30) + 1-Byte-Länge überspringen
+        $i++;            // INTEGER-Tag für r
+        $rLen = ord($der[$i++]);
+        $r    = substr($der, $i, $rLen);
+        $i   += $rLen;
+        $i++;            // INTEGER-Tag für s
+        $sLen = ord($der[$i++]);
+        $s    = substr($der, $i, $sLen);
+
+        $r = str_pad(ltrim($r, "\x00"), 32, "\x00", STR_PAD_LEFT);
+        $s = str_pad(ltrim($s, "\x00"), 32, "\x00", STR_PAD_LEFT);
+        return substr($r, -32) . substr($s, -32);
+    }
+
+    private static function b64u(string $data): string {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    }
+}

@@ -1,0 +1,96 @@
+/* ============================================================
+   THEME: Mittelalter — Pergament, Holz, Dorf-Ästhetik
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=MedievalSharp&family=IM+Fell+English:ital@0;1&display=swap');
+/* Fallback-Import falls MedievalSharp nicht verfügbar */
+@import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+
+:root {
+  --font-display: 'UnifrakturMaguntia', 'Lora', Georgia, serif;
+  --font-body:    'Lora', Georgia, serif;
+  --radius:    3px;
+  --radius-lg: 6px;
+
+  --bg-deep:  #1a1208;
+  --nav-bg:   rgba(30,20,8,.92);
+
+  --card-bg:  #2a1e10;
+  --panel-bg: #231808;
+
+  --border:        #6b4c2a;
+  --border-subtle: rgba(107,76,42,.4);
+  --accent-border: #a07040;
+
+  --accent:        #d4a84b;
+  --accent-bright: #f0c870;
+  --accent-glow:   rgba(212,168,75,.3);
+
+  --text-main:   #c8b48a;
+  --text-dim:    #7a6040;
+  --text-bright: #e8d5a8;
+  --label-color: #8a6a40;
+
+  --hover-bg:    rgba(107,76,42,.25);
+  --selected-bg: rgba(212,168,75,.1);
+  --focus-ring:  rgba(160,112,64,.3);
+  --role-bg:     rgba(107,76,42,.3);
+
+  --card-shadow: 0 4px 24px rgba(0,0,0,.6), inset 0 1px 0 rgba(212,168,75,.08);
+
+  --input-bg:     rgba(10,8,4,.6);
+  --input-border: #5a3c1a;
+
+  --btn-primary-bg:          linear-gradient(135deg,#78350f,#451a03);
+  --btn-primary-hover:       linear-gradient(135deg,#92400e,#78350f);
+  --btn-primary-text:        #f0c870;
+  --btn-primary-shadow:      0 2px 12px rgba(120,53,15,.5);
+  --btn-primary-shadow-hover:0 4px 20px rgba(146,64,14,.6);
+  --btn-secondary-bg:        rgba(42,30,16,.6);
+  --btn-secondary-text:      var(--text-dim);
+
+  --danger-text:      #c0392b;
+  --danger-bright:    #e88;
+  --danger-bg:        rgba(100,20,10,.35);
+  --danger-bg-strong: linear-gradient(135deg,#7f1d1d,#450a0a);
+  --danger-border:    rgba(180,60,40,.5);
+
+  --alert-error-bg:     rgba(100,20,10,.35);  --alert-error-border:   rgba(180,60,40,.5);  --alert-error-text:   #e8a0a0;
+  --alert-success-bg:   rgba(20,40,15,.4);    --alert-success-border: rgba(80,140,60,.35); --alert-success-text: #90c870;
+  --alert-info-bg:      rgba(20,30,60,.3);    --alert-info-border:    rgba(80,120,200,.35);--alert-info-text:    #90b0e8;
+  --alert-warn-bg:      rgba(80,55,10,.3);    --alert-warn-border:    rgba(180,130,40,.35);--alert-warn-text:    #d4a84b;
+
+  --tag-alive-bg:rgba(20,40,15,.4);  --tag-alive-text:#90c870; --tag-alive-border:rgba(80,140,60,.3);
+  --tag-dead-bg:rgba(60,15,10,.4);   --tag-dead-text:#e8a0a0;  --tag-dead-border:rgba(160,60,40,.35);
+  --tag-day-bg:rgba(80,55,10,.3);    --tag-day-text:#d4a84b;   --tag-day-border:rgba(180,130,40,.3);
+  --tag-night-bg:rgba(10,10,25,.5);  --tag-night-text:#9090d8; --tag-night-border:rgba(80,80,180,.3);
+
+  --phase-day-bg:   linear-gradient(135deg,rgba(212,168,75,.15),rgba(212,168,75,.05));
+  --phase-day-border:rgba(212,168,75,.3); --phase-day-text:#d4a84b;
+  --phase-night-bg: linear-gradient(135deg,rgba(20,15,40,.4),rgba(10,8,20,.5));
+  --phase-night-border:rgba(80,80,180,.3); --phase-night-text:#9090d8;
+}
+
+body.theme-medieval {
+  background-color: #1a1208;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect width='80' height='80' fill='%231a1208'/%3E%3Cpath d='M0 0h80v80H0z' fill='none' stroke='%23251a0a' stroke-width='1'/%3E%3C/svg%3E");
+}
+body.theme-medieval::before {
+  content:'';
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(120,70,20,.15) 0%,transparent 70%);
+}
+body.theme-medieval>*{position:relative;z-index:1}
+
+body.theme-medieval .card {
+  border: 1px solid #6b4c2a;
+  box-shadow: 0 4px 24px rgba(0,0,0,.6), inset 0 1px 0 rgba(212,168,75,.06);
+  background-image: linear-gradient(to bottom, rgba(60,40,15,.2), transparent);
+}
+body.theme-medieval .nav {
+  border-bottom: 2px solid #6b4c2a;
+  background: rgba(20,14,6,.94);
+}
+body.theme-medieval h1,body.theme-medieval h2,body.theme-medieval h3 {
+  color: var(--accent-bright);
+  text-shadow: 0 1px 8px rgba(212,168,75,.2);
+}

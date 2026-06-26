@@ -1,0 +1,237 @@
+<?php
+// Copyright (c) 2026 Andreas Vetter
+require_once dirname(__DIR__) . '/core/bootstrap.php';
+header('Content-Type: application/json; charset=utf-8');
+Auth::requireAdmin();
+
+// Admin noch in der Datenbank vorhanden? (z.B. nach Löschung durch anderen Admin)
+$_adminId=Auth::player()['id'];
+if(!Database::queryOne("SELECT id FROM players WHERE id=? AND is_admin=1",[$_adminId])){
+    http_response_code(401);
+    echo json_encode(['error'=>'Nicht eingeloggt.']);
+    exit;
+}
+
+$input=jsonBody();
+$action=$input['action']??'';
+$gameId=(int)($input['game_id']??0);
+
+// Dünne lokale Aliase um die zentralen Helper aus core/helpers.php —
+// vermeidet doppelte json_encode-Logik, behält aber die kurze
+// Schreibweise ok()/err() bei, die in dieser Datei an 25+ Stellen
+// verwendet wird.
+function ok($msg='OK',$extra=[]){ jsonOk($msg,$extra); }
+function err($msg,$code=400){ jsonError($msg,$code); }
+
+switch($action){
+  case 'start_game':
+    $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='lobby'",[$gameId]);
+    if(!$g) err('Nicht in Lobby');
+
+    // Spieler holen
+    $ids = array_column(
+      Database::query("SELECT player_id FROM game_players WHERE game_id=?",[$gameId]),
+      'player_id'
+    );
+    $playerCount = count($ids);
+    if($playerCount < MIN_PLAYERS) err('Mindestens '.MIN_PLAYERS.' Spieler erforderlich');
+
+    // Aktive Sonderrollen laden (amount > 0, Dorfbewohner = amount 0 oder hat fill=1)
+    // "Auffüll-Rolle" = die Rolle mit dem Flag fill=1 (Dorfbewohner).
+    // Alle anderen aktiven Rollen mit amount > 0 sind Sonderrollen.
+    $fillRole   = Database::queryOne("SELECT id,name FROM roles WHERE active=1 AND fill=1 LIMIT 1");
+    $fillRoleId = $fillRole ? (int)$fillRole['id'] : null;
+
+    $specialRoles = Database::query(
+      "SELECT id, name, amount FROM roles WHERE active=1 AND fill=0 AND amount>0 ORDER BY sort_order"
+    );
+
+    // Sonderrollen-Pool aufbauen
+    $pool = [];
+    foreach($specialRoles as $r){
+      for($i=0;$i<(int)$r['amount'];$i++) $pool[]=(int)$r['id'];
+    }
+    $specialCount = count($pool);
+
+    // FEHLER: Sonderrollen übersteigen Spieleranzahl
+    if($specialCount > $playerCount){
+      $names = implode(', ', array_map(fn($r)=>$r['name'].'('.$r['amount'].'x)', $specialRoles));
+      err("Sonderrollen ({$specialCount}) übersteigen Spieleranzahl ({$playerCount}).\n".
+          "Aktive Sonderrollen: {$names}.\n".
+          'Bitte unter "Rollen verwalten" die Anzahlen anpassen.');
+    }
+
+    // Restliche Spieler bekommen die Auffüll-Rolle
+    $remaining = $playerCount - $specialCount;
+    for($i=0;$i<$remaining;$i++) $pool[]=$fillRoleId; // null wenn keine Auffüll-Rolle definiert
+
+    // Zufällig mischen und zuweisen
+    shuffle($ids);
+    shuffle($pool);
+    foreach($ids as $i=>$pid){
+      Database::execute(
+        "UPDATE game_players SET role_id=? WHERE game_id=? AND player_id=?",
+        [$pool[$i]??null,$gameId,$pid]
+      );
+    }
+
+    // Spiel starten
+    Database::execute("UPDATE games SET status='running',phase='day',round=1 WHERE id=?",[$gameId]);
+
+    require_once CORE_PATH . '/WebPush.php';
+    WebPush::sendToGame($gameId);
+
+    $msg = "▶ Spiel gestartet! {$specialCount} Sonderrollen + {$remaining} ";
+    $msg .= $fillRole ? $fillRole['name'] : 'ohne Rolle';
+    $msg .= " vergeben.";
+    ok($msg);break;
+
+  case 'switch_phase':
+    $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='running'",[$gameId]);
+    if(!$g)err('Spiel läuft nicht');
+    $np=$g['phase']==='day'?'night':'day';
+    $nr=$g['round']+($np==='day'?1:0);
+    Database::execute("UPDATE games SET phase=?,round=? WHERE id=?",[$np,$nr,$gameId]);
+    ok($np==='night'?"🌕 Nacht {$g['round']} beginnt":"☀️ Tag {$nr} beginnt");break;
+
+  case 'execute_vote':
+    $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='running' AND phase='day'",[$gameId]);
+    if(!$g)err('Nicht im Tagesmodus');
+    $pid=(int)($input['player_id']??0);
+    if(!$pid){
+      $top=Database::queryOne("SELECT target_id,COUNT(*) as cnt FROM votes WHERE game_id=? AND round=? GROUP BY target_id ORDER BY cnt DESC LIMIT 1",[$gameId,$g['round']]);
+      if(!$top)err('Keine Stimmen');
+      $pid=$top['target_id'];
+    }
+    recordDeath($gameId,$pid,$g['round'],'day',null,true);
+    Database::execute("DELETE FROM votes WHERE game_id=? AND round=?",[$gameId,$g['round']]);
+    $n=Database::queryOne("SELECT display_name FROM players WHERE id=?",[$pid]);
+    ok("⚖️ {$n['display_name']} wurde gehenkt.");break;
+
+  case 'free_accused':
+    $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='running' AND phase='day'",[$gameId]);
+    if(!$g)err('Nicht im Tagesmodus');
+    Database::execute("DELETE FROM votes WHERE game_id=? AND round=?",[$gameId,$g['round']]);
+    ok("✓ Angeklagter freigesprochen — Stimmen gelöscht.");break;
+
+  case 'execute_night':
+    $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='running' AND phase='night'",[$gameId]);
+    if(!$g)err('Nicht im Nachtmodus');
+    $top=Database::queryOne("SELECT target_player_id,COUNT(*) as cnt FROM night_actions WHERE game_id=? AND round=? AND action_type='wolf_kill' GROUP BY target_player_id ORDER BY cnt DESC LIMIT 1",[$gameId,$g['round']]);
+    if(!$top){ok('Wölfe haben niemanden gewählt.');break;}
+    recordDeath($gameId,$top['target_player_id'],$g['round'],'night');
+    $n=Database::queryOne("SELECT username FROM players WHERE id=?",[$top['target_player_id']]);
+    ok("🐺 {$n['username']} wurde zerrissen!");break;
+
+  case 'kill_player':
+    $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='running'",[$gameId]);
+    if(!$g)err('Spiel läuft nicht');
+    $pid=(int)($input['player_id']??0);
+    recordDeath($gameId,$pid,$g['round'],$g['phase']);
+    ok('Spieler gestorben');break;
+
+  case 'add_player':
+    $pid=(int)($input['player_id']??0);
+    Database::execute("INSERT IGNORE INTO game_players (game_id,player_id) VALUES (?,?)",[$gameId,$pid]);
+    ok('Hinzugefügt');break;
+
+  case 'add_all_players':
+    $g=Database::queryOne("SELECT status FROM games WHERE id=?",[$gameId]);
+    if(!$g||$g['status']!=='lobby') err('Nur in der Lobby möglich');
+    Database::execute(
+      "INSERT IGNORE INTO game_players (game_id,player_id)
+       SELECT ?,id FROM players WHERE id NOT IN (SELECT player_id FROM game_players WHERE game_id=?)",
+      [$gameId,$gameId]
+    );
+    ok('Alle Spieler hinzugefügt');break;
+
+  case 'remove_player':
+    $pid=(int)($input['player_id']??0);
+    Database::execute("DELETE FROM game_players WHERE game_id=? AND player_id=?",[$gameId,$pid]);
+    ok('Entfernt');break;
+
+  case 'end_game':
+    Database::execute("UPDATE games SET status='finished' WHERE id=?",[$gameId]);
+    ok('🏁 Spiel beendet');break;
+
+  case 'reset_game':
+    foreach(['game_players','deaths','votes','night_actions'] as $t)
+      Database::execute("DELETE FROM {$t} WHERE game_id=?",[$gameId]);
+    Database::execute("UPDATE games SET status='lobby',phase='day',round=0 WHERE id=?",[$gameId]);
+    ok('🔄 Spiel zurückgesetzt');break;
+
+  case 'new_game':
+    Database::execute("INSERT INTO games (status) VALUES ('lobby')");
+    $id=Database::lastId();
+    ok("➕ Neues Spiel #{$id}",['game_id'=>$id]);break;
+
+  // ── Rollen-Verwaltung (CRUD) ──────────────────────────────────
+  case 'role_create':
+    $name = trim($input['name'] ?? '');
+    if(!$name) err('Name erforderlich');
+    $exists = Database::queryOne("SELECT id FROM roles WHERE name=?",[$name]);
+    if($exists) err('Eine Rolle mit diesem Namen existiert bereits');
+    Database::execute(
+      "INSERT INTO roles (name,cooldown,description,rules,active,amount,fill,icon_path,sichtbar,befragen,auto_eintrag,sort_order) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+      [
+        $name,
+        max(0,(int)($input['cooldown'] ?? 0)),
+        trim($input['description'] ?? ''),
+        trim($input['rules'] ?? ''),
+        !empty($input['active']) ? 1 : 0,
+        max(0,(int)($input['amount'] ?? 1)),
+        !empty($input['fill']) ? 1 : 0,
+        trim($input['icon_path'] ?? '') ?: null,
+        !empty($input['sichtbar']) ? 1 : 0,
+        !empty($input['befragen']) ? 1 : 0,
+        !empty($input['auto_eintrag']) ? 1 : 0,
+        (int)($input['sort_order'] ?? 0),
+      ]
+    );
+    ok('🎭 Rolle erstellt', ['role_id' => Database::lastId()]);break;
+
+  case 'role_update':
+    $roleId = (int)($input['role_id'] ?? 0);
+    $existing = Database::queryOne("SELECT id FROM roles WHERE id=?",[$roleId]);
+    if(!$existing) err('Rolle nicht gefunden');
+    $name = trim($input['name'] ?? '');
+    if(!$name) err('Name erforderlich');
+    $dup = Database::queryOne("SELECT id FROM roles WHERE name=? AND id!=?",[$name,$roleId]);
+    if($dup) err('Eine andere Rolle hat bereits diesen Namen');
+    Database::execute(
+      "UPDATE roles SET name=?,cooldown=?,description=?,rules=?,active=?,amount=?,fill=?,icon_path=?,sichtbar=?,befragen=?,auto_eintrag=?,sort_order=? WHERE id=?",
+      [
+        $name,
+        max(0,(int)($input['cooldown'] ?? 0)),
+        trim($input['description'] ?? ''),
+        trim($input['rules'] ?? ''),
+        !empty($input['active']) ? 1 : 0,
+        max(0,(int)($input['amount'] ?? 1)),
+        !empty($input['fill']) ? 1 : 0,
+        trim($input['icon_path'] ?? '') ?: null,
+        !empty($input['sichtbar']) ? 1 : 0,
+        !empty($input['befragen']) ? 1 : 0,
+        !empty($input['auto_eintrag']) ? 1 : 0,
+        (int)($input['sort_order'] ?? 0),
+        $roleId,
+      ]
+    );
+    ok('🎭 Rolle aktualisiert');break;
+
+  case 'role_delete':
+    $roleId = (int)($input['role_id'] ?? 0);
+    // FK ON DELETE SET NULL kümmert sich um game_players/deaths-Referenzen
+    Database::execute("DELETE FROM roles WHERE id=?",[$roleId]);
+    ok('🗑️ Rolle gelöscht');break;
+
+  case 'role_toggle_active':
+    $roleId = (int)($input['role_id'] ?? 0);
+    $r = Database::queryOne("SELECT active FROM roles WHERE id=?",[$roleId]);
+    if(!$r) err('Rolle nicht gefunden');
+    $newActive = $r['active'] ? 0 : 1;
+    Database::execute("UPDATE roles SET active=? WHERE id=?",[$newActive,$roleId]);
+    ok('Status geändert', ['active' => $newActive]);break;
+
+  default:
+    err('Unbekannte Aktion');
+}

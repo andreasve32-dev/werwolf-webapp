@@ -1,0 +1,82 @@
+/* ============================================================
+   THEME: Gothic — Düster, Mondlicht, Mystisch
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+
+:root {
+  --font-display: 'Cinzel', serif;
+  --font-body:    'Crimson Text', Georgia, serif;
+  --radius:    6px;
+  --radius-lg: 12px;
+
+  --bg-deep:  #0a0a0f;
+  --nav-bg:   rgba(10,10,15,.88);
+
+  --card-bg:  #111118;
+  --panel-bg: #16161f;
+
+  --border:        #2a2a3a;
+  --border-subtle: rgba(42,42,58,.5);
+  --accent-border: #4a3060;
+
+  --accent:       #c8a96e;
+  --accent-bright:#f0d090;
+  --accent-glow:  rgba(200,169,110,.3);
+
+  --text-main:   #d4cfc8;
+  --text-dim:    #606070;
+  --text-bright: #f0ead8;
+  --label-color: #50586a;
+
+  --hover-bg:    rgba(107,33,168,.12);
+  --selected-bg: rgba(200,169,110,.07);
+  --focus-ring:  rgba(107,33,168,.25);
+  --role-bg:     rgba(107,33,168,.2);
+
+  --card-shadow: 0 0 32px rgba(107,33,168,.18), inset 0 1px 0 rgba(200,169,110,.05);
+
+  --input-bg:     rgba(0,0,0,.45);
+  --input-border: #2a2a3a;
+
+  --btn-primary-bg:          linear-gradient(135deg,#6b21a8,#4a1580);
+  --btn-primary-hover:       linear-gradient(135deg,#9333ea,#6b21a8);
+  --btn-primary-text:        #fff;
+  --btn-primary-shadow:      0 2px 12px rgba(107,33,168,.4);
+  --btn-primary-shadow-hover:0 4px 20px rgba(147,51,234,.55);
+  --btn-secondary-bg:        rgba(42,42,58,.4);
+  --btn-secondary-text:      var(--text-dim);
+
+  --danger-text:      #c0392b;
+  --danger-bright:    #ff9999;
+  --danger-bg:        rgba(139,26,26,.3);
+  --danger-bg-strong: linear-gradient(135deg,#8b1a1a,#5a0e0e);
+  --danger-border:    #8b1a1a;
+
+  --alert-error-bg:      rgba(139,26,26,.3);  --alert-error-border:   #8b1a1a;  --alert-error-text:   #ffaaaa;
+  --alert-success-bg:    rgba(26,58,42,.4);   --alert-success-border: rgba(46,204,113,.3); --alert-success-text: #86efac;
+  --alert-info-bg:       rgba(107,33,168,.2); --alert-info-border:    rgba(147,51,234,.3); --alert-info-text:    #c084fc;
+  --alert-warn-bg:       rgba(180,120,0,.2);  --alert-warn-border:    rgba(200,169,110,.3);--alert-warn-text:    #c8a96e;
+
+  --tag-alive-bg:#1a3a2a; --tag-alive-text:#2ecc71; --tag-alive-border:rgba(46,204,113,.3);
+  --tag-dead-bg:rgba(139,26,26,.3); --tag-dead-text:#ff9999; --tag-dead-border:rgba(192,57,43,.35);
+  --tag-day-bg:rgba(200,169,110,.12); --tag-day-text:#c8a96e; --tag-day-border:rgba(200,169,110,.3);
+  --tag-night-bg:rgba(10,10,30,.5); --tag-night-text:#818cf8; --tag-night-border:rgba(129,140,248,.3);
+
+  --phase-day-bg:   linear-gradient(135deg,rgba(200,169,110,.15),rgba(200,169,110,.05));
+  --phase-day-border:   rgba(200,169,110,.3); --phase-day-text:  #c8a96e;
+  --phase-night-bg: linear-gradient(135deg,rgba(107,33,168,.22),rgba(30,10,60,.35));
+  --phase-night-border: rgba(147,51,234,.35); --phase-night-text:#c084fc;
+}
+
+body.theme-gothic::before {
+  content:'';
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    radial-gradient(1px 1px at 18% 25%,rgba(200,169,110,.5) 0%,transparent 100%),
+    radial-gradient(1px 1px at 75% 12%,rgba(200,169,110,.4) 0%,transparent 100%),
+    radial-gradient(1px 1px at 50% 65%,rgba(160,168,192,.3) 0%,transparent 100%),
+    radial-gradient(1px 1px at  8% 80%,rgba(200,169,110,.25) 0%,transparent 100%),
+    radial-gradient(1px 1px at 92% 72%,rgba(160,168,192,.2) 0%,transparent 100%),
+    radial-gradient(700px 700px at 50% -120px,rgba(107,33,168,.18) 0%,transparent 70%);
+}
+body.theme-gothic>*{position:relative;z-index:1}

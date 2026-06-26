@@ -1,0 +1,16 @@
+# Sicherheitsmaßnahme für hochgeladene Rollen-Icons:
+# Dieser Ordner darf NIEMALS PHP-Dateien ausführen, selbst wenn
+# durch einen Upload-Bug eine .php-Datei hier landen würde.
+<IfModule mod_php.c>
+  php_flag engine off
+</IfModule>
+<FilesMatch "\.(php|phtml|php3|php4|php5|php7|phps)$">
+  Order allow,deny
+  Deny from all
+</FilesMatch>
+
+# Nur Bild-/SVG-Dateitypen dürfen ausgeliefert werden
+<FilesMatch "\.(?!svg$|png$|jpg$|jpeg$|gif$|webp$)[^.]+$">
+  Order allow,deny
+  Deny from all
+</FilesMatch>

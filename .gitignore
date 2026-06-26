@@ -1,0 +1,26 @@
+# ── Zugangsdaten (NIEMALS ins Repo) ─────────────────────────
+config/config.php
+
+# ── Backup-ZIPs ──────────────────────────────────────────────
+public/
+
+# ── Audiodateien (zu groß für Git) ───────────────────────────
+audio/*.mp3
+audio/*.ogg
+audio/*.wav
+
+# ── Claude-Sitzungsdaten ─────────────────────────────────────
+.claude/
+
+# ── PDFs / lokale Dokumente ──────────────────────────────────
+*.pdf
+
+# ── Betriebssystem ───────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ──────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp

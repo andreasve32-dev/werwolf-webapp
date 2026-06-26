@@ -1,0 +1,88 @@
+/* ============================================================
+   THEME: Minimal — Schwarz-Weiß, clean, maximale Lesbarkeit
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:ital,wght@0,400;0,500;1,400&display=swap');
+
+:root {
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+  --radius:    4px;
+  --radius-lg: 8px;
+
+  --bg-deep:  #09090b;
+  --nav-bg:   rgba(9,9,11,.9);
+
+  --card-bg:  #141414;
+  --panel-bg: #1a1a1a;
+
+  --border:        #2d2d2d;
+  --border-subtle: #222;
+  --accent-border: #404040;
+
+  --accent:        #e4e4e7;
+  --accent-bright: #fff;
+  --accent-glow:   rgba(228,228,231,.15);
+
+  --text-main:   #a1a1aa;
+  --text-dim:    #52525b;
+  --text-bright: #fafafa;
+  --label-color: #71717a;
+
+  --hover-bg:    rgba(255,255,255,.04);
+  --selected-bg: rgba(255,255,255,.07);
+  --focus-ring:  rgba(228,228,231,.15);
+  --role-bg:     rgba(255,255,255,.06);
+
+  --card-shadow: 0 1px 0 rgba(255,255,255,.04);
+
+  --input-bg:     rgba(0,0,0,.5);
+  --input-border: #2d2d2d;
+
+  --btn-primary-bg:          #18181b;
+  --btn-primary-hover:       #27272a;
+  --btn-primary-text:        #fafafa;
+  --btn-primary-shadow:      none;
+  --btn-primary-shadow-hover:none;
+  --btn-secondary-bg:        #141414;
+  --btn-secondary-text:      var(--text-dim);
+
+  --danger-text:      #f87171;
+  --danger-bright:    #fca5a5;
+  --danger-bg:        rgba(127,29,29,.25);
+  --danger-bg-strong: #1c0a0a;
+  --danger-border:    rgba(239,68,68,.3);
+
+  --alert-error-bg:     rgba(30,8,8,.6);   --alert-error-border:  rgba(239,68,68,.25);  --alert-error-text:   #fca5a5;
+  --alert-success-bg:   rgba(6,20,12,.6);  --alert-success-border:rgba(74,222,128,.2);  --alert-success-text: #86efac;
+  --alert-info-bg:      rgba(8,12,30,.6);  --alert-info-border:   rgba(148,163,184,.2); --alert-info-text:    #cbd5e1;
+  --alert-warn-bg:      rgba(20,16,4,.6);  --alert-warn-border:   rgba(234,179,8,.2);   --alert-warn-text:    #fde047;
+
+  --tag-alive-bg:rgba(6,20,12,.6);  --tag-alive-text:#86efac; --tag-alive-border:rgba(74,222,128,.2);
+  --tag-dead-bg:rgba(30,8,8,.6);    --tag-dead-text:#fca5a5;  --tag-dead-border:rgba(239,68,68,.25);
+  --tag-day-bg:rgba(20,16,4,.6);    --tag-day-text:#fde047;   --tag-day-border:rgba(234,179,8,.2);
+  --tag-night-bg:rgba(8,10,25,.6);  --tag-night-text:#cbd5e1; --tag-night-border:rgba(148,163,184,.2);
+
+  --phase-day-bg:   rgba(20,20,10,.6);
+  --phase-day-border:#2d2d2d; --phase-day-text:#fde047;
+  --phase-night-bg: rgba(8,8,20,.6);
+  --phase-night-border:#2d2d2d; --phase-night-text:#cbd5e1;
+}
+
+body.theme-minimal {background:#09090b}
+body.theme-minimal h1,body.theme-minimal h2,body.theme-minimal h3 {
+  color:#fff; font-weight:700; letter-spacing:-.02em;
+}
+body.theme-minimal .btn--primary {
+  border: 1px solid #3d3d3d;
+  background: linear-gradient(to bottom,#2a2a2a,#1a1a1a);
+}
+body.theme-minimal .btn--primary:hover:not(:disabled) {
+  background: linear-gradient(to bottom,#3a3a3a,#2a2a2a);
+}
+body.theme-minimal .nav {
+  border-bottom: 1px solid #1f1f1f;
+}
+body.theme-minimal .card {
+  border: 1px solid #222;
+}
+body.theme-minimal .auth-logo__title { color: #fff; }

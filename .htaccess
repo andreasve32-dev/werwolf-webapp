@@ -1,0 +1,62 @@
+# ══════════════════════════════════════════════════════════════
+#  WERWOLF — .htaccess  (Document Root: /var/www/html)
+# ══════════════════════════════════════════════════════════════
+#
+#  Zugriffsmatrix:
+#  ÖFFENTLICH    → index.php, register.php, assets/*
+#  NUR EINGELOGGT→ game.php, deaths.php, logout.php   (PHP: Auth::requireLogin)
+#  NUR ADMIN     → admin/*                             (PHP: Auth::requireAdmin)
+#  NUR AJAX      → api/*                               (PHP: Auth::requireLogin + DB-Check)
+#  GESPERRT (403)→ config/, core/, templates/, db/, docs/
+#  GESPERRT (403)→ *.sql, *.md, *.log, *.bak, .htaccess, .env
+# ══════════════════════════════════════════════════════════════
+
+# ── Verzeichnislisten überall deaktivieren ───────────────────
+Options -Indexes
+
+# ── Standard-Startseite ──────────────────────────────────────
+DirectoryIndex index.php
+
+# ── Interne Ordner sperren (403) ─────────────────────────────
+# Diese Ordner enthalten PHP-Klassen, SQL-Schemata, Konfiguration
+# und Templates — niemals per HTTP erreichbar.
+<IfModule mod_alias.c>
+  RedirectMatch 403 ^/(config|core|templates|db|docs)(/|$)
+</IfModule>
+
+# ── Sensible Dateitypen sperren ──────────────────────────────
+<FilesMatch "\.(sql|md|log|bak|tmp|sh|env|htpasswd|ini|orig|swp)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# .htaccess und .htpasswd selbst vor Lesezugriff schützen
+<Files ~ "^\.ht">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</Files>
+
+# ── Cache deaktivieren (alle Ressourcen) ─────────────────────
+<IfModule mod_headers.c>
+  Header always set Cache-Control "no-cache, no-store, must-revalidate"
+  Header always set Pragma        "no-cache"
+  Header always set Expires       "0"
+</IfModule>
+
+# ── Sicherheits-Header ───────────────────────────────────────
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options  "nosniff"
+  Header always set X-Frame-Options         "SAMEORIGIN"
+  Header always set Referrer-Policy         "strict-origin-when-cross-origin"
+  Header always set X-XSS-Protection        "1; mode=block"
+</IfModule>

@@ -1,0 +1,196 @@
+/* ============================================================
+   THEME: Crystal — Final Fantasy VII / VIII / IX Mix
+   JRPG-Menü-Ästhetik: Tiefes Navy, Teal-Akzente, Kristall-Glow
+   Inspiriert von: FF7 (Türkis/Navy), FF8 (Violett/Stahl),
+                   FF9 (Golden/Ornament)
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;600;700&family=Barlow:ital,wght@0,400;0,500;1,400&display=swap');
+
+:root {
+  --font-display: 'Josefin Sans', 'Trebuchet MS', sans-serif;
+  --font-body:    'Barlow', 'Segoe UI', sans-serif;
+  --radius:    4px;
+  --radius-lg: 8px;
+
+  /* ── Hintergrund & Panels ────────────────────────────────── */
+  --bg-deep:  #030b16;
+  --nav-bg:   rgba(3,11,22,.93);
+
+  --card-bg:  #06101e;
+  --panel-bg: #091528;
+
+  /* ── Rahmen ──────────────────────────────────────────────── */
+  --border:        #0e2a46;
+  --border-subtle: rgba(14,42,70,.5);
+  --accent-border: #1a6882;
+
+  /* ── Akzentfarbe: FF7-Teal ──────────────────────────────── */
+  --accent:        #1ecec6;
+  --accent-bright: #54ece4;
+  --accent-glow:   rgba(30,206,198,.35);
+
+  /* ── Text ────────────────────────────────────────────────── */
+  --text-main:   #b8d6f0;
+  --text-dim:    #2c5070;
+  --text-bright: #e0f2ff;
+  --label-color: #224868;
+
+  /* ── Interaktion ─────────────────────────────────────────── */
+  --hover-bg:    rgba(30,206,198,.1);
+  --selected-bg: rgba(30,206,198,.08);
+  --focus-ring:  rgba(30,206,198,.28);
+  --role-bg:     rgba(12,60,110,.32);
+
+  --card-shadow: 0 0 26px rgba(30,206,198,.1),
+                 inset 0 1px 0 rgba(30,206,198,.07);
+
+  /* ── Inputs ──────────────────────────────────────────────── */
+  --input-bg:     rgba(3,11,22,.65);
+  --input-border: #0e2a46;
+
+  /* ── Buttons ─────────────────────────────────────────────── */
+  --btn-primary-bg:           linear-gradient(135deg,#0c788a,#085868);
+  --btn-primary-hover:        linear-gradient(135deg,#0fa2b6,#0c788a);
+  --btn-primary-text:         #e0f8ff;
+  --btn-primary-shadow:       0 2px 14px rgba(30,206,198,.32);
+  --btn-primary-shadow-hover: 0 4px 22px rgba(30,206,198,.52);
+  --btn-secondary-bg:         rgba(14,42,70,.42);
+  --btn-secondary-text:       var(--text-dim);
+
+  /* ── Gefahr / Rot ────────────────────────────────────────── */
+  --danger-text:      #e85050;
+  --danger-bright:    #ff8888;
+  --danger-bg:        rgba(110,18,18,.36);
+  --danger-bg-strong: linear-gradient(135deg,#7a1010,#480808);
+  --danger-border:    #6a1212;
+
+  /* ── Alerts ──────────────────────────────────────────────── */
+  --alert-error-bg:     rgba(110,18,18,.3);   --alert-error-border:   #6a1212;               --alert-error-text:   #ff8888;
+  --alert-success-bg:   rgba(8,68,64,.35);    --alert-success-border: rgba(30,206,198,.3);   --alert-success-text: #68ffe0;
+  --alert-info-bg:      rgba(12,48,110,.22);  --alert-info-border:    rgba(58,130,210,.32);  --alert-info-text:    #70b8f8;
+  --alert-warn-bg:      rgba(96,78,8,.22);    --alert-warn-border:    rgba(180,156,40,.32);  --alert-warn-text:    #c0a030;
+
+  /* ── Tags ────────────────────────────────────────────────── */
+  --tag-alive-bg: #08281e;  --tag-alive-text: #1ecec6;  --tag-alive-border: rgba(30,206,198,.3);
+  --tag-dead-bg:  rgba(110,18,18,.3);  --tag-dead-text: #ff8888;  --tag-dead-border: rgba(180,36,36,.35);
+  --tag-day-bg:   rgba(150,116,8,.14); --tag-day-text:  #c8a22c;  --tag-day-border:  rgba(196,164,46,.3);
+  --tag-night-bg: rgba(5,8,42,.52);   --tag-night-text:#5878d8;  --tag-night-border:rgba(80,110,210,.3);
+
+  /* ── Phasen-Banner ───────────────────────────────────────── */
+  --phase-day-bg:     linear-gradient(135deg,rgba(150,116,8,.16),rgba(150,116,8,.05));
+  --phase-day-border: rgba(196,164,46,.3); --phase-day-text:  #c8a22c;
+  --phase-night-bg:   linear-gradient(135deg,rgba(12,48,110,.22),rgba(4,8,46,.38));
+  --phase-night-border: rgba(46,96,195,.35); --phase-night-text: #6090e0;
+}
+
+/* ── FF7-Stil: Scan-Lines + Teal-Glow + Vignette ──────────── */
+body.theme-crystal {
+  background: #030b16;
+}
+body.theme-crystal::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    radial-gradient(ellipse 90% 55% at 50% -4%,  rgba(30,206,198,.1)  0%, transparent 65%),
+    radial-gradient(ellipse 45% 65% at 92% 108%, rgba(90,70,210,.12)  0%, transparent 58%),
+    radial-gradient(ellipse 35% 45% at  4%  82%, rgba(30,206,198,.06) 0%, transparent 58%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(30,206,198,.013) 3px,
+      rgba(30,206,198,.013) 4px
+    );
+}
+body.theme-crystal > * { position: relative; z-index: 1; }
+
+/* ── FF-Menü-Box: Ecken-Verzierungen auf Glow-Cards ─────────
+   Die kleinen Ecken sind das charakteristische Merkmal der
+   FF7/8/9-Menüfenster.
+   ──────────────────────────────────────────────────────────── */
+body.theme-crystal .card--glow {
+  position: relative;
+  border-color: #1a6882;
+  box-shadow: var(--card-shadow),
+              0 0 0 1px rgba(30,206,198,.12),
+              inset 0 0 28px rgba(30,206,198,.03);
+}
+body.theme-crystal .card--glow::before,
+body.theme-crystal .card--glow::after {
+  content: '';
+  position: absolute;
+  width: 10px; height: 10px;
+  border: 1.5px solid var(--accent);
+  opacity: .7;
+  pointer-events: none;
+}
+body.theme-crystal .card--glow::before {
+  top: -1px; left: -1px;
+  border-right: none; border-bottom: none;
+  border-radius: var(--radius-lg) 0 0 0;
+}
+body.theme-crystal .card--glow::after {
+  bottom: -1px; right: -1px;
+  border-left: none; border-top: none;
+  border-radius: 0 0 var(--radius-lg) 0;
+}
+
+/* ── Nav & Tabbar ────────────────────────────────────────── */
+body.theme-crystal .nav {
+  border-bottom-color: rgba(30,206,198,.18);
+  box-shadow: 0 1px 0 rgba(30,206,198,.08), 0 4px 20px rgba(0,0,20,.5);
+}
+body.theme-crystal .subnav {
+  border-bottom-color: rgba(30,206,198,.14);
+}
+body.theme-crystal .tabbar {
+  border-top-color: rgba(30,206,198,.22);
+  background: rgba(3,11,22,.96);
+  box-shadow: 0 -1px 0 rgba(30,206,198,.12);
+}
+body.theme-crystal .subnav__link.active {
+  background: rgba(30,206,198,.18);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+body.theme-crystal .tabbar__item.active {
+  color: var(--accent);
+}
+
+/* ── Section-Title: FF-Stil Trennlinie ───────────────────── */
+body.theme-crystal .section-title {
+  color: var(--accent);
+  border-bottom-color: rgba(30,206,198,.22);
+  letter-spacing: .14em;
+}
+
+/* ── Überschriften ───────────────────────────────────────── */
+body.theme-crystal h1,
+body.theme-crystal h2,
+body.theme-crystal h3 {
+  color: var(--text-bright);
+  letter-spacing: .06em;
+  font-weight: 600;
+}
+body.theme-crystal .auth-logo__title {
+  color: var(--accent);
+  letter-spacing: .12em;
+  text-shadow: 0 0 20px rgba(30,206,198,.5);
+}
+body.theme-crystal .nav__logo {
+  color: var(--accent);
+  text-shadow: 0 0 12px rgba(30,206,198,.4);
+}
+
+/* ── Player-Cards: Teal-Selektion ────────────────────────── */
+body.theme-crystal .player-card.selected {
+  box-shadow: 0 0 16px var(--accent-glow), 0 0 0 1px var(--accent);
+}
+
+/* ── Phase-Banner: ATB-Stil-Glow ─────────────────────────── */
+body.theme-crystal .phase-banner--night {
+  text-shadow: 0 0 12px rgba(90,110,220,.6);
+}
+body.theme-crystal .phase-banner--day {
+  text-shadow: 0 0 12px rgba(200,160,40,.5);
+}
