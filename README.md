@@ -30,6 +30,7 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 │   ├── roles.php       ← Rollen verwalten (CRUD + Icon-Upload)
 │   ├── players.php     ← Spielerverwaltung (Übersicht, löschen, Passwort ändern)
 │   ├── messages.php    ← Spielerfragen beantworten
+│   ├── slogans.php     ← Dorf-Sprüche verwalten (Tag/Nacht, bis zu 20 pro Phase)
 │   ├── settings.php    ← Server-Einstellungen (DB-konfigurierbar)
 │   ├── setup.php       ← 5-Schritt-Wizard: DB einrichten + Admin-Konto wählen (kein Login nötig)
 │   ├── testplayers.php ← Testdaten: Spieler schnell anlegen
@@ -76,6 +77,11 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 │   └── icons/roles/        ← Rollen-Icons (PNG/JPG), inkl. .htaccess-Schutz
 │
 ├── audio/              ← Hintergrundmusik (MP3)
+│
+├── docs/               ← Anleitungen (Login erforderlich; Admin-Seite nur für Admins)
+│   ├── index.php       ← Übersichtsseite mit Links zu Spieler- und Admin-Anleitung
+│   ├── spieler.php     ← Spieler-Anleitung: Rollen, Ablauf, Versammlung, Push, iPhone
+│   └── admin.php       ← Admin-Handbuch: Spielleitung, Runden, Nacht-Reihenfolge
 │
 ├── db/
 │   ├── schema.sql   ← Vollständiges Schema (DROP + CREATE) — für setup.php und Neuinstallation
@@ -363,7 +369,6 @@ ab dem nächsten Seitenaufruf — kein Datei-Edit nötig:
 | `deaths_peace_text` | Text unter dem Friedhof-Bereich |
 | `login_logo` / `mini_logo` | Logo + Favicon (Pfade, via Upload gesetzt) |
 | `game_timezone` | PHP-Zeitzone (z. B. `Europe/Berlin`) |
-| `day_slogans` | Zufallssprüche im Tages-Banner (eine Zeile = ein Slogan) |
 
 ---
 
@@ -462,15 +467,41 @@ Im Formular „Rollen verwalten" gibt es einen Bild-Uploader:
 
 ---
 
-## 🔄 Backup & Versionierung
+## 🗓️ Bürgerversammlung
 
-Backups liegen lokal auf dem Server (außerhalb des Projektordners) und folgen dem Schema `werwolf-vX.X.X.zip`.
-Jedes Backup entspricht einer Versionserhöhung um 0.0.1.
+Lebende Spieler können über das Spielfenster eine **Bürgerversammlung einberufen**. Die Versammlung startet zur nächsten vollen Stunde — alle Spieler erhalten eine Push-Benachrichtigung. Nur eine Versammlung gleichzeitig ist möglich.
 
-Vor jedem Backup:
-1. `app_version` in `db/schema.sql` und per `admin/settings.php` hochzählen
-2. `CHANGELOG.md` mit den Änderungen seit dem letzten Backup ergänzen
-3. ZIP mit 7-Zip erstellen
+- **Einberufen:** Spielfenster → „Bürgerversammlung einberufen" (nur lebende Spieler)
+- **Ablauf:** Countdown bis zur vollen Stunde, dann „Versammlung läuft"-Anzeige
+- **Beenden:** Der Einberufende oder ein Admin kann die Versammlung jederzeit beenden
+- **Admin-Panel:** Aktive Versammlungen werden oben im Admin-Panel als Banner angezeigt
+- **DB-Tabelle:** `assembly_requests` — `scheduled_at` (Unix-Timestamp), `ended_at` (NULL = aktiv)
+
+---
+
+## 💬 Dorf-Sprüche
+
+Im Spielfenster-Banner rotieren während eines laufenden Spiels zufällige Dorf-Sprüche alle **2 Minuten**. Tagsüber laufen Tag-Sprüche, nachts Nacht-Sprüche.
+
+- **Verwalten:** `admin/slogans.php` — bis zu **20 Sprüche pro Phase** (Tag / Nacht)
+- **DB-Tabelle:** `slogans` — `text`, `phase` (day/night), `active`
+- **Aktionen:** Hinzufügen, Aktivieren/Deaktivieren (✓/○), Löschen
+- Deaktivierte Sprüche werden nicht angezeigt, bleiben aber in der DB erhalten
+
+---
+
+## 📖 Hilfe & Anleitungen
+
+Unter `docs/` liegt eine integrierte Anleitung für Spieler und Admin:
+
+| Seite | Zugang | Inhalt |
+|---|---|---|
+| `docs/index.php` | eingeloggte Spieler | Übersicht mit Links |
+| `docs/spieler.php` | eingeloggte Spieler | Rollen, Spielablauf, Versammlung, Push, iPhone-Hinweis |
+| `docs/admin.php` | nur Admin | Spielleitung, Nacht-Reihenfolge, Phasenwechsel |
+
+Beide Anleitungen haben einen **🖨️ Als PDF speichern**-Button (Browser-Druckfunktion mit Print-CSS).
+Die Docs-Seiten sind über den **📖 Hilfe**-Tab in der Navigation erreichbar.
 
 ---
 
@@ -501,6 +532,13 @@ Vor jedem Backup:
   Definition) und `db/init.sql` (idempotente ALTER TABLE / INSERT IGNORE für bestehende Installs).
 - **Diagnose:** `/admin/diagnostics.php` zeigt PHP-Extensions, DB-Tabellen, alle
   Projektdateien und ermöglicht URL-Tests. Enthält einen kopierbaren KI-Fehlerbericht.
+- **Kein PHP in Nowdocs:** `<<<'IDENTIFIER'` (einfache Anführungszeichen) verhindert
+  PHP-Interpolation. `<?= ... ?>` oder `${var}` werden NICHT ausgewertet — nur reguläre
+  Heredocs (`<<<IDENTIFIER` ohne Quotes) oder separate `sprintf()`-Aufrufe verwenden.
+- **Inline-JS-Konstanten** für PHP-Werte immer über den `sprintf()`-Block am Seitenanfang
+  definieren, nie inline per `<?= ?>` in Heredocs/Nowdocs.
+- **Sprüche:** `slogans`-Tabelle (phase=day/night, active). Kein `DAY_SLOGANS`-Constant mehr.
+- **Docs:** `docs/`-Verzeichnis enthält Spieler- und Admin-Anleitungen. Login erforderlich.
 
 Beim Debuggen zuerst prüfen: `config/config.php` (DB/Settings korrekt?),
 dann `/admin/diagnostics.php` (zeigt alle Systeminfos auf einen Blick),
