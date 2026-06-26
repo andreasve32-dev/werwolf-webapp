@@ -22,7 +22,7 @@
   <span class="legal-footer__sep">·</span>
   <a href="<?= APP_URL ?>/nutzungsbedingungen.php">Nutzungsbedingungen</a>
   <span class="legal-footer__sep">·</span>
-  <span class="legal-footer__copy">Charakterbilder auf den Karten: © SQUARE ENIX</span>
+  <span class="legal-footer__copy">KI-generierte Charakterbilder, inspiriert von FINAL FANTASY XIV © SQUARE ENIX</span>
 </footer>
 
 <?php $__bepPlayer = Auth::check() ? Auth::player() : null; ?>
