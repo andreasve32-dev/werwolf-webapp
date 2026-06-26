@@ -118,7 +118,7 @@ define('DB_HOST', 'DB');          // Docker-Service-Name oder IP
 define('DB_PORT', '3306');
 define('DB_NAME', 'werwolf');
 define('DB_USER', 'root');
-define('DB_PASS', 'urc22b-7');
+define('DB_PASS', '**********');
 ```
 
 Für einen anderen Server: nur diese vier Zeilen ändern. Der Rest der App
