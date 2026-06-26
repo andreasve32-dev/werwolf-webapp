@@ -75,6 +75,21 @@ $hasMusic    = defined('BACKGROUND_MUSIC') && BACKGROUND_MUSIC;
   </div>
   <?php endif; ?>
 
+  <!-- Atmosphäre -->
+  <div class="settings-section">
+    <div class="settings-label">🌤️ Atmosphäre</div>
+    <div class="settings-row">
+      <div>
+        <span class="settings-row__name" id="daynight-label">🌙 Nachtmodus</span>
+        <div class="text-dim text-xs" style="margin-top:.15rem">Nur Optik — kein Spieleffekt</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="set-daynight" onchange="toggleDayNight(this.checked)">
+        <span class="toggle-switch__track"></span>
+      </label>
+    </div>
+  </div>
+
   <!-- Effekte -->
   <div class="settings-section">
     <div class="settings-label">✨ Effekte</div>
@@ -361,6 +376,11 @@ function openSettingsSheet() {
     if (el) el.checked = localStorage.getItem('ww_fx_' + k) !== 'false';
   });
 
+  // Atmosphäre-Toggle
+  const dnEl = document.getElementById('set-daynight');
+  const isDay = localStorage.getItem('ww_daynight') === 'day';
+  if (dnEl) { dnEl.checked = isDay; _updateDaynightLabel(isDay); }
+
   document.getElementById('settings-sheet').classList.add('open');
   document.getElementById('settings-backdrop').classList.add('open');
   initPushToggle();
@@ -389,6 +409,17 @@ function settingToggle(key, val) {
     const fn = 'set' + key.charAt(0).toUpperCase() + key.slice(1);
     if (typeof window.FX[fn] === 'function') window.FX[fn](val);
   }
+}
+
+// ── Tag/Nacht-Modus (rein visuell) ───────────────────────────
+function _updateDaynightLabel(isDay) {
+  const el = document.getElementById('daynight-label');
+  if (el) el.textContent = isDay ? '☀️ Tagmodus' : '🌙 Nachtmodus';
+}
+function toggleDayNight(isDay) {
+  localStorage.setItem('ww_daynight', isDay ? 'day' : 'night');
+  document.documentElement.setAttribute('data-daynight', isDay ? 'day' : 'night');
+  _updateDaynightLabel(isDay);
 }
 
 // ── Lautstärke ändern & speichern ───────────────────────────

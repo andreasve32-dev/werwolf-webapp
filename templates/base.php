@@ -46,6 +46,14 @@ $showNav = $page['nav'] ?? true;
   <link rel="icon" type="image/png" href="<?= e(assetUrl(MINI_LOGO)) ?>">
   <?php endif; ?>
 
+  <!-- Tag/Nacht-Modus sofort setzen (vor CSS-Render, verhindert Flash) -->
+  <script>
+  (function(){
+    var dn = localStorage.getItem('ww_daynight');
+    if (dn) document.documentElement.setAttribute('data-daynight', dn);
+  })();
+  </script>
+
   <!-- Theme-CSS zuerst (definiert CSS-Variablen) -->
   <link rel="stylesheet" href="<?= ASSETS_URL ?>/css/themes/<?= e($themeData['css_file']) ?>?v=<?= filemtime(ROOT_PATH . '/assets/css/themes/' . $themeData['css_file']) ?>">
   <!-- Dann Basis-CSS (nutzt die Variablen) -->

@@ -23,7 +23,7 @@ $deathsByPhase = Database::query(
     "SELECT phase, COUNT(*) AS cnt FROM deaths GROUP BY phase ORDER BY cnt DESC"
 );
 $deathsPerRound = Database::query(
-    "SELECT round, COUNT(*) AS cnt FROM deaths GROUP BY round ORDER BY round ASC LIMIT 20"
+    "SELECT round, phase, COUNT(*) AS cnt FROM deaths GROUP BY round, phase ORDER BY round ASC, phase ASC LIMIT 40"
 );
 $topAccused = Database::query("
     SELECT p.display_name, COUNT(*) AS stimmen
@@ -62,6 +62,13 @@ $deathsByPlayerCause = Database::query("
     GROUP BY d.player_id, d.is_gehenkt
 ");
 
+$deathsByPlayerPhase = Database::query("
+    SELECT d.player_id, d.phase, COUNT(*) AS cnt
+    FROM deaths d
+    JOIN games g ON g.id = d.game_id AND g.status = 'finished'
+    GROUP BY d.player_id, d.phase
+");
+
 $votesGivenMap    = [];
 $votesReceivedMap = [];
 foreach (Database::query("SELECT voter_id AS pid, COUNT(*) AS cnt FROM votes GROUP BY voter_id") as $r) {
@@ -87,6 +94,10 @@ foreach ($rolesByPlayer as $r) {
 $deathsGrouped = [];
 foreach ($deathsByPlayerCause as $r) {
     $deathsGrouped[(int)$r['player_id']][] = $r;
+}
+$deathsPhaseGrouped = [];
+foreach ($deathsByPlayerPhase as $r) {
+    $deathsPhaseGrouped[(int)$r['player_id']][$r['phase']] = (int)$r['cnt'];
 }
 
 $causeLabels = [0 => 'Ermordet', 1 => 'Gehenkt'];
@@ -125,6 +136,8 @@ foreach ($allPlayers as $p) {
         'anklagen'         => $votesReceivedMap[$pid]  ?? 0,
         'rollen'           => $rollen,
         'tod'              => $tod,
+        'tod_tag'          => $deathsPhaseGrouped[$pid]['day']   ?? 0,
+        'tod_nacht'        => $deathsPhaseGrouped[$pid]['night'] ?? 0,
     ];
 }
 
@@ -147,9 +160,16 @@ foreach ($deathsByPhase as $row) {
         'color' => ['day'=>'#fbbf24','night'=>'#818cf8'][$row['phase']] ?? '#6b7280',
     ];
 }
-$roundBarData = [];
+// Gruppiert nach Runde + Phase für den gestapelten/gruppierten Chart
+$roundPhaseMap = [];
 foreach ($deathsPerRound as $row) {
-    $roundBarData[] = ['label' => 'R'.(int)$row['round'], 'cnt' => (int)$row['cnt']];
+    $r = (int)$row['round'];
+    if (!isset($roundPhaseMap[$r])) $roundPhaseMap[$r] = ['day' => 0, 'night' => 0];
+    $roundPhaseMap[$r][$row['phase']] = (int)$row['cnt'];
+}
+$roundBarData = [];
+foreach ($roundPhaseMap as $rnd => $phases) {
+    $roundBarData[] = ['label' => 'R'.$rnd, 'day' => $phases['day'], 'night' => $phases['night']];
 }
 $accuseBarData = [];
 foreach ($topAccused as $row) {
@@ -303,14 +323,14 @@ require TEMPLATE_PATH . '/base.php';
       <!-- Stat-Chips -->
       <div class="player-stat-chips" id="detail-chips"></div>
 
-      <!-- 2 Kreisdiagramme nebeneinander -->
-      <div class="stats-row-2" style="margin-top:1rem;margin-bottom:0">
+      <!-- 3 Kreisdiagramme nebeneinander -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1rem;margin-bottom:0">
         <div>
           <div class="text-xs text-dim" style="text-align:center;margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.06em">
             Rollen gespielt
           </div>
           <div style="display:flex;flex-direction:column;align-items:center;gap:.75rem">
-            <canvas id="detail-chart-rollen" width="170" height="170" style="max-width:170px"></canvas>
+            <canvas id="detail-chart-rollen" width="150" height="150" style="max-width:150px"></canvas>
             <div class="stats-legend" id="detail-legend-rollen"></div>
           </div>
         </div>
@@ -319,11 +339,21 @@ require TEMPLATE_PATH . '/base.php';
             Todesursachen
           </div>
           <div style="display:flex;flex-direction:column;align-items:center;gap:.75rem">
-            <canvas id="detail-chart-tod" width="170" height="170" style="max-width:170px"></canvas>
+            <canvas id="detail-chart-tod" width="150" height="150" style="max-width:150px"></canvas>
             <div class="stats-legend" id="detail-legend-tod"></div>
           </div>
         </div>
+        <div>
+          <div class="text-xs text-dim" style="text-align:center;margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.06em">
+            Tag / Nacht
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:.75rem">
+            <canvas id="detail-chart-phase" width="150" height="150" style="max-width:150px"></canvas>
+            <div class="stats-legend" id="detail-legend-phase"></div>
+          </div>
+        </div>
       </div>
+      <style>@media(max-width:520px){#player-detail .stats-row-3{grid-template-columns:1fr 1fr}}</style>
 
     </div>
   </div>
@@ -589,11 +619,85 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath(); ctx.fill();
 }
 
+// ── Gruppiertes Balkendiagramm Tag/Nacht ─────────────────────
+function drawGroupedBar(canvasId, data) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !data.length) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W   = canvas.offsetWidth || 500;
+  const H   = parseInt(canvas.getAttribute('height')) || 180;
+  canvas.width  = W * dpr; canvas.height = H * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const pad = {top:20, right:10, bottom:52, left:36};
+  const cW = W - pad.left - pad.right;
+  const cH = H - pad.top - pad.bottom;
+  const maxVal = Math.max(...data.map(d => Math.max(d.day||0, d.night||0)), 1);
+  const groupW = cW / data.length;
+  const barW   = Math.min(18, groupW / 2 - 3);
+  const gap    = 3;
+  const dim = chartTextColor(), bright = chartBrightColor();
+  const dayColor   = 'rgba(251,191,36,.88)';  // Gelb/Amber
+  const nightColor = 'rgba(129,140,248,.88)'; // Violett
+
+  // Rasterlinien
+  ctx.strokeStyle = 'rgba(128,128,128,0.15)'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + cH - (i/4)*cH;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left+cW, y); ctx.stroke();
+    if (i > 0) { ctx.fillStyle=dim; ctx.font='9px sans-serif'; ctx.textAlign='right'; ctx.fillText(Math.round(maxVal*i/4), pad.left-4, y+3); }
+  }
+
+  data.forEach((d, i) => {
+    const groupX = pad.left + i * groupW + groupW / 2;
+    const xDay   = groupX - barW - gap/2;
+    const xNight = groupX + gap/2;
+
+    // Tag-Balken (links)
+    if (d.day > 0) {
+      const h = (d.day/maxVal)*cH;
+      const y = pad.top + cH - h;
+      ctx.fillStyle = dayColor;
+      roundRect(ctx, xDay, y, barW, h, [3,3,0,0]);
+      ctx.fillStyle = bright; ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(d.day, xDay + barW/2, y - 3);
+    }
+    // Nacht-Balken (rechts)
+    if (d.night > 0) {
+      const h = (d.night/maxVal)*cH;
+      const y = pad.top + cH - h;
+      ctx.fillStyle = nightColor;
+      roundRect(ctx, xNight, y, barW, h, [3,3,0,0]);
+      ctx.fillStyle = bright; ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(d.night, xNight + barW/2, y - 3);
+    }
+
+    // Rundenbezeichnung
+    ctx.save();
+    ctx.translate(groupX, pad.top + cH + 10);
+    ctx.rotate(-Math.PI / 5);
+    ctx.fillStyle = dim; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(d.label, 0, 0);
+    ctx.restore();
+  });
+
+  // Legende
+  const legendY = H - 14;
+  const items = [['☀️ Tag', dayColor], ['🌕 Nacht', nightColor]];
+  let lx = pad.left;
+  items.forEach(([label, color]) => {
+    ctx.fillStyle = color; ctx.fillRect(lx, legendY - 7, 10, 10);
+    ctx.fillStyle = dim; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(label, lx + 13, legendY + 1);
+    lx += 75;
+  });
+}
+
 // ── Alle globalen Charts ──────────────────────────────────────
 function drawAll() {
   drawDonut('chart-cause', 'legend-cause', STATS.cause);
   drawDonut('chart-phase', 'legend-phase', STATS.phase);
-  if (STATS.rounds.length)  drawSimpleBar('chart-rounds',  STATS.rounds,  'cnt',     'rgba(129,140,248,0.85)');
+  if (STATS.rounds.length)  drawGroupedBar('chart-rounds', STATS.rounds);
   if (STATS.accused.length) drawSimpleBar('chart-accused', STATS.accused, 'stimmen', 'rgba(234,88,12,0.8)');
   if (_openPid !== null) renderPlayerDetail(_openPid);
 }
@@ -638,6 +742,8 @@ function renderPlayerDetail(pid) {
     chip('✅ Überlebt', p.ueberlebt),
     chip('💀 Gestorben', p.gestorben),
     chip('⚖️ Gehenkt', p.gehenkt),
+    chip('☀️ Tode am Tag', p.tod_tag),
+    chip('🌕 Tode in der Nacht', p.tod_nacht),
     chip('🗳️ Stimmen gegeben', p.stimmen_gegeben),
     chip('🎯 Anklagen erhalten', p.anklagen),
     chip('📊 Überlebensrate', survive + '%'),
@@ -646,12 +752,21 @@ function renderPlayerDetail(pid) {
   drawDonutEl(
     document.getElementById('detail-chart-rollen'),
     document.getElementById('detail-legend-rollen'),
-    p.rollen, 170
+    p.rollen, 150
   );
   drawDonutEl(
     document.getElementById('detail-chart-tod'),
     document.getElementById('detail-legend-tod'),
-    p.tod, 170
+    p.tod, 150
+  );
+  // Tag/Nacht-Donut
+  const phaseData = [];
+  if (p.tod_tag   > 0) phaseData.push({label:'☀️ Tag',   value:p.tod_tag,   color:'rgba(251,191,36,.9)'});
+  if (p.tod_nacht > 0) phaseData.push({label:'🌕 Nacht', value:p.tod_nacht, color:'rgba(129,140,248,.9)'});
+  drawDonutEl(
+    document.getElementById('detail-chart-phase'),
+    document.getElementById('detail-legend-phase'),
+    phaseData, 150
   );
 }
 
