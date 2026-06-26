@@ -37,6 +37,35 @@ $specialRoles = Database::query(
 $specialCount = array_sum(array_column($specialRoles, 'amount'));
 $fillCount    = max(0, $playerCount - $specialCount);
 
+// Gewinn-Bedingung prüfen (nur bei laufendem Spiel)
+$killerWin  = false;
+$citizenWin = false;
+if ($game['status'] === 'running') {
+    $aliveKillers = (int)(Database::queryOne(
+        "SELECT COUNT(*) AS cnt FROM game_players gp
+         JOIN roles r ON r.id = gp.role_id
+         WHERE gp.game_id = ? AND gp.is_alive = 1 AND r.is_killer = 1",
+        [$gameId]
+    )['cnt'] ?? 0);
+    $aliveNonKillers = (int)(Database::queryOne(
+        "SELECT COUNT(*) AS cnt FROM game_players gp
+         LEFT JOIN roles r ON r.id = gp.role_id
+         WHERE gp.game_id = ? AND gp.is_alive = 1 AND (r.is_killer = 0 OR r.id IS NULL)",
+        [$gameId]
+    )['cnt'] ?? 0);
+    $totalKillers = (int)(Database::queryOne(
+        "SELECT COUNT(*) AS cnt FROM game_players gp
+         JOIN roles r ON r.id = gp.role_id
+         WHERE gp.game_id = ? AND r.is_killer = 1",
+        [$gameId]
+    )['cnt'] ?? 0);
+    if ($totalKillers > 0 && $aliveKillers === 0) {
+        $citizenWin = true;
+    } elseif ($aliveKillers > 0 && $aliveKillers >= $aliveNonKillers) {
+        $killerWin = true;
+    }
+}
+
 $_navMsgPending = 0;
 try {
     $row = Database::queryOne("SELECT COUNT(*) AS cnt FROM messages WHERE reply IS NULL");
@@ -62,6 +91,18 @@ require TEMPLATE_PATH . '/base.php';
       <?php endif; ?>
     </p>
   </div>
+
+  <?php if ($killerWin): ?>
+  <div class="alert alert--error animate-in" style="font-size:1.05rem;font-family:var(--font-display);text-align:center;padding:1.2rem">
+    🔪 <strong>Die Killer haben gewonnen!</strong><br>
+    <span style="font-size:.85rem;font-weight:400">Die Killer sind mindestens so viele wie die Überlebenden — das Dorf ist verloren.</span>
+  </div>
+  <?php elseif ($citizenWin): ?>
+  <div class="alert alert--success animate-in" style="font-size:1.05rem;font-family:var(--font-display);text-align:center;padding:1.2rem">
+    🏘️ <strong>Die Bürger haben gewonnen!</strong><br>
+    <span style="font-size:.85rem;font-weight:400">Alle Killer sind tot — das Dorf ist gerettet.</span>
+  </div>
+  <?php endif; ?>
 
   <!-- ── Spielsteuerung ──────────────────────────────────────── -->
   <div class="card card--glow animate-in mb-2">

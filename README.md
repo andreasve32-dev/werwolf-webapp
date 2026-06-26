@@ -95,7 +95,8 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 │   ├── migration_fix_logo_path.sql ← Logo-Pfad korrigieren
 │   ├── migration_beta.sql          ← Beta-Modus-Einstellung
 │   ├── migration_remove_cause.sql  ← cause-Spalte entfernt, is_gehenkt + rolle_aufgedeckt ergänzt
-│   └── migration_cooldown.sql      ← cooldown_started_at in game_players ergänzt
+│   ├── migration_cooldown.sql      ← cooldown_started_at in game_players ergänzt
+│   └── migration_killer.sql        ← is_killer-Flag in roles ergänzt
 │
 ├── public/             ← Backups (ZIP-Dateien, nicht im Web zugänglich)
 │
@@ -397,6 +398,7 @@ Aktivieren/Deaktivieren, Löschen, alles per Formular.
 | `icon_path` | Pfad zur Icon-Datei |
 | `sichtbar` | 1 = Spieler mit gleicher Rolle erkennen sich gegenseitig |
 | `auto_eintrag` | 1 = Todesort/-zeit wird beim Sterben automatisch eingetragen |
+| `is_killer` | 1 = Killer-Team (gewinnen wenn ≥ Überlebende Nicht-Killer) |
 | `sort_order` | Reihenfolge in Listen |
 
 **Standard-Rollen (alle aktiv):**

@@ -50,6 +50,7 @@ require TEMPLATE_PATH . '/base.php';
               <?php if (!empty($r['sichtbar'])): ?><span class="tag tag--day">👁️ Sichtbar untereinander</span><?php endif; ?>
               <?php if (!empty($r['befragen'])): ?><span class="tag tag--night">🔍 Darf Tote befragen</span><?php endif; ?>
               <?php if (!empty($r['auto_eintrag'])): ?><span class="tag tag--running">⭐ Star</span><?php endif; ?>
+              <?php if (!empty($r['is_killer'])): ?><span class="tag tag--dead">🔪 Killer</span><?php endif; ?>
             </div>
             <div class="text-dim text-sm mt-1"><?= e($r['description'] ?: 'Keine Beschreibung') ?></div>
             <div class="text-xs text-dim mt-1">
@@ -113,6 +114,7 @@ function collectFormData(prefix) {
     sichtbar: get('sichtbar')?.checked ? 1 : 0,
     befragen: get('befragen')?.checked ? 1 : 0,
     auto_eintrag: get('auto_eintrag')?.checked ? 1 : 0,
+    is_killer: get('is_killer')?.checked ? 1 : 0,
     amount: parseInt(get('amount')?.value || '1', 10),
     icon_path: get('icon_path')?.value.trim() || '',
     sort_order: parseInt(get('sort_order')?.value || '0', 10),

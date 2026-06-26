@@ -113,10 +113,16 @@ $v       = fn(string $key, $default = '') => $isEdit ? ($editRole[$key] ?? $defa
            style="width:18px;height:18px;accent-color:var(--accent)">
     <label class="form-label" for="<?= $prefix ?>auto_eintrag" style="margin:0">⭐ Star — Ort &amp; Zeit automatisch eintragen</label>
   </div>
+  <div class="form-group flex gap-sm" style="align-items:center">
+    <input type="checkbox" id="<?= $prefix ?>is_killer" <?= $v('is_killer', 0) ? 'checked' : '' ?>
+           style="width:18px;height:18px;accent-color:#f87171">
+    <label class="form-label" for="<?= $prefix ?>is_killer" style="margin:0">🔪 Killer-Team</label>
+  </div>
 </div>
 <p class="text-dim text-xs mt-1" style="margin-top:-.5rem">
   <strong>Auffüll-Rolle</strong>: Spieler ohne Sonderrolle bekommen diese Rolle (z.B. Bürger). &nbsp;|&nbsp;
   <strong>Sichtbar untereinander</strong>: Spieler mit dieser Rolle erkennen sich beim Start gegenseitig (z.B. Mörder). &nbsp;|&nbsp;
   <strong>Darf Tote befragen</strong>: Diese Rolle sieht Ort &amp; Zeit in der Todesliste. &nbsp;|&nbsp;
-  <strong>Star</strong>: Ort &amp; Zeit werden beim Sterben sofort automatisch eingetragen.
+  <strong>Star</strong>: Ort &amp; Zeit werden beim Sterben sofort automatisch eingetragen. &nbsp;|&nbsp;
+  <strong>Killer-Team</strong>: Zählt zur Killer-Seite — Killer gewinnen wenn sie die Bürger zahlenmäßig erreichen.
 </p>
