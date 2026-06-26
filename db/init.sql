@@ -177,3 +177,19 @@ SET @sql2 = IF(@col2_exists=0,'ALTER TABLE roles ADD COLUMN sichtbar TINYINT(1) 
 PREPARE stmt2 FROM @sql2; EXECUTE stmt2; DEALLOCATE PREPARE stmt2;
 UPDATE roles SET sichtbar=1 WHERE name='Mörder' AND sichtbar=0;
 UPDATE roles SET sichtbar=1 WHERE name='Das Paar' AND sichtbar=0;
+
+-- idempotente Migration: befragen / auto_eintrag / is_killer Spalten in roles
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS befragen    TINYINT(1) NOT NULL DEFAULT 0 AFTER sichtbar;
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS auto_eintrag TINYINT(1) NOT NULL DEFAULT 0 AFTER befragen;
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS is_killer    TINYINT(1) NOT NULL DEFAULT 0 AFTER auto_eintrag;
+UPDATE roles SET befragen=1    WHERE name='Nekromant' AND befragen=0;
+
+-- idempotente Migration: deaths-Spalten nachrüsten
+ALTER TABLE deaths ADD COLUMN IF NOT EXISTS ort             VARCHAR(255) NULL DEFAULT NULL AFTER phase;
+ALTER TABLE deaths ADD COLUMN IF NOT EXISTS zeit            VARCHAR(50)  NULL DEFAULT NULL AFTER ort;
+ALTER TABLE deaths ADD COLUMN IF NOT EXISTS is_gehenkt      TINYINT(1) NOT NULL DEFAULT 0 AFTER phase;
+ALTER TABLE deaths ADD COLUMN IF NOT EXISTS rolle_aufgedeckt TINYINT(1) NOT NULL DEFAULT 0 AFTER zeit;
+-- cause-Spalte entfernen (aus älterer Schema-Version)
+SET @col_cause = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='deaths' AND COLUMN_NAME='cause');
+SET @sql_cause = IF(@col_cause=1,'ALTER TABLE deaths DROP COLUMN cause','SELECT 1');
+PREPARE stmt_cause FROM @sql_cause; EXECUTE stmt_cause; DEALLOCATE PREPARE stmt_cause;

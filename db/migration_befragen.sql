@@ -9,3 +9,5 @@ ALTER TABLE deaths
 
 ALTER TABLE roles
   ADD COLUMN befragen TINYINT(1) NOT NULL DEFAULT 0 AFTER sichtbar;
+
+UPDATE roles SET befragen=1 WHERE name='Nekromant' AND befragen=0;

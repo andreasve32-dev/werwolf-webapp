@@ -36,7 +36,7 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 │   └── diagnostics.php ← System-Diagnose: PHP, DB, Dateien, URL-Test, KI-Fehlerbericht
 │
 ├── api/                ← JSON-Endpunkte, vom JS aufgerufen
-│   ├── game.php            ← join, get_players, vote, self_report_death, get_log
+│   ├── game.php            ← join, get_players, vote, self_report_death, update_death_info, get_log
 │   ├── admin.php           ← Spielsteuerung + Rollen-CRUD
 │   ├── messages.php        ← Spieler-Fragen senden/empfangen + Admin-Antworten
 │   ├── push.php            ← Web-Push-Abonnement verwalten + Benachrichtigungen senden
@@ -368,6 +368,19 @@ ab dem nächsten Seitenaufruf — kein Datei-Edit nötig:
 4. **Nacht:** Admin wechselt Phase, wertet Nacht aus oder tötet manuell.
 5. Wiederholt sich, bis Admin „Spiel beenden" klickt.
 
+### Tote befragen (Nekromant-Funktion)
+
+Ist eine Rolle mit `befragen=1` (z. B. Nekromant) **lebendig** im Spiel, sehen tote
+Spieler auf der Todesliste (`deaths.php`) einen **📋 Eintragen**-Button bei ihrem
+eigenen Eintrag. Darüber können sie Rolle, Ort und Todeszeit selbst nachtragen.
+Nach dem Speichern ist der Eintrag für alle sichtbar (`rolle_aufgedeckt=1`).
+
+- Der Button verschwindet, sobald der Eintrag ausgefüllt wurde.
+- Die **Star-Rolle** (`auto_eintrag=1`) setzt `rolle_aufgedeckt=1` sofort beim Sterben —
+  vollständig unabhängig davon, ob ein Nekromant lebt.
+- Technisch: `api/game.php` → `update_death_info` aktualisiert `ort`, `zeit` und `role_id`,
+  setzt `rolle_aufgedeckt=1`.
+
 ### Spieler-Nachrichten
 
 Spieler können über das Spielfenster Fragen an den Spielleiter stellen.
@@ -397,7 +410,8 @@ Aktivieren/Deaktivieren, Löschen, alles per Formular.
 | `amount` | Anzahl pro Spiel (bei fill=0) |
 | `icon_path` | Pfad zur Icon-Datei |
 | `sichtbar` | 1 = Spieler mit gleicher Rolle erkennen sich gegenseitig |
-| `auto_eintrag` | 1 = Todesort/-zeit wird beim Sterben automatisch eingetragen |
+| `befragen` | 1 = Diese Rolle darf tote Spieler befragen (Tote können eigene Rolle, Ort und Zeit in die Todesliste eintragen) |
+| `auto_eintrag` | 1 = Todesort/-zeit wird beim Sterben automatisch eingetragen (setzt `rolle_aufgedeckt=1` sofort) |
 | `is_killer` | 1 = Killer-Team (gewinnen wenn ≥ Überlebende Nicht-Killer) |
 | `sort_order` | Reihenfolge in Listen |
 
@@ -407,12 +421,12 @@ Aktivieren/Deaktivieren, Löschen, alles per Formular.
 |---|---|
 | 🏘️ Bürger | Füllrolle, kein Sonderrecht |
 | 🔪 Mörder | Sichtbar (Mörder erkennen sich), Cooldown 30 Min. |
-| 💀 Nekromant | Kann tote Spieler befragen |
-| 🔮 Hellseherin | Kann Rolle aufdecken, Cooldown 30 Min. |
+| 💀 Nekromant | `befragen=1` — tote Spieler können Rolle, Ort und Zeit selbst eintragen |
+| 🔮 Hellseher | Kann Rolle aufdecken, Cooldown 30 Min. |
 | 🕵️ Detektiv | Kann Spieler durchsuchen |
 | 💑 Das Paar | 2 Spieler, sichtbar füreinander |
 | 🐔 Dodo | Gewinnt durch eigene Hinrichtung |
-| ⭐ Celebrity | Tod sofort öffentlich bekannt |
+| ⭐ Star | `auto_eintrag=1` — Tod + Zeit sofort öffentlich, unabhängig vom Nekromanten |
 | 🔫 Gunslinger | Kann einmalig einen Spieler erschießen |
 | 🤠 Sheriff | Kann unbegrenzt erschießen, stirbt bei Unschuldigen |
 

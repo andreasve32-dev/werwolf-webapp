@@ -113,12 +113,17 @@ switch($action){
     echo json_encode(['ok'=>true,'started_at'=>$now]);break;
 
   case 'update_death_info':
-    // Todesort und -zeit nachtragen. Erlaubt für: Admin oder der Betroffene selbst.
+    // Todesort, -zeit und Rolle nachtragen. Erlaubt für: Admin oder der Betroffene selbst.
     $deathId = (int)($input['death_id'] ?? 0);
-    $ort  = trim($input['ort']  ?? '');
-    $zeit = trim($input['zeit'] ?? '');
+    $ort     = trim($input['ort']  ?? '');
+    $zeit    = trim($input['zeit'] ?? '');
+    $roleId  = !empty($input['role_id']) ? (int)$input['role_id'] : null;
     if (mb_strlen($ort) > 200) { http_response_code(400); echo json_encode(['error'=>'Ort zu lang']); exit; }
     if (mb_strlen($zeit) > 20)  { http_response_code(400); echo json_encode(['error'=>'Zeit zu lang']);  exit; }
+    if ($roleId !== null) {
+        $roleOk = Database::queryOne("SELECT id FROM roles WHERE id=?", [$roleId]);
+        if (!$roleOk) $roleId = null;
+    }
     $isAdmin = (bool)Auth::player()['is_admin'];
     $death = Database::queryOne("SELECT * FROM deaths WHERE id=?", [$deathId]);
     if (!$death) { http_response_code(404); echo json_encode(['error'=>'Nicht gefunden']); exit; }
@@ -126,7 +131,10 @@ switch($action){
         http_response_code(403); echo json_encode(['error'=>'Keine Berechtigung']); exit;
     }
     try {
-        Database::execute("UPDATE deaths SET ort=?, zeit=?, rolle_aufgedeckt=1 WHERE id=?", [$ort ?: null, $zeit ?: null, $deathId]);
+        Database::execute(
+            "UPDATE deaths SET ort=?, zeit=?, role_id=COALESCE(?,role_id), rolle_aufgedeckt=1 WHERE id=?",
+            [$ort ?: null, $zeit ?: null, $roleId, $deathId]
+        );
     } catch (\Throwable $ex) {
         http_response_code(500);
         echo json_encode(['error' => 'DB-Fehler: ' . $ex->getMessage() . ' — Migration db/migration_zeit.sql ausführen?']);

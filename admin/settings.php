@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'save')
         'background_music', 'default_role_icon', 'session_lifetime',
         'deaths_empty_title', 'deaths_empty_sub', 'deaths_peace_text',
         'login_logo', 'mini_logo', 'register_subtitle',
+        'game_timezone', 'day_slogans',
     ];
 
     $body   = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -84,6 +85,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'save')
                 $v = trim($v);
                 if (mb_strlen($v) > 255) {
                     $errors[$key] = 'Wert zu lang (max. 255 Zeichen).'; continue 2;
+                }
+                break;
+            case 'game_timezone':
+                $v = trim($v);
+                if ($v !== '' && !in_array($v, timezone_identifiers_list(), true)) {
+                    $errors[$key] = 'Ungültige Zeitzone (z.B. Europe/Berlin).'; continue 2;
+                }
+                break;
+            case 'day_slogans':
+                $v = trim($v);
+                if (mb_strlen($v) > 5000) {
+                    $errors[$key] = 'Slogans zu lang (max. 5000 Zeichen).'; continue 2;
                 }
                 break;
         }
@@ -572,7 +585,7 @@ async function saveSettings(e) {
   const form = document.getElementById('settings-form');
   const data = {};
 
-  form.querySelectorAll('input[name], select[name]').forEach(el => {
+  form.querySelectorAll('input[name], select[name], textarea[name]').forEach(el => {
     if (el.type === 'checkbox')  data[el.name] = el.checked;
     else if (el.type === 'radio') { if (el.checked) data[el.name] = el.value; }
     else data[el.name] = el.value;
