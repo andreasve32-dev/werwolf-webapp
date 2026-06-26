@@ -20,7 +20,7 @@ require TEMPLATE_PATH . '/base.php';
       <h2 class="section-title">1. Geltungsbereich</h2>
       <p class="text-sm text-dim" style="line-height:1.7">
         Diese Nutzungsbedingungen gelten für alle Nutzer der <?= e(APP_NAME) ?>-Webanwendung
-        (nachfolgend „Dienst") von Andreas Vetter (nachfolgend „Betreiber").
+        (nachfolgend „Dienst") des Betreibers (nachfolgend „Betreiber").
         Der Dienst richtet sich ausschließlich an einen geschlossenen, vorab eingeladenen
         Teilnehmerkreis.
       </p>
@@ -131,7 +131,7 @@ require TEMPLATE_PATH . '/base.php';
         Der Betreiber behält sich das Recht vor, Konten bei Verstoß gegen diese
         Nutzungsbedingungen ohne Vorankündigung zu sperren oder zu löschen.
         Du kannst die Löschung deines Kontos jederzeit per E-Mail an
-        <a href="mailto:andy.ve@outlook.de">andy.ve@outlook.de</a> beantragen.
+        <a href="mailto:ihre@email.de">ihre@email.de</a> beantragen.
       </p>
     </section>
 
@@ -148,7 +148,7 @@ require TEMPLATE_PATH . '/base.php';
       <h2 class="section-title">12. Anwendbares Recht und Gerichtsstand</h2>
       <p class="text-sm text-dim" style="line-height:1.7">
         Es gilt das Recht der Bundesrepublik Deutschland.
-        Gerichtsstand ist, soweit gesetzlich zulässig, Heidelberg (Baden-Württemberg).
+        Gerichtsstand ist, soweit gesetzlich zulässig, der Wohnort des Betreibers.
       </p>
     </section>
 

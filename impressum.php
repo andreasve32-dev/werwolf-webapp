@@ -14,9 +14,9 @@ require TEMPLATE_PATH . '/base.php';
     <section class="mb-3">
       <h2 class="section-title">Angaben gemäß § 18 Abs. 2 MStV</h2>
       <p class="text-sm" style="line-height:1.8">
-        <strong>Andreas Vetter</strong><br>
-        Otto-Hahn-Platz 2<br>
-        69126 Heidelberg<br>
+        <strong>Ihr Name</strong><br>
+        Ihre Straße und Hausnummer<br>
+        Ihre PLZ und Ort<br>
         Deutschland
       </p>
     </section>
@@ -24,7 +24,7 @@ require TEMPLATE_PATH . '/base.php';
     <section class="mb-3">
       <h2 class="section-title">Kontakt</h2>
       <p class="text-sm" style="line-height:1.8">
-        E-Mail: <a href="mailto:andy.ve@outlook.de">andy.ve@outlook.de</a>
+        E-Mail: <a href="mailto:ihre@email.de">ihre@email.de</a>
       </p>
     </section>
 

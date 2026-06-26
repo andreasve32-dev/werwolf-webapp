@@ -20,10 +20,10 @@ require TEMPLATE_PATH . '/base.php';
     <section class="mb-3">
       <h2 class="section-title">1. Verantwortlicher (Art. 13 Abs. 1 lit. a DSGVO)</h2>
       <p class="text-sm" style="line-height:1.8">
-        <strong>Andreas Vetter</strong><br>
-        Otto-Hahn-Platz 2<br>
-        69126 Heidelberg, Deutschland<br>
-        E-Mail: <a href="mailto:andy.ve@outlook.de">andy.ve@outlook.de</a>
+        <strong>Ihr Name</strong><br>
+        Ihre Straße und Hausnummer<br>
+        Ihre PLZ und Ort, Deutschland<br>
+        E-Mail: <a href="mailto:ihre@email.de">ihre@email.de</a>
       </p>
     </section>
 
@@ -156,7 +156,7 @@ require TEMPLATE_PATH . '/base.php';
       </ul>
       <p class="text-sm text-dim mt-1" style="line-height:1.7">
         Zur Ausübung dieser Rechte wende dich an:
-        <a href="mailto:andy.ve@outlook.de">andy.ve@outlook.de</a>
+        <a href="mailto:ihre@email.de">ihre@email.de</a>
       </p>
     </section>
 
