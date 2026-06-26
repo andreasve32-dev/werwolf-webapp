@@ -294,9 +294,6 @@ require TEMPLATE_PATH . '/base.php';
                   <span style="font-family:var(--font-display);font-size:.88rem;color:var(--text-bright)">
                     <?= e($gp['display_name']) ?>
                   </span>
-                  <?php if ($gp['role_id']): ?>
-                    <span class="text-dim text-xs"><?= e($gp['role_name'] ?? '') ?></span>
-                  <?php endif; ?>
                 <?php endif; ?>
               </div>
               <div class="flex gap-xs">
