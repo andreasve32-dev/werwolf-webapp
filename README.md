@@ -167,7 +167,7 @@ die Module `mod_alias` und `mod_headers` aktiv.
 
 **`.htaccess` schützt automatisch:**
 - Verzeichnislisten überall deaktiviert (`Options -Indexes`)
-- Gesperrte Ordner (HTTP 403): `config/`, `core/`, `templates/`, `db/`, `docs/`
+- Gesperrte Ordner (HTTP 403): `config/`, `core/`, `templates/`, `db/`
 - Gesperrte Dateitypen: `*.sql`, `*.md`, `*.log`, `*.bak`, `*.env`, `.htaccess` selbst
 - Sicherheits-Header: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `X-XSS-Protection`
 - `game.php`, `admin/`, `api/` sind per PHP-Auth geschützt (`Auth::requireLogin` / `Auth::requireAdmin`)

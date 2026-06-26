@@ -7,7 +7,7 @@
 #  NUR EINGELOGGT→ game.php, deaths.php, logout.php   (PHP: Auth::requireLogin)
 #  NUR ADMIN     → admin/*                             (PHP: Auth::requireAdmin)
 #  NUR AJAX      → api/*                               (PHP: Auth::requireLogin + DB-Check)
-#  GESPERRT (403)→ config/, core/, templates/, db/, docs/
+#  GESPERRT (403)→ config/, core/, templates/, db/
 #  GESPERRT (403)→ *.sql, *.md, *.log, *.bak, .htaccess, .env
 # ══════════════════════════════════════════════════════════════
 
@@ -21,7 +21,7 @@ DirectoryIndex index.php
 # Diese Ordner enthalten PHP-Klassen, SQL-Schemata, Konfiguration
 # und Templates — niemals per HTTP erreichbar.
 <IfModule mod_alias.c>
-  RedirectMatch 403 ^/(config|core|templates|db|docs)(/|$)
+  RedirectMatch 403 ^/(config|core|templates|db)(/|$)
 </IfModule>
 
 # ── Sensible Dateitypen sperren ──────────────────────────────
