@@ -21,6 +21,8 @@
   <a href="<?= APP_URL ?>/datenschutz.php">Datenschutz</a>
   <span class="legal-footer__sep">·</span>
   <a href="<?= APP_URL ?>/nutzungsbedingungen.php">Nutzungsbedingungen</a>
+  <span class="legal-footer__sep">·</span>
+  <span class="legal-footer__copy">Charakterbilder auf den Karten: © SQUARE ENIX</span>
 </footer>
 
 <?php $__bepPlayer = Auth::check() ? Auth::player() : null; ?>
