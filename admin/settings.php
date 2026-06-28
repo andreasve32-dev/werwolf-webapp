@@ -135,19 +135,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'save')
 
 // ── AJAX: VAPID-Schlüssel generieren ────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'vapid_generate') {
+    ob_start();
     header('Content-Type: application/json');
-    $body  = json_decode(file_get_contents('php://input'), true) ?? [];
-    $force = !empty($body['force']);
-    if ($force) {
-        Database::execute("DELETE FROM settings WHERE `key` IN ('vapid_public_key','vapid_private_key')");
-    }
-    require_once dirname(__DIR__) . '/core/WebPush.php';
-    $ok = WebPush::ensureKeys();
-    if ($ok) {
-        $row = Database::queryOne("SELECT value FROM settings WHERE `key`='vapid_public_key'");
-        echo json_encode(['ok' => true, 'key' => $row['value'] ?? '', 'message' => 'VAPID-Schlüssel erfolgreich generiert.']);
-    } else {
-        echo json_encode(['ok' => false, 'error' => 'Schlüsselgenerierung fehlgeschlagen — ist OpenSSL verfügbar?']);
+    try {
+        $body  = json_decode(file_get_contents('php://input'), true) ?? [];
+        $force = !empty($body['force']);
+        if ($force) {
+            Database::execute("DELETE FROM settings WHERE `key` IN ('vapid_public_key','vapid_private_key')");
+        }
+        require_once dirname(__DIR__) . '/core/WebPush.php';
+        $ok = WebPush::ensureKeys();
+        ob_end_clean();
+        if ($ok) {
+            $row = Database::queryOne("SELECT value FROM settings WHERE `key`='vapid_public_key'");
+            echo json_encode(['ok' => true, 'key' => $row['value'] ?? '', 'message' => 'VAPID-Schlüssel erfolgreich generiert.']);
+        } else {
+            echo json_encode(['ok' => false, 'error' => 'Schlüsselgenerierung fehlgeschlagen — OpenSSL nicht verfügbar oder fehlerhaft konfiguriert.']);
+        }
+    } catch (Throwable $e) {
+        ob_end_clean();
+        echo json_encode(['ok' => false, 'error' => 'Fehler: ' . $e->getMessage()]);
     }
     exit;
 }
