@@ -78,7 +78,7 @@ switch($action){
     if(!$g){http_response_code(400);echo json_encode(['error'=>'Spiel läuft nicht']);exit;}
     $me=Database::queryOne("SELECT * FROM game_players WHERE game_id=? AND player_id=? AND is_alive=1",[$gameId,$playerId]);
     if(!$me){http_response_code(400);echo json_encode(['error'=>'Nicht berechtigt']);exit;}
-    Database::execute("INSERT INTO votes (game_id,round,voter_id,target_id) VALUES (?,?,?,?) AS new_row ON DUPLICATE KEY UPDATE target_id=new_row.target_id",[$gameId,$g['round'],$playerId,$tid]);
+    Database::execute("INSERT INTO votes (game_id,round,voter_id,target_id) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE target_id=VALUES(target_id)",[$gameId,$g['round'],$playerId,$tid]);
     echo json_encode(['ok'=>true]);break;
 
   case 'self_report_death':

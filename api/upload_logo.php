@@ -48,8 +48,8 @@ if (!move_uploaded_file($file['tmp_name'], $destAbs)) {
 $logoPath = LOGO_DIR_REL . '/' . LOGO_FILENAME;
 
 Database::execute(
-    'INSERT INTO settings (`key`, value, type, label, description, sort_order) VALUES (?,?,?,?,?,?) AS new_row
-     ON DUPLICATE KEY UPDATE value = new_row.value',
+    'INSERT INTO settings (`key`, value, type, label, description, sort_order) VALUES (?,?,?,?,?,?)
+     ON DUPLICATE KEY UPDATE value = VALUES(value)',
     ['login_logo', $logoPath, 'string', 'Login-Logo', 'Pfad zum Bild auf der Anmeldeseite (leer = Wolf-Emoji 🐺).', 5]
 );
 

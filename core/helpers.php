@@ -227,8 +227,8 @@ function canUseAbility(array $gamePlayerRow, int $currentRound): bool {
 function bumpAssetVersion(): void {
     $current = (int)(Database::queryOne('SELECT value FROM settings WHERE `key` = ?', ['asset_version'])['value'] ?? 0);
     Database::execute(
-        'INSERT INTO settings (`key`, value, type, label, description, sort_order) VALUES (?,?,?,?,?,?) AS new_row
-         ON DUPLICATE KEY UPDATE value = new_row.value',
+        'INSERT INTO settings (`key`, value, type, label, description, sort_order) VALUES (?,?,?,?,?,?)
+         ON DUPLICATE KEY UPDATE value = VALUES(value)',
         ['asset_version', (string)($current + 1), 'int', 'Asset-Version', 'Wird bei jedem Bild-Upload erhöht (Cache-Busting).', 999]
     );
 }

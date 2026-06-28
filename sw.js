@@ -5,8 +5,9 @@ self.addEventListener('push', function (event) {
     const data    = event.data ? event.data.json().catch(() => ({})) : Promise.resolve({});
     event.waitUntil(
         data.then(function (d) {
+            var appTitle = (d.app ? '🐺 ' + d.app : '🐺 Spiel');
             return self.registration.showNotification(
-                d.title  || '🐺 Werwolf',
+                d.title  || appTitle,
                 {
                     body    : d.body    || 'Neue Aktivität im Spiel — tippe zum Öffnen.',
                     icon    : d.icon    || '/assets/icons/logo/mini_logo.png',
@@ -18,7 +19,7 @@ self.addEventListener('push', function (event) {
                 }
             );
         }).catch(function () {
-            return self.registration.showNotification('🐺 Werwolf', {
+            return self.registration.showNotification('🐺 Spiel', {
                 body   : 'Neue Aktivität im Spiel — tippe zum Öffnen.',
                 tag    : 'werwolf',
                 renotify: true,

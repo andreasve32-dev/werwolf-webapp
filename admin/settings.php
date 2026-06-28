@@ -121,8 +121,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'save')
     try {
         foreach ($values as $k => $v) {
             Database::execute(
-                'INSERT INTO settings (`key`, value) VALUES (?,?) AS new_row
-                 ON DUPLICATE KEY UPDATE value = new_row.value',
+                'INSERT INTO settings (`key`, value) VALUES (?,?)
+                 ON DUPLICATE KEY UPDATE value = VALUES(value)',
                 [$k, $v]
             );
         }
