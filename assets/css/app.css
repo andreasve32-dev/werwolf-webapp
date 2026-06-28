@@ -203,8 +203,8 @@ body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
   display: flex;
   background: var(--nav-bg);
   border-top: 1px solid var(--border);
-  backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .tabbar__item {

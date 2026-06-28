@@ -59,4 +59,16 @@ DirectoryIndex index.php
   Header always set X-Frame-Options         "SAMEORIGIN"
   Header always set Referrer-Policy         "strict-origin-when-cross-origin"
   Header always set X-XSS-Protection        "1; mode=block"
+  Header unset X-Powered-By
+  Header always unset X-Powered-By
+</IfModule>
+
+# ── PHP-Version nicht preisgeben ─────────────────────────────
+<IfModule mod_php.c>
+  php_flag expose_php Off
+</IfModule>
+
+# ── Zeichensatz für Textdateien ──────────────────────────────
+<IfModule mod_mime.c>
+  AddCharset utf-8 .css .js .php .html .htm .json
 </IfModule>

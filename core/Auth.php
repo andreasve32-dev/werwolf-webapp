@@ -25,23 +25,23 @@ class Auth {
         ini_set('session.gc_maxlifetime', SESSION_LIFETIME);
 
         session_name(SESSION_NAME);
+        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                || (($_SERVER['SERVER_PORT'] ?? 80) == 443);
         session_set_cookie_params([
             'lifetime' => SESSION_LIFETIME,
             'path'     => '/',
-            'secure'   => false,   // auf true setzen, sobald HTTPS aktiv ist
+            'secure'   => $isHttps,
             'httponly' => true,
             'samesite' => 'Lax',
         ]);
         session_start();
 
         // Rolling 7-Tage-Fenster: Cookie-Ablauf bei jedem Request vorwärts schieben.
-        // session_set_cookie_params() + session_start() sendet nur beim ersten Anlegen
-        // einen Set-Cookie-Header; für bestehende Sessions muss das manuell geschehen.
         if (!empty($_SESSION['player_id'])) {
             setcookie(SESSION_NAME, session_id(), [
                 'expires'  => time() + SESSION_LIFETIME,
                 'path'     => '/',
-                'secure'   => false,
+                'secure'   => $isHttps,
                 'httponly' => true,
                 'samesite' => 'Lax',
             ]);
