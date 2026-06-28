@@ -2,11 +2,13 @@
 // Service Worker — Werwolf Web Push
 
 self.addEventListener('push', function (event) {
-    const data    = event.data ? event.data.json().catch(() => ({})) : Promise.resolve({});
+    var appTitle = '🐺 Spiel';
+    const data   = event.data ? event.data.json().catch(() => ({})) : Promise.resolve({});
     event.waitUntil(
         data.then(function (d) {
+            if (d.app) appTitle = '🐺 ' + d.app;
             return self.registration.showNotification(
-                d.title  || '🐺 Spiel',
+                d.title  || appTitle,
                 {
                     body    : d.body    || 'Neue Aktivität im Spiel — tippe zum Öffnen.',
                     icon    : d.icon    || '/assets/icons/logo/mini_logo.png',
@@ -18,7 +20,7 @@ self.addEventListener('push', function (event) {
                 }
             );
         }).catch(function () {
-            return self.registration.showNotification('🐺 Spiel', {
+            return self.registration.showNotification(appTitle, {
                 body   : 'Neue Aktivität im Spiel — tippe zum Öffnen.',
                 tag    : 'werwolf',
                 renotify: true,

@@ -89,10 +89,8 @@ class WebPush {
                  WHERE gp.game_id = ?",
                 [$gameId]
             );
-            $appName    = defined('APP_NAME') ? APP_NAME : 'Spiel';
-            $notifTitle = $appName;
-            $notifBody  = $title !== '' ? ($body !== '' ? "$title — $body" : $title) : $body;
-            $payload    = json_encode(['title' => $notifTitle, 'body' => $notifBody, 'tag' => 'werwolf-event']);
+            $appName = defined('APP_NAME') ? APP_NAME : 'Spiel';
+            $payload = json_encode(['title' => $title, 'body' => $body, 'tag' => 'werwolf-event', 'app' => $appName]);
             foreach ($subs as $s) {
                 self::dispatch($s['endpoint'], $pub, $priv, $payload);
             }
