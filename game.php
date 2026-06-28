@@ -227,6 +227,12 @@ require TEMPLATE_PATH . '/base.php';
           </div>
         </div>
         <?php endif; ?>
+
+        <div class="mt-2 pt-1" style="border-top:1px solid var(--border);text-align:center">
+          <a href="<?= APP_URL ?>/docs/spieler.php" class="btn btn--ghost btn--sm btn--full">
+            📖 Spieler-Anleitung
+          </a>
+        </div>
       </div>
 
       <!-- ── Versammlungs-Karte (immer sichtbar wenn Spiel läuft) ── -->

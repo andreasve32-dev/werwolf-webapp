@@ -118,12 +118,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'save')
         echo json_encode(['ok' => false, 'errors' => $errors]); exit;
     }
 
-    foreach ($values as $k => $v) {
-        Database::execute(
-            'INSERT INTO settings (`key`, value) VALUES (?,?)
-             ON DUPLICATE KEY UPDATE value = VALUES(value)',
-            [$k, $v]
-        );
+    try {
+        foreach ($values as $k => $v) {
+            Database::execute(
+                'INSERT INTO settings (`key`, value) VALUES (?,?) AS new_row
+                 ON DUPLICATE KEY UPDATE value = new_row.value',
+                [$k, $v]
+            );
+        }
+    } catch (Throwable $e) {
+        echo json_encode(['ok' => false, 'errors' => ['db' => 'Datenbankfehler: ' . $e->getMessage()]]); exit;
     }
     echo json_encode(['ok' => true, 'message' => count($values) . ' Einstellung(en) gespeichert.']);
     exit;
@@ -161,7 +165,7 @@ $defaults = [
     'login_logo'         => LOGIN_LOGO,
     'mini_logo'          => MINI_LOGO,
     'game_timezone'      => GAME_TIMEZONE,
-    'push_cooldown'      => '30',
+    'push_cooldown'      => '5',
 ];
 foreach ($defaults as $k => $def) {
     if (!isset($cfg[$k])) $cfg[$k] = ['key' => $k, 'value' => $def, 'type' => 'string', 'label' => $k, 'description' => ''];
@@ -343,7 +347,7 @@ require TEMPLATE_PATH . '/base.php';
         </div>
         <div style="display:flex;align-items:center;gap:.5rem">
           <input class="form-input" type="number" name="push_cooldown"
-                 value="<?= (int)($cfg['push_cooldown']['value'] ?? 30) ?>"
+                 value="<?= (int)($cfg['push_cooldown']['value'] ?? 5) ?>"
                  min="0" max="1440" style="width:90px">
           <span class="text-dim text-sm">Min.</span>
         </div>

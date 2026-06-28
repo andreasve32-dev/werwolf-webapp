@@ -39,8 +39,8 @@ class WebPush {
         foreach (['vapid_public_key' => $pub, 'vapid_private_key' => $privPem] as $k => $v) {
             Database::execute(
                 "INSERT INTO settings (`key`, value, type, label, description, sort_order)
-                 VALUES (?, ?, 'string', ?, '', 999)
-                 ON DUPLICATE KEY UPDATE value = VALUES(value)",
+                 VALUES (?, ?, 'string', ?, '', 999) AS new_row
+                 ON DUPLICATE KEY UPDATE value = new_row.value",
                 [$k, $v, $k === 'vapid_public_key' ? 'VAPID Public Key' : 'VAPID Private Key']
             );
         }
@@ -109,8 +109,8 @@ class WebPush {
     private static function updateLastSent(): void {
         Database::execute(
             "INSERT INTO settings (`key`,value,type,label,description,sort_order)
-             VALUES('push_last_sent',?,'int','Push: letzter Versand (intern)','',999)
-             ON DUPLICATE KEY UPDATE value=VALUES(value)",
+             VALUES('push_last_sent',?,'int','Push: letzter Versand (intern)','',999) AS new_row
+             ON DUPLICATE KEY UPDATE value=new_row.value",
             [(string)time()]
         );
     }

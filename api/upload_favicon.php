@@ -48,8 +48,8 @@ if (!move_uploaded_file($file['tmp_name'], $destAbs)) {
 $faviconPath = FAVICON_DIR_REL . '/' . FAVICON_FILENAME;
 
 Database::execute(
-    'INSERT INTO settings (`key`, value, type, label, description, sort_order) VALUES (?,?,?,?,?,?)
-     ON DUPLICATE KEY UPDATE value = VALUES(value)',
+    'INSERT INTO settings (`key`, value, type, label, description, sort_order) VALUES (?,?,?,?,?,?) AS new_row
+     ON DUPLICATE KEY UPDATE value = new_row.value',
     ['mini_logo', $faviconPath, 'string', 'Browser-Icon (Favicon)', 'PNG-Datei für die Browser-Adressleiste / Tab-Icon.', 6]
 );
 

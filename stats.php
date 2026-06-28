@@ -261,33 +261,47 @@ require TEMPLATE_PATH . '/base.php';
 
   <!-- ── Tode pro Runde ─────────────────────────────────────── -->
   <?php if (!empty($roundBarData)): ?>
-  <div class="card animate-in" style="animation-delay:.08s">
-    <div class="section-title">Tode pro Runde (alle Spiele)</div>
-    <div style="overflow-x:auto">
-      <canvas id="chart-rounds" height="160"
-              style="min-width:<?= max(400, count($roundBarData) * 42) ?>px;width:100%">
-      </canvas>
+  <div class="card animate-in stats-acc" id="acc-rounds" style="animation-delay:.08s">
+    <button class="stats-acc-hdr" onclick="toggleAcc('acc-rounds')" type="button">
+      <span class="section-title" style="margin:0">Tode pro Runde (alle Spiele)</span>
+      <span class="stats-acc-chevron">›</span>
+    </button>
+    <div class="stats-acc-body" id="acc-rounds-body">
+      <div style="overflow-x:auto;padding-top:.5rem">
+        <canvas id="chart-rounds" height="160"
+                style="min-width:<?= max(400, count($roundBarData) * 42) ?>px;width:100%">
+        </canvas>
+      </div>
     </div>
   </div>
   <?php endif; ?>
 
   <!-- ── Häufigste Anklagen ─────────────────────────────────── -->
   <?php if (!empty($accuseBarData)): ?>
-  <div class="card animate-in" style="animation-delay:.1s">
-    <div class="section-title">Häufigste Anklagen (Abstimmungen erhalten)</div>
-    <div style="overflow-x:auto">
-      <canvas id="chart-accused" height="180"
-              style="min-width:<?= max(300, count($accuseBarData) * 68) ?>px;width:100%">
-      </canvas>
+  <div class="card animate-in stats-acc" id="acc-accused" style="animation-delay:.1s">
+    <button class="stats-acc-hdr" onclick="toggleAcc('acc-accused')" type="button">
+      <span class="section-title" style="margin:0">Häufigste Anklagen (Abstimmungen erhalten)</span>
+      <span class="stats-acc-chevron">›</span>
+    </button>
+    <div class="stats-acc-body" id="acc-accused-body">
+      <div style="overflow-x:auto;padding-top:.5rem">
+        <canvas id="chart-accused" height="180"
+                style="min-width:<?= max(300, count($accuseBarData) * 68) ?>px;width:100%">
+        </canvas>
+      </div>
     </div>
   </div>
   <?php endif; ?>
 
   <!-- ── Spielerliste ───────────────────────────────────────── -->
   <?php if (!empty($allPlayers)): ?>
-  <div class="card animate-in" style="animation-delay:.12s">
-    <div class="section-title">Spieler-Profile</div>
-    <p class="text-dim text-xs mb-3">
+  <div class="card animate-in stats-acc" id="acc-players" style="animation-delay:.12s">
+    <button class="stats-acc-hdr" onclick="toggleAcc('acc-players')" type="button">
+      <span class="section-title" style="margin:0">Spieler-Profile</span>
+      <span class="stats-acc-chevron">›</span>
+    </button>
+    <div class="stats-acc-body" id="acc-players-body">
+    <p class="text-dim text-xs mb-3" style="padding-top:.5rem">
       Spieler anklicken für Rollen-Verteilung, Todesursachen und persönliche Statistiken.
     </p>
 
@@ -323,8 +337,8 @@ require TEMPLATE_PATH . '/base.php';
       <!-- Stat-Chips -->
       <div class="player-stat-chips" id="detail-chips"></div>
 
-      <!-- 3 Kreisdiagramme nebeneinander -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1rem;margin-bottom:0">
+      <!-- Kreisdiagramme: max 2 nebeneinander -->
+      <div class="detail-charts-grid">
         <div>
           <div class="text-xs text-dim" style="text-align:center;margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.06em">
             Rollen gespielt
@@ -353,10 +367,10 @@ require TEMPLATE_PATH . '/base.php';
           </div>
         </div>
       </div>
-      <style>@media(max-width:520px){#player-detail .stats-row-3{grid-template-columns:1fr 1fr}}</style>
 
     </div>
-  </div>
+    </div><!-- /acc-players-body -->
+  </div><!-- /acc-players -->
   <?php endif; ?>
 
 <?php endif; // $hasData ?>
@@ -499,6 +513,32 @@ require TEMPLATE_PATH . '/base.php';
   white-space: nowrap;
 }
 .stat-chip strong { color: var(--text-bright); }
+
+/* ── Akkordeon ───────────────────────────────────────────── */
+.stats-acc-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; background: none; border: none; cursor: pointer;
+  padding: 0; color: inherit; text-align: left; gap: .5rem;
+}
+.stats-acc-hdr:hover .stats-acc-chevron { color: var(--text-bright); }
+.stats-acc-chevron {
+  font-size: 1.3rem; color: var(--text-dim);
+  transition: transform .2s ease; flex-shrink: 0; line-height: 1;
+}
+.stats-acc.acc-open .stats-acc-chevron { transform: rotate(90deg); }
+.stats-acc-body { display: none; }
+.stats-acc.acc-open .stats-acc-body { display: block; }
+
+/* ── Spieler-Detail Kreisdiagramme (max 2 nebeneinander) ── */
+.detail-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+@media (min-width: 560px) {
+  .detail-charts-grid { grid-template-columns: repeat(3, 1fr); }
+}
 </style>
 
 <?php
@@ -693,16 +733,62 @@ function drawGroupedBar(canvasId, data) {
   });
 }
 
+// ── Mobile Chartgröße ────────────────────────────────────────
+function mobileH(defaultH) {
+  return window.innerWidth < 600 ? Math.round(defaultH * 0.65) : defaultH;
+}
+
 // ── Alle globalen Charts ──────────────────────────────────────
 function drawAll() {
   drawDonut('chart-cause', 'legend-cause', STATS.cause);
   drawDonut('chart-phase', 'legend-phase', STATS.phase);
-  if (STATS.rounds.length)  drawGroupedBar('chart-rounds', STATS.rounds);
-  if (STATS.accused.length) drawSimpleBar('chart-accused', STATS.accused, 'stimmen', 'rgba(234,88,12,0.8)');
-  if (_openPid !== null) renderPlayerDetail(_openPid);
+  const cRounds = document.getElementById('chart-rounds');
+  if (cRounds) cRounds.setAttribute('height', mobileH(160));
+  if (STATS.rounds.length && document.getElementById('acc-rounds')?.classList.contains('acc-open'))
+    drawGroupedBar('chart-rounds', STATS.rounds);
+  const cAcc = document.getElementById('chart-accused');
+  if (cAcc) cAcc.setAttribute('height', mobileH(180));
+  if (STATS.accused.length && document.getElementById('acc-accused')?.classList.contains('acc-open'))
+    drawSimpleBar('chart-accused', STATS.accused, 'stimmen', 'rgba(234,88,12,0.8)');
+  if (_openPid !== null && document.getElementById('acc-players')?.classList.contains('acc-open'))
+    renderPlayerDetail(_openPid);
 }
-window.addEventListener('load',   drawAll);
+window.addEventListener('load',   () => { restoreAccState(); drawAll(); });
 window.addEventListener('resize', () => { clearTimeout(window._rt); window._rt = setTimeout(drawAll, 120); });
+
+// ── Akkordeon ─────────────────────────────────────────────────
+const _ACC_KEY = 'ww_stats_acc';
+
+function toggleAcc(id) {
+  const card = document.getElementById(id);
+  if (!card) return;
+  const wasOpen = card.classList.contains('acc-open');
+  card.classList.toggle('acc-open', !wasOpen);
+  if (!wasOpen) {
+    // Sektion gerade geöffnet → Charts neu zeichnen
+    const cRounds = document.getElementById('chart-rounds');
+    if (cRounds) cRounds.setAttribute('height', mobileH(160));
+    const cAcc = document.getElementById('chart-accused');
+    if (cAcc) cAcc.setAttribute('height', mobileH(180));
+    if (id === 'acc-rounds'  && STATS.rounds.length)  drawGroupedBar('chart-rounds', STATS.rounds);
+    if (id === 'acc-accused' && STATS.accused.length) drawSimpleBar('chart-accused', STATS.accused, 'stimmen', 'rgba(234,88,12,0.8)');
+    if (id === 'acc-players' && _openPid !== null)    renderPlayerDetail(_openPid);
+  }
+  saveAccState();
+}
+
+function saveAccState() {
+  const open = [];
+  document.querySelectorAll('.stats-acc.acc-open').forEach(el => open.push(el.id));
+  LS.set(_ACC_KEY, open);
+}
+
+function restoreAccState() {
+  const open = LS.get(_ACC_KEY) || [];
+  document.querySelectorAll('.stats-acc').forEach(el => {
+    el.classList.toggle('acc-open', open.includes(el.id));
+  });
+}
 
 // ── Spieler-Detail ────────────────────────────────────────────
 let _openPid = null;

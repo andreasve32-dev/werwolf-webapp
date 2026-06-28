@@ -3,6 +3,10 @@
 require_once dirname(__DIR__) . '/core/bootstrap.php';
 Auth::requireLogin();
 
+$allRoles = Database::query(
+    "SELECT name, description, icon_path, active FROM roles ORDER BY sort_order, name"
+);
+
 $page = ['title' => 'Spieler-Anleitung'];
 require TEMPLATE_PATH . '/base.php';
 ?>
@@ -60,6 +64,12 @@ require TEMPLATE_PATH . '/base.php';
   font-size:.9rem;color:var(--text-dim)}
 .tip-box strong{color:var(--text)}
 
+.role-card--inactive{opacity:.45;filter:grayscale(.7);position:relative}
+.role-card--inactive img{opacity:.6}
+.role-inactive-badge{position:absolute;top:.45rem;right:.45rem;background:rgba(239,68,68,.18);
+  color:#f87171;font-size:.65rem;font-weight:700;border-radius:999px;
+  padding:.1rem .45rem;letter-spacing:.04em;border:1px solid rgba(239,68,68,.35)}
+
 .warn-box{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);
   border-radius:var(--radius-md);padding:1rem 1.25rem;margin:1rem 0;
   font-size:.9rem;color:var(--text-dim)}
@@ -107,15 +117,13 @@ require TEMPLATE_PATH . '/base.php';
   <div class="flow animate-in" style="animation-delay:.04s">
     <div class="flow-node flow-node--start">🚀 Spiel startet</div>
     <div class="flow-arrow">→</div>
-    <div class="flow-node flow-node--day">☀️ Tag-Phase<br><small>Reden, Anklagen</small></div>
+    <div class="flow-node flow-node--day">💬 Reden &amp; Anklagen<br><small>jederzeit</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-node flow-node--day" style="border-color:rgba(251,191,36,.9)">🗳️ Abstimmung<br><small>Hinrichten?</small></div>
+    <div class="flow-node flow-node--day" style="border-color:rgba(251,191,36,.9)">🗳️ Bürgerversammlung<br><small>Verdächtigen hinrichten?</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-node flow-node--night">🌕 Nacht-Phase<br><small>Mörder töten</small></div>
+    <div class="flow-node flow-node--night">🔪 Mörder schlagen zu<br><small>jederzeit möglich</small></div>
     <div class="flow-arrow">→</div>
-    <div class="flow-node flow-node--day">☀️ Neuer Tag …</div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-node flow-node--end">🏁 Spielende</div>
+    <div class="flow-node flow-node--end">🏁 Siegbedingung<br><small>erfüllt?</small></div>
   </div>
 
 
@@ -153,79 +161,38 @@ require TEMPLATE_PATH . '/base.php';
   <div class="card animate-in" style="animation-delay:.08s">
     <div class="section-title">🎭 Alle Rollen im Überblick</div>
 
-    <div class="role-grid">
-
-      <div class="role-card">
-        <img src="<?= APP_URL ?>/assets/icons/roles/buerger.png" alt="Bürger">
-        <div class="role-name">Bürger</div>
-        <div class="role-team team--buerger">Bürger-Team</div>
-        <div class="role-desc">Keine Sonderrolle. Rede, beobachte und kläre durch Abstimmen.</div>
-      </div>
-
-      <div class="role-card">
-        <img src="<?= APP_URL ?>/assets/icons/roles/moerder.png" alt="Mörder">
-        <div class="role-name">Mörder</div>
-        <div class="role-team team--killer">Mörder-Team</div>
-        <div class="role-desc">Zeige einem Spieler die Mordwaffe — er ist sofort tot. 30 Min. Abklingzeit.</div>
-      </div>
-
-      <div class="role-card">
-        <img src="<?= APP_URL ?>/assets/icons/roles/hellseherin.png" alt="Hellseherin">
-        <div class="role-name">Hellseherin</div>
-        <div class="role-team team--buerger">Bürger-Team</div>
-        <div class="role-desc">Kann einen Spieler befragen. Die App zeigt an: Killer oder unschuldig.</div>
-      </div>
-
-      <div class="role-card">
-        <img src="<?= APP_URL ?>/assets/icons/roles/detektiv.png" alt="Detektiv">
-        <div class="role-name">Detektiv</div>
-        <div class="role-team team--buerger">Bürger-Team</div>
-        <div class="role-desc">Durchsuche einen Spieler. Trägt er die Mordwaffe, muss er sie abgeben.</div>
-      </div>
-
-      <div class="role-card">
-        <img src="<?= APP_URL ?>/assets/icons/roles/nekromant.png" alt="Nekromant">
-        <div class="role-name">Nekromant</div>
-        <div class="role-team team--buerger">Bürger-Team</div>
-        <div class="role-desc">Kann tote Spieler befragen und erhält Hinweise auf den Mörder.</div>
-      </div>
-
-      <div class="role-card">
-        <img src="<?= APP_URL ?>/assets/icons/roles/gunslinger.png" alt="Gunslinger">
-        <div class="role-name">Gunslinger</div>
-        <div class="role-team team--buerger">Bürger-Team</div>
-        <div class="role-desc">Kann schießen. Triffst du einen Killer, lebst du. Triffst du einen Unschuldigen, stirbst du selbst.</div>
-      </div>
-
-      <div class="role-card">
-        <img src="<?= APP_URL ?>/assets/icons/roles/sheriff.png" alt="Sheriff">
-        <div class="role-name">Sheriff</div>
-        <div class="role-team team--buerger">Bürger-Team</div>
-        <div class="role-desc">Kann schießen — ohne Limit. Aber: Triffst du keinen Killer oder Dodo, stirbst du.</div>
-      </div>
-
-      <div class="role-card">
-        <img src="<?= APP_URL ?>/assets/icons/roles/celebrity.png" alt="Promi">
-        <div class="role-name">Promi</div>
-        <div class="role-team team--buerger">Bürger-Team</div>
-        <div class="role-desc">Deine Rolle ist allen bekannt. Du trittst automatisch ins Spiel ein.</div>
-      </div>
-
-      <div class="role-card">
-        <img src="<?= APP_URL ?>/assets/icons/roles/das-paar.png" alt="Das Paar">
-        <div class="role-name">Das Paar</div>
-        <div class="role-team team--solo">Eigenes Team</div>
-        <div class="role-desc">Zwei Spieler, die zusammen gewinnen. Stirbt einer, stirbt der andere mit.</div>
-      </div>
-
-      <div class="role-card">
-        <img src="<?= APP_URL ?>/assets/icons/roles/dodo.png" alt="Dodo">
-        <div class="role-name">Dodo</div>
-        <div class="role-team team--solo">Eigenes Team</div>
-        <div class="role-desc">Gewinnst, wenn die Versammlung dich erhängt. Du darfst KEINE Mordwaffe tragen!</div>
-      </div>
-
+    <div class="tip-box" style="margin-bottom:1rem">
+      <strong>ℹ️ Aktivierte &amp; deaktivierte Rollen:</strong>
+      Der Admin kann Rollen für jedes Spiel einzeln aktivieren oder deaktivieren.
+      Auf der <strong>Rollen</strong>-Seite siehst du nur die aktuell <strong>aktivierten</strong> Rollen —
+      deaktivierte Rollen werden dort nicht angezeigt und können im laufenden Spiel nicht vergeben werden.
     </div>
+
+    <?php if (empty($allRoles)): ?>
+      <p class="text-dim text-sm" style="text-align:center;padding:1rem 0">
+        Noch keine Rollen in der Datenbank konfiguriert.
+      </p>
+    <?php else: ?>
+    <div class="role-grid">
+      <?php foreach ($allRoles as $r):
+        $active  = (bool)$r['active'];
+        $iconUrl = !empty($r['icon_path'])
+            ? APP_URL . '/' . ltrim($r['icon_path'], '/')
+            : APP_URL . '/' . DEFAULT_ROLE_ICON;
+      ?>
+      <div class="role-card<?= $active ? '' : ' role-card--inactive' ?>">
+        <?php if (!$active): ?>
+          <div class="role-inactive-badge">Deaktiviert</div>
+        <?php endif; ?>
+        <img src="<?= e($iconUrl) ?>" alt="<?= e($r['name']) ?>">
+        <div class="role-name"><?= e($r['name']) ?></div>
+        <?php if ($r['description']): ?>
+          <div class="role-desc"><?= e($r['description']) ?></div>
+        <?php endif; ?>
+      </div>
+      <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
   </div>
 
 
@@ -238,7 +205,7 @@ require TEMPLATE_PATH . '/base.php';
     <h3>☀️ Tag-Phase — Das Dorf wacht auf</h3>
     <ul>
       <li>Alle Spieler reden, diskutieren und tauschen Verdächtigungen aus.</li>
-      <li>Wer gestern Nacht gestorben ist, wird bekannt gegeben und trägt sich aus.</li>
+      <li>Wer getötet wurde, wird bekannt gegeben und trägt sich in der App selbst aus.</li>
       <li>Jeder lebende Spieler kann eine <strong>Bürgerversammlung einberufen</strong>, um
           einen Verdächtigen anzuklagen und per Handzeichen hinrichten zu lassen.</li>
       <li>Der Admin verwaltet die Abstimmung und trägt das Ergebnis in die App ein.</li>
@@ -248,11 +215,10 @@ require TEMPLATE_PATH . '/base.php';
   <div class="phase-box phase-box--night animate-in" style="animation-delay:.12s">
     <h3>🌕 Nacht-Phase — Das Dorf schläft</h3>
     <ul>
-      <li>Alle Spieler schließen die Augen (oder schauen weg).</li>
-      <li>Die Mörder zeigen einem Spieler ihrer Wahl die Mordwaffe — dieser ist tot.</li>
-      <li>Sonderrollen (Hellseherin, Detektiv, Nekromant …) werden vom Admin nacheinander
-          aufgerufen und handeln im Verborgenen.</li>
-      <li>Ein getöteter Spieler trägt sich nach der Nacht in der App selbst aus.</li>
+      <li>Der Tag-Nacht-Wechsel ist <strong>nur optisch</strong> — er ändert den Hintergrund und die Atmosphäre im Spielfenster.</li>
+      <li>Die Mörder können <strong>jederzeit</strong> (Tag oder Nacht) die Mordwaffe einsetzen — es gibt keine Phasensperre.</li>
+      <li>Sonderrollen (Hellseherin, Detektiv, Nekromant …) handeln ebenfalls unabhängig von der Phase, koordiniert durch den Admin.</li>
+      <li>Ein getöteter Spieler trägt sich in der App selbst als tot ein.</li>
     </ul>
   </div>
 

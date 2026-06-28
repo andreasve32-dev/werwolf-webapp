@@ -399,8 +399,8 @@ require TEMPLATE_PATH . '/base.php';
       </div>
       <?php endif; ?>
 
-      <!-- Bürgerversammlung (Tag) -->
-      <?php if ($game['status']==='running' && $game['phase']==='day'): ?>
+      <!-- Bürgerversammlung -->
+      <?php if ($game['status']==='running'): ?>
       <div class="card animate-in" style="animation-delay:.1s">
         <div class="section-title">🏛️ Bürgerversammlung</div>
         <?php if (empty($votes)): ?>

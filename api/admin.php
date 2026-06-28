@@ -151,8 +151,8 @@ switch($action){
     ok($np==='night'?"🌕 Nacht {$g['round']} beginnt":"☀️ Tag {$nr} beginnt");break;
 
   case 'execute_vote':
-    $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='running' AND phase='day'",[$gameId]);
-    if(!$g)err('Nicht im Tagesmodus');
+    $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='running'",[$gameId]);
+    if(!$g)err('Spiel läuft nicht');
     $pid=(int)($input['player_id']??0);
     if(!$pid){
       $top=Database::queryOne("SELECT target_id,COUNT(*) as cnt FROM votes WHERE game_id=? AND round=? GROUP BY target_id ORDER BY cnt DESC LIMIT 1",[$gameId,$g['round']]);
@@ -168,14 +168,14 @@ switch($action){
     ok("⚖️ {$n['display_name']} wurde gehenkt.".($winner ? $winMsg[$winner] : ''), ['game_ended' => (bool)$winner, 'winner' => $winner]);break;
 
   case 'free_accused':
-    $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='running' AND phase='day'",[$gameId]);
-    if(!$g)err('Nicht im Tagesmodus');
+    $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='running'",[$gameId]);
+    if(!$g)err('Spiel läuft nicht');
     Database::execute("DELETE FROM votes WHERE game_id=? AND round=?",[$gameId,$g['round']]);
     ok("✓ Angeklagter freigesprochen — Stimmen gelöscht.");break;
 
   case 'execute_night':
-    $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='running' AND phase='night'",[$gameId]);
-    if(!$g)err('Nicht im Nachtmodus');
+    $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='running'",[$gameId]);
+    if(!$g)err('Spiel läuft nicht');
     $top=Database::queryOne("SELECT target_player_id,COUNT(*) as cnt FROM night_actions WHERE game_id=? AND round=? AND action_type='wolf_kill' GROUP BY target_player_id ORDER BY cnt DESC LIMIT 1",[$gameId,$g['round']]);
     if(!$top){ok('Wölfe haben niemanden gewählt.');break;}
     recordDeath($gameId,$top['target_player_id'],$g['round'],'night');

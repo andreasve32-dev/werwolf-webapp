@@ -23,8 +23,8 @@ switch ($action) {
         if (!$endpoint) jsonError('Endpoint fehlt.');
         Database::execute(
             "INSERT INTO push_subscriptions (player_id, endpoint, p256dh, auth)
-             VALUES (?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE p256dh = VALUES(p256dh), auth = VALUES(auth)",
+             VALUES (?, ?, ?, ?) AS new_row
+             ON DUPLICATE KEY UPDATE p256dh = new_row.p256dh, auth = new_row.auth",
             [$player['id'], $endpoint, $p256dh ?: null, $auth ?: null]
         );
         jsonOk('Abonniert.');

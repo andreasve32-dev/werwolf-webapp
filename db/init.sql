@@ -337,5 +337,5 @@ INSERT IGNORE INTO settings (`key`, value, type, label, description, sort_order)
 ('login_logo',         '',                                              'string', 'Login-Logo',                    'Pfad zum PNG-Bild auf der Anmeldeseite (leer = Wolf-Emoji 🐺).',       5),
 ('mini_logo',          '',                                              'string', 'Browser-Icon (Favicon)',        'PNG-Datei für die Browser-Adressleiste / Tab-Icon.',                    6),
 ('game_timezone',      'Europe/Berlin',                                 'string', 'Zeitzone',                      'PHP-Zeitzone des Servers (z.B. Europe/Berlin, UTC).',                  20),
-('push_cooldown',      '30',                                            'int',    'Push-Cooldown (Min.)',          'Mindestwartezeit zwischen zwei Auto-Push-Benachrichtigungen.',         26),
+('push_cooldown',      '5',                                             'int',    'Push-Cooldown (Min.)',          'Mindestwartezeit zwischen zwei Auto-Push-Benachrichtigungen.',         26),
 ('push_last_sent',     '0',                                             'int',    'Push: letzter Versand (intern)','Unix-Timestamp des letzten gesendeten Pushes (intern).',              999);

@@ -193,5 +193,29 @@ function _b64uToUint8(b64u) {
 }
 </script>
 <?php endif; ?>
+<!-- ── Portrait-Sperre (Handy im Querformat) ─────────────────── -->
+<div id="portrait-overlay">
+  <div>
+    <div style="font-size:3rem;margin-bottom:.75rem">📱</div>
+    <div style="font-family:var(--font-display);font-size:1.1rem;color:var(--text-bright);margin-bottom:.5rem">
+      Bitte Handy drehen
+    </div>
+    <p style="color:var(--text-dim);font-size:.85rem;margin:0">
+      Diese App ist für den Hochformat-Modus optimiert.
+    </p>
+  </div>
+</div>
+<style>
+#portrait-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 99999;
+  background: var(--bg, #0d0d14);
+  align-items: center; justify-content: center; text-align: center;
+  padding: 2rem;
+}
+@media screen and (orientation: landscape) and (max-height: 500px) and (hover: none) and (pointer: coarse) {
+  #portrait-overlay { display: flex; }
+}
+</style>
 </body>
 </html>
