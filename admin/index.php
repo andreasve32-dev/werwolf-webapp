@@ -38,9 +38,11 @@ $specialCount = array_sum(array_column($specialRoles, 'amount'));
 $fillCount    = max(0, $playerCount - $specialCount);
 
 // Gewinn-Bedingung: bei beendetem Spiel aus winner-Spalte, bei laufendem Spiel live prüfen
-$killerWin  = false;
-$citizenWin = false;
-$dodoWin    = false;
+$killerWin       = false;
+$citizenWin      = false;
+$dodoWin         = false;
+$aliveKillers    = 0;
+$aliveNonKillers = 0;
 if ($game['status'] === 'finished' && !empty($game['winner'])) {
     $dodoWin    = $game['winner'] === 'dodo';
     $citizenWin = $game['winner'] === 'citizen';

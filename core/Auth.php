@@ -104,11 +104,14 @@ class Auth {
         $_SESSION['is_admin']     = (bool) $player['is_admin'];
         $_SESSION['_db_ok_at']    = time(); // frisch eingeloggt, kein sofortiger DB-Check nötig
 
+        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                || (($_SERVER['SERVER_PORT'] ?? 80) == 443);
+
         // Cookie sofort auf volle SESSION_LIFETIME setzen
         setcookie(SESSION_NAME, session_id(), [
             'expires'  => time() + SESSION_LIFETIME,
             'path'     => '/',
-            'secure'   => false,
+            'secure'   => $isHttps,
             'httponly' => true,
             'samesite' => 'Lax',
         ]);
@@ -119,7 +122,13 @@ class Auth {
             'username'     => $player['username'],
             'display_name' => $player['display_name'],
             'is_admin'     => (bool) $player['is_admin'],
-        ]), time() + SESSION_LIFETIME, '/', '', false, false);
+        ]), [
+            'expires'  => time() + SESSION_LIFETIME,
+            'path'     => '/',
+            'secure'   => $isHttps,
+            'httponly' => false,
+            'samesite' => 'Lax',
+        ]);
     }
 
     /** Spieler ausloggen und alle Cookies löschen. */

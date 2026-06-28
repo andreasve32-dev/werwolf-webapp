@@ -179,11 +179,11 @@ switch($action){
     $top=Database::queryOne("SELECT target_player_id,COUNT(*) as cnt FROM night_actions WHERE game_id=? AND round=? AND action_type='wolf_kill' GROUP BY target_player_id ORDER BY cnt DESC LIMIT 1",[$gameId,$g['round']]);
     if(!$top){ok('Wölfe haben niemanden gewählt.');break;}
     recordDeath($gameId,$top['target_player_id'],$g['round'],'night');
-    $n=Database::queryOne("SELECT username FROM players WHERE id=?",[$top['target_player_id']]);
+    $n=Database::queryOne("SELECT display_name FROM players WHERE id=?",[$top['target_player_id']]);
     $winner = checkAndEndGame($gameId);
-    if (!$winner) WebPush::sendToGame($gameId,false,'💀 Ein Spieler ist tot',($n['username']??'Jemand').' wurde in der Nacht zerrissen.');
+    if (!$winner) WebPush::sendToGame($gameId,false,'💀 Ein Spieler ist tot',($n['display_name']??'Jemand').' wurde in der Nacht zerrissen.');
     $winMsg = ['dodo'=>' 🐦 Dodo-Sieg!','citizen'=>' 🏘️ Bürger-Sieg!','killer'=>' 🔪 Mörder-Sieg!'];
-    ok("🐺 {$n['username']} wurde zerrissen!".($winner ? $winMsg[$winner] : ''), ['game_ended' => (bool)$winner, 'winner' => $winner]);break;
+    ok("🐺 {$n['display_name']} wurde zerrissen!".($winner ? $winMsg[$winner] : ''), ['game_ended' => (bool)$winner, 'winner' => $winner]);break;
 
   case 'kill_player':
     $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='running'",[$gameId]);
