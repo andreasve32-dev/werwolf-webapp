@@ -133,6 +133,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'save')
     exit;
 }
 
+// ── AJAX: VAPID-Schlüssel generieren ────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'vapid_generate') {
+    header('Content-Type: application/json');
+    $body  = json_decode(file_get_contents('php://input'), true) ?? [];
+    $force = !empty($body['force']);
+    if ($force) {
+        Database::execute("DELETE FROM settings WHERE `key` IN ('vapid_public_key','vapid_private_key')");
+    }
+    require_once dirname(__DIR__) . '/core/WebPush.php';
+    $ok = WebPush::ensureKeys();
+    if ($ok) {
+        $row = Database::queryOne("SELECT value FROM settings WHERE `key`='vapid_public_key'");
+        echo json_encode(['ok' => true, 'key' => $row['value'] ?? '', 'message' => 'VAPID-Schlüssel erfolgreich generiert.']);
+    } else {
+        echo json_encode(['ok' => false, 'error' => 'Schlüsselgenerierung fehlgeschlagen — ist OpenSSL verfügbar?']);
+    }
+    exit;
+}
+
+// ── AJAX: Alle Push-Abonnements löschen ─────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'clear_subs') {
+    header('Content-Type: application/json');
+    Database::execute("DELETE FROM push_subscriptions");
+    echo json_encode(['ok' => true, 'message' => 'Alle Geräte-Abonnements gelöscht.']);
+    exit;
+}
+
+// ── AJAX: Einzelnes Abonnement löschen ──────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'delete_sub') {
+    header('Content-Type: application/json');
+    $id = (int)(json_decode(file_get_contents('php://input'), true)['id'] ?? 0);
+    if ($id) Database::execute("DELETE FROM push_subscriptions WHERE id=?", [$id]);
+    echo json_encode(['ok' => true]);
+    exit;
+}
+
 // ── Aktuelle Werte aus DB laden ───────────────────────────────
 $cfg  = [];
 $migrationNeeded = false;
@@ -170,6 +206,17 @@ $defaults = [
 foreach ($defaults as $k => $def) {
     if (!isset($cfg[$k])) $cfg[$k] = ['key' => $k, 'value' => $def, 'type' => 'string', 'label' => $k, 'description' => ''];
 }
+
+// Push-Abonnements laden
+$pushSubs = [];
+try {
+    $pushSubs = Database::query(
+        "SELECT ps.id, p.display_name, ps.created_at
+         FROM push_subscriptions ps
+         JOIN players p ON p.id = ps.player_id
+         ORDER BY ps.created_at DESC"
+    );
+} catch (Throwable $e) {}
 
 $page = ['title' => 'Server-Einstellungen'];
 require TEMPLATE_PATH . '/base.php';
@@ -350,6 +397,74 @@ require TEMPLATE_PATH . '/base.php';
                  value="<?= (int)($cfg['push_cooldown']['value'] ?? 5) ?>"
                  min="0" max="1440" style="width:90px">
           <span class="text-dim text-sm">Min.</span>
+        </div>
+      </div>
+
+      <!-- VAPID-Schlüssel -->
+      <?php $vapidKey = $cfg['vapid_public_key']['value'] ?? ''; ?>
+      <div class="settings-row" style="padding:.6rem 0;border-top:1px solid var(--border);margin-top:.5rem">
+        <div>
+          <span class="settings-row__name">VAPID Public Key</span>
+          <div class="text-dim text-xs mt-1">
+            Wird im Browser der Spieler hinterlegt. Einmal generieren — danach nicht mehr ändern, sonst müssen alle Spieler Push neu aktivieren.
+          </div>
+        </div>
+        <div style="max-width:340px;width:100%">
+          <?php if ($vapidKey): ?>
+          <div class="panel text-xs" style="word-break:break-all;padding:.5rem .75rem;line-height:1.5;margin-bottom:.5rem">
+            <span id="vapid-key-display"><?= e($vapidKey) ?></span>
+          </div>
+          <div class="flex gap-xs">
+            <button type="button" class="btn btn--ghost btn--sm" onclick="vapidGenerate(false)">🔄 Neu generieren</button>
+          </div>
+          <?php else: ?>
+          <div class="alert alert--error mb-1" style="font-size:.82rem">
+            ⚠️ Noch nicht eingerichtet — Push-Benachrichtigungen funktionieren nicht.
+          </div>
+          <button type="button" class="btn btn--primary btn--sm" onclick="vapidGenerate(false)">✨ Schlüssel generieren</button>
+          <?php endif; ?>
+          <div id="vapid-result" class="mt-1"></div>
+        </div>
+      </div>
+
+      <!-- Registrierte Geräte -->
+      <div style="border-top:1px solid var(--border);margin-top:.75rem;padding-top:.75rem">
+        <div class="flex gap-sm" style="align-items:center;justify-content:space-between;margin-bottom:.5rem">
+          <span class="settings-row__name">
+            Registrierte Geräte
+            <span class="badge" style="margin-left:.4rem" id="subs-count"><?= count($pushSubs) ?></span>
+          </span>
+          <?php if (!empty($pushSubs)): ?>
+          <button type="button" class="btn btn--ghost btn--sm"
+                  style="color:var(--danger)" onclick="clearAllSubs()">🗑 Alle löschen</button>
+          <?php endif; ?>
+        </div>
+        <div id="subs-list">
+        <?php if (empty($pushSubs)): ?>
+          <div class="text-dim text-sm">Noch keine Geräte registriert.</div>
+        <?php else: ?>
+          <table style="width:100%;font-size:.83rem;border-collapse:collapse" id="subs-table">
+            <thead>
+              <tr style="color:var(--text-dim);text-align:left">
+                <th style="padding:.3rem .5rem">Spieler</th>
+                <th style="padding:.3rem .5rem">Registriert am</th>
+                <th style="padding:.3rem .5rem;width:32px"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($pushSubs as $sub): ?>
+              <tr id="sub-row-<?= (int)$sub['id'] ?>" style="border-top:1px solid var(--border)">
+                <td style="padding:.3rem .5rem"><?= e($sub['display_name']) ?></td>
+                <td style="padding:.3rem .5rem;color:var(--text-dim)"><?= e(substr($sub['created_at'] ?? '', 0, 16)) ?></td>
+                <td style="padding:.3rem .5rem">
+                  <button class="btn btn--ghost btn--sm" style="padding:.15rem .4rem;color:var(--danger)"
+                          onclick="deleteSub(<?= (int)$sub['id'] ?>)">✕</button>
+                </td>
+              </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        <?php endif; ?>
         </div>
       </div>
     </div>
@@ -691,6 +806,60 @@ async function uploadFavicon() {
   }
   btn.disabled = false;
   btn.textContent = 'Hochladen';
+}
+
+// ── Push / VAPID ──────────────────────────────────────────────
+async function vapidGenerate(force) {
+  if (force && !confirm('VAPID-Schlüssel wirklich neu generieren?\nAlle Spieler müssen Push-Benachrichtigungen danach neu aktivieren!')) return;
+  const res = document.getElementById('vapid-result');
+  res.innerHTML = '<span class="text-dim text-xs">Generiere…</span>';
+  try {
+    const r = await fetch(SETTINGS_API + '?action=vapid_generate', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({force: !!force}),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      res.innerHTML = `<div class="alert alert--success text-xs">✓ ${escHtml(d.message)}</div>`;
+      const disp = document.getElementById('vapid-key-display');
+      if (disp) disp.textContent = d.key;
+      else setTimeout(() => location.reload(), 1000);
+    } else {
+      res.innerHTML = `<div class="alert alert--error text-xs">${escHtml(d.error || 'Fehler')}</div>`;
+    }
+  } catch(e) {
+    res.innerHTML = `<div class="alert alert--error text-xs">Netzwerkfehler</div>`;
+  }
+}
+
+async function deleteSub(id) {
+  const row = document.getElementById('sub-row-' + id);
+  try {
+    const r = await fetch(SETTINGS_API + '?action=delete_sub', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({id}),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      row?.remove();
+      const cnt = document.getElementById('subs-count');
+      if (cnt) cnt.textContent = parseInt(cnt.textContent || '1') - 1;
+    }
+  } catch(e) {}
+}
+
+async function clearAllSubs() {
+  if (!confirm('Alle Geräte-Abonnements löschen?')) return;
+  try {
+    const r = await fetch(SETTINGS_API + '?action=clear_subs', {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}',
+    });
+    const d = await r.json();
+    if (d.ok) {
+      showToast(d.message, 'success');
+      setTimeout(() => location.reload(), 700);
+    }
+  } catch(e) {}
 }
 
 async function removeLogo() {
