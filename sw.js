@@ -5,9 +5,8 @@ self.addEventListener('push', function (event) {
     const data    = event.data ? event.data.json().catch(() => ({})) : Promise.resolve({});
     event.waitUntil(
         data.then(function (d) {
-            var appTitle = (d.app ? '🐺 ' + d.app : '🐺 Spiel');
             return self.registration.showNotification(
-                d.title  || appTitle,
+                d.title  || '🐺 Spiel',
                 {
                     body    : d.body    || 'Neue Aktivität im Spiel — tippe zum Öffnen.',
                     icon    : d.icon    || '/assets/icons/logo/mini_logo.png',
