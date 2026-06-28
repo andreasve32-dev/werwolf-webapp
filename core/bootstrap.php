@@ -11,9 +11,11 @@
  * ============================================================
  */
 
-// Fehlerreporting — wird nach dem DB-Laden von APP_DEBUG gesteuert
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
+// Fehler standardmäßig ausblenden (Produktion) — wird nach DB-Laden per APP_DEBUG gesteuert
+error_reporting(0);
+ini_set('display_errors', '0');
+// PHP-Version nicht preisgeben
+header_remove('X-Powered-By');
 
 // 1. Konfiguration (DB-Zugangsdaten, Pfade, SESSION_NAME)
 require_once __DIR__ . '/../config/config.php';
@@ -50,9 +52,9 @@ date_default_timezone_set(GAME_TIMEZONE);
 unset($_cfg);
 
 // 4. Fehlerreporting gemäß APP_DEBUG
-if (!APP_DEBUG) {
-    ini_set('display_errors', '0');
-    error_reporting(0);
+if (APP_DEBUG) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', '1');
 }
 
 // 5. Weitere Kern-Klassen und Hilfsfunktionen
