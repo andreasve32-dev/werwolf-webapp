@@ -10,7 +10,7 @@ $totals = Database::queryOne("
         (SELECT COUNT(*) FROM games WHERE status='finished') AS spiele_beendet,
         (SELECT COUNT(*) FROM games WHERE status='running')  AS spiele_laufend,
         (SELECT COUNT(*) FROM games WHERE status='lobby')    AS spiele_lobby,
-        (SELECT COUNT(*) FROM players WHERE is_admin=0)      AS spieler_gesamt,
+        (SELECT COUNT(*) FROM players)                        AS spieler_gesamt,
         (SELECT COUNT(*) FROM deaths)                        AS tode_gesamt,
         (SELECT ROUND(AVG(round),1) FROM games WHERE status='finished' AND round > 0) AS avg_runden,
         (SELECT COUNT(*) FROM votes)                         AS stimmen_gesamt
@@ -41,7 +41,6 @@ $allPlayers = Database::query("
     FROM players p
     JOIN game_players gp ON gp.player_id = p.id
     JOIN games g         ON g.id = gp.game_id AND g.status = 'finished'
-    WHERE p.is_admin = 0
     GROUP BY p.id
     ORDER BY spiele DESC, p.display_name
 ");
