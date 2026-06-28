@@ -91,6 +91,19 @@ try {
     $_navMsgPending = (int)($row['cnt'] ?? 0);
 } catch (Throwable $e) {}
 
+// Debug: Rollen für Admin-Rollenwahl (nur wenn Debug-Modus an und Spiel läuft)
+$debugRoles      = [];
+$adminGameEntry  = null;
+if (APP_DEBUG && $game['status'] === 'running') {
+    $debugRoles     = Database::query("SELECT id, name FROM roles WHERE active=1 ORDER BY sort_order, name");
+    $adminGameEntry = Database::queryOne(
+        "SELECT gp.role_id, r.name AS role_name
+         FROM game_players gp LEFT JOIN roles r ON r.id=gp.role_id
+         WHERE gp.game_id=? AND gp.player_id=?",
+        [$gameId, Auth::player()['id']]
+    );
+}
+
 // Aktuelle Versammlungsanfrage
 $pendingAssembly = null;
 if ($game['status'] === 'running') {
@@ -474,6 +487,35 @@ require TEMPLATE_PATH . '/base.php';
       </div>
       <?php endif; ?>
 
+      <!-- Debug: Eigene Rolle wählen -->
+      <?php if (APP_DEBUG && $adminGameEntry && !empty($debugRoles)): ?>
+      <div class="card animate-in mt-2" style="animation-delay:.16s;border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04)">
+        <div class="section-title" style="color:#fbbf24">🐛 Debug — Eigene Rolle wählen</div>
+        <p class="text-dim text-xs mb-2">
+          Nur im Debug-Modus sichtbar. Setzt deine eigene Rolle im laufenden Spiel sofort.
+          <?php if ($adminGameEntry['role_name']): ?>
+            Aktuell: <strong style="color:var(--text-bright)"><?= e($adminGameEntry['role_name']) ?></strong>
+          <?php else: ?>
+            Aktuell: <em>keine Rolle</em>
+          <?php endif; ?>
+        </p>
+        <div class="flex gap-sm">
+          <select id="debug-role-select" class="form-input" style="flex:1">
+            <option value="">Rolle wählen…</option>
+            <?php foreach ($debugRoles as $r): ?>
+            <option value="<?= (int)$r['id'] ?>"
+              <?= (int)($adminGameEntry['role_id'] ?? 0) === (int)$r['id'] ? 'selected' : '' ?>>
+              <?= e($r['name']) ?>
+            </option>
+            <?php endforeach; ?>
+          </select>
+          <button class="btn btn--ghost" style="border-color:rgba(251,191,36,.4);color:#fbbf24"
+                  onclick="debugSetOwnRole()">Setzen</button>
+        </div>
+        <div id="debug-role-result" class="mt-1"></div>
+      </div>
+      <?php endif; ?>
+
     </div>
   </div>
 </div>
@@ -614,6 +656,22 @@ async function manualKill(){
 JS;
 
 $page['inline_js'] .= <<<'JS'
+
+// ── Debug: Eigene Rolle setzen ───────────────────────────────
+async function debugSetOwnRole() {
+  const sel = document.getElementById('debug-role-select');
+  const res = document.getElementById('debug-role-result');
+  const roleId = parseInt(sel?.value);
+  if (!roleId) { showToast('Keine Rolle gewählt', 'error'); return; }
+  const r = await apiFetch(API_BASE+'/admin.php', {action:'set_own_role', game_id:GAME_ID, role_id:roleId});
+  if (r.error === 'session_expired') return;
+  if (r.ok) {
+    res.innerHTML = `<div class="alert alert--success">${escHtml(r.message||'Rolle gesetzt')}</div>`;
+    setTimeout(() => location.reload(), 900);
+  } else {
+    res.innerHTML = `<div class="alert alert--error">${escHtml(r.error||'Fehler')}</div>`;
+  }
+}
 
 // ── Versammlung beenden (Admin) ──────────────────────────────
 async function endAssemblyAdmin() {

@@ -197,6 +197,19 @@ switch($action){
     $winMsg = ['dodo'=>' 🐦 Dodo-Sieg!','citizen'=>' 🏘️ Bürger-Sieg!','killer'=>' 🔪 Mörder-Sieg!'];
     ok('Spieler gestorben'.($winner ? $winMsg[$winner] : ''), ['game_ended' => (bool)$winner, 'winner' => $winner]);break;
 
+  case 'set_own_role':
+    if (!APP_DEBUG) err('Nur im Debug-Modus verfügbar.', 403);
+    $g = Database::queryOne("SELECT * FROM games WHERE id=? AND status='running'", [$gameId]);
+    if (!$g) err('Spiel läuft nicht');
+    $roleId = (int)($input['role_id'] ?? 0);
+    if (!$roleId) err('Keine Rolle angegeben');
+    $role = Database::queryOne("SELECT id, name FROM roles WHERE id=? AND active=1", [$roleId]);
+    if (!$role) err('Rolle nicht gefunden oder inaktiv');
+    $me = Database::queryOne("SELECT id FROM game_players WHERE game_id=? AND player_id=?", [$gameId, $_adminId]);
+    if (!$me) err('Du bist nicht als Spieler im Spiel');
+    Database::execute("UPDATE game_players SET role_id=? WHERE game_id=? AND player_id=?", [$roleId, $gameId, $_adminId]);
+    ok('🎭 Rolle gesetzt: ' . $role['name']);break;
+
   case 'add_player':
     $pid=(int)($input['player_id']??0);
     Database::execute("INSERT IGNORE INTO game_players (game_id,player_id) VALUES (?,?)",[$gameId,$pid]);
