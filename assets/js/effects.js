@@ -39,7 +39,7 @@
     }
     #fx-phase.fx-out { animation: fx-phase-out .9s ease forwards; }
     .fx-phase-night { background: radial-gradient(ellipse at 50% 38%, rgba(12,4,45,.9), rgba(0,0,8,.96)); }
-    .fx-phase-day   { background: radial-gradient(ellipse at 50% 30%, rgba(255,200,45,.62), rgba(255,115,0,.42)); backdrop-filter: blur(2px); }
+    .fx-phase-day   { background: radial-gradient(ellipse at 50% 30%, rgba(255,200,45,.62), rgba(255,115,0,.42)); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
     .fx-phase-icon  { font-size: 5.5rem; animation: fx-phase-pulse 1.1s ease-in-out infinite alternate; }
     .fx-phase-label { font-size: 1.25rem; letter-spacing: .13em; color: #fff;
                       text-shadow: 0 2px 24px rgba(0,0,0,.9); font-family: var(--font-display, serif); }
