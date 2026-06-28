@@ -56,14 +56,18 @@ class WebPush {
 
     /** Push an einen einzelnen Spieler senden. */
     public static function sendToPlayer(int $playerId): void {
-        [$pub, $priv] = self::loadKeys();
-        if (!$pub) return;
-        $subs = Database::query(
-            "SELECT endpoint FROM push_subscriptions WHERE player_id = ?",
-            [$playerId]
-        );
-        foreach ($subs as $s) {
-            self::dispatch($s['endpoint'], $pub, $priv);
+        try {
+            [$pub, $priv] = self::loadKeys();
+            if (!$pub) return;
+            $subs = Database::query(
+                "SELECT endpoint FROM push_subscriptions WHERE player_id = ?",
+                [$playerId]
+            );
+            foreach ($subs as $s) {
+                self::dispatch($s['endpoint'], $pub, $priv);
+            }
+        } catch (Throwable $e) {
+            error_log('[WebPush] sendToPlayer error: ' . $e->getMessage());
         }
     }
 
@@ -73,21 +77,24 @@ class WebPush {
      * $title / $body: optionaler Nachrichtentext (leer = generischer Fallback im SW).
      */
     public static function sendToGame(int $gameId, bool $force = false, string $title = '', string $body = ''): void {
-        if (!$force && !self::checkCooldown()) return;
-
-        self::updateLastSent();
-        [$pub, $priv] = self::loadKeys();
-        if (!$pub) return;
-        $subs = Database::query(
-            "SELECT DISTINCT ps.endpoint
-             FROM push_subscriptions ps
-             JOIN game_players gp ON gp.player_id = ps.player_id
-             WHERE gp.game_id = ?",
-            [$gameId]
-        );
-        $payload = ($title !== '') ? json_encode(['title' => $title, 'body' => $body, 'tag' => 'werwolf-event']) : '';
-        foreach ($subs as $s) {
-            self::dispatch($s['endpoint'], $pub, $priv, $payload);
+        try {
+            if (!$force && !self::checkCooldown()) return;
+            self::updateLastSent();
+            [$pub, $priv] = self::loadKeys();
+            if (!$pub) return;
+            $subs = Database::query(
+                "SELECT DISTINCT ps.endpoint
+                 FROM push_subscriptions ps
+                 JOIN game_players gp ON gp.player_id = ps.player_id
+                 WHERE gp.game_id = ?",
+                [$gameId]
+            );
+            $payload = ($title !== '') ? json_encode(['title' => $title, 'body' => $body, 'tag' => 'werwolf-event']) : '';
+            foreach ($subs as $s) {
+                self::dispatch($s['endpoint'], $pub, $priv, $payload);
+            }
+        } catch (Throwable $e) {
+            error_log('[WebPush] sendToGame error: ' . $e->getMessage());
         }
     }
 
@@ -124,43 +131,49 @@ class WebPush {
     }
 
     private static function dispatch(string $endpoint, string $pubKey, string $privPem, string $payload = ''): void {
-        $p        = parse_url($endpoint);
-        $audience = $p['scheme'] . '://' . $p['host'];
-        $jwt      = self::createJwt($audience, $privPem);
+        try {
+            $p        = parse_url($endpoint);
+            if (empty($p['scheme']) || empty($p['host'])) return;
+            $audience = $p['scheme'] . '://' . $p['host'];
+            $jwt      = self::createJwt($audience, $privPem);
 
-        $headers = [
-            'Authorization: vapid t=' . $jwt . ',k=' . $pubKey,
-            'TTL: 86400',
-        ];
-        if ($payload !== '') {
-            $headers[] = 'Content-Type: application/json';
-            $headers[] = 'Content-Length: ' . strlen($payload);
-        } else {
-            $headers[] = 'Content-Length: 0';
-        }
+            $headers = [
+                'Authorization: vapid t=' . $jwt . ',k=' . $pubKey,
+                'TTL: 86400',
+            ];
+            if ($payload !== '') {
+                $headers[] = 'Content-Type: application/json';
+                $headers[] = 'Content-Length: ' . strlen($payload);
+            } else {
+                $headers[] = 'Content-Length: 0';
+            }
 
-        $ch = curl_init($endpoint);
-        curl_setopt_array($ch, [
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => $payload,
-            CURLOPT_HTTPHEADER     => $headers,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 10,
-            CURLOPT_SSL_VERIFYPEER => true,
-        ]);
-        curl_exec($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+            $ch = curl_init($endpoint);
+            curl_setopt_array($ch, [
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => $payload,
+                CURLOPT_HTTPHEADER     => $headers,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT        => 5,
+                CURLOPT_SSL_VERIFYPEER => true,
+            ]);
+            curl_exec($ch);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
 
-        if ($code === 410 || $code === 404) {
-            Database::execute(
-                "DELETE FROM push_subscriptions WHERE endpoint = ?",
-                [$endpoint]
-            );
+            if ($code === 410 || $code === 404) {
+                Database::execute(
+                    "DELETE FROM push_subscriptions WHERE endpoint = ?",
+                    [$endpoint]
+                );
+            }
+        } catch (Throwable $e) {
+            error_log('[WebPush] dispatch error: ' . $e->getMessage());
         }
     }
 
     private static function createJwt(string $audience, string $privPem): string {
+        if (!$privPem) throw new RuntimeException('VAPID Private Key nicht konfiguriert');
         $header  = self::b64u('{"typ":"JWT","alg":"ES256"}');
         $payload = self::b64u(json_encode([
             'aud' => $audience,
@@ -168,7 +181,9 @@ class WebPush {
             'sub' => 'mailto:noreply@werwolf.local',
         ]));
         $data = "$header.$payload";
-        openssl_sign($data, $der, $privPem, OPENSSL_ALGO_SHA256);
+        if (!@openssl_sign($data, $der, $privPem, OPENSSL_ALGO_SHA256)) {
+            throw new RuntimeException('openssl_sign fehlgeschlagen — VAPID Key ungültig?');
+        }
         return "$data." . self::b64u(self::derToRS($der));
     }
 
