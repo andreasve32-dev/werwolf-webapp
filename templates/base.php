@@ -42,8 +42,11 @@ $showNav = $page['nav'] ?? true;
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title><?= e($pageTitle) ?></title>
 
-  <?php if (MINI_LOGO !== '' && file_exists(ROOT_PATH . '/' . MINI_LOGO)): ?>
-  <link rel="icon" type="image/png" href="<?= e(assetUrl(MINI_LOGO)) ?>">
+  <?php
+  $_faviconPath = MINI_LOGO !== '' ? MINI_LOGO : 'assets/icons/logo/mini_logo.png';
+  if (file_exists(ROOT_PATH . '/' . $_faviconPath)):
+  ?>
+  <link rel="icon" type="image/png" href="<?= e(assetUrl($_faviconPath)) ?>">
   <?php endif; ?>
 
   <!-- Atmosphäre: nur setzen wenn Funktion aktiviert (ww_atmosphere !== '0') -->

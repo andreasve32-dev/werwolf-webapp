@@ -335,7 +335,7 @@ INSERT IGNORE INTO settings (`key`, value, type, label, description, sort_order)
 ('deaths_empty_sub',   'Das Dorf ist in Frieden … noch.',              'string', 'Todesliste: Leer-Subtext',      'Untertitel wenn noch niemand gestorben ist.',                          91),
 ('deaths_peace_text',  'Mögen sie in Frieden ruhen',                    'string', 'Todesliste: Friedenstext',      'Text unter dem Friedhof-Bereich wenn Tote vorhanden sind.',           92),
 ('login_logo',         '',                                              'string', 'Login-Logo',                    'Pfad zum PNG-Bild auf der Anmeldeseite (leer = Wolf-Emoji 🐺).',       5),
-('mini_logo',          '',                                              'string', 'Browser-Icon (Favicon)',        'PNG-Datei für die Browser-Adressleiste / Tab-Icon.',                    6),
+('mini_logo',          'assets/icons/logo/mini_logo.png',               'string', 'Browser-Icon (Favicon)',        'PNG-Datei für die Browser-Adressleiste / Tab-Icon.',                    6),
 ('game_timezone',      'Europe/Berlin',                                 'string', 'Zeitzone',                      'PHP-Zeitzone des Servers (z.B. Europe/Berlin, UTC).',                  20),
 ('push_cooldown',      '5',                                             'int',    'Push-Cooldown (Min.)',          'Mindestwartezeit zwischen zwei Auto-Push-Benachrichtigungen.',         26),
 ('push_last_sent',     '0',                                             'int',    'Push: letzter Versand (intern)','Unix-Timestamp des letzten gesendeten Pushes (intern).',              999);
