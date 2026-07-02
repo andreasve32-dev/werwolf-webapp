@@ -13,11 +13,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     switch ($block) {
 
         case 'zeit':
-            // Block 1: Aktuelle Serverzeit
+            // Block 1: Aktuelle Serverzeit (date() liefert nur englische Namen)
+            $tage   = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+            $monate = [1 => 'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli',
+                       'August', 'September', 'Oktober', 'November', 'Dezember'];
+            $datum = $tage[(int)date('w')] . ', ' . date('d.') . ' ' . $monate[(int)date('n')] . ' ' . date('Y');
             echo json_encode([
                 'html' => '<span style="font-size:2rem;font-family:var(--font-display)">'
                         . date('H:i:s')
-                        . '</span><div class="text-dim text-xs mt-1">' . date('l, d. F Y') . '</div>',
+                        . '</span><div class="text-dim text-xs mt-1">' . $datum . '</div>',
             ]);
             break;
 
@@ -48,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         case 'spieler':
             // Block 3: Spieler im laufenden Spiel
-            $game = Database::queryOne("SELECT id FROM games WHERE status='running' LIMIT 1");
+            $game = Database::queryOne("SELECT id FROM games WHERE status='running' ORDER BY id DESC LIMIT 1");
             if (!$game) {
                 echo json_encode(['html' => '<span class="text-dim">Kein laufendes Spiel</span>']);
                 break;
@@ -174,11 +178,6 @@ require TEMPLATE_PATH . '/base.php';
 .live-block { transition: opacity .15s; min-height: 2rem; }
 .live-block.updating { opacity: .4; }
 
-.flash { animation: flash-update .4s ease; }
-@keyframes flash-update {
-  0%   { background: rgba(var(--accent-rgb, 220,180,90), .15); }
-  100% { background: transparent; }
-}
 </style>
 
 <?php
@@ -206,6 +205,18 @@ function clearLog() {
   document.getElementById('log').textContent = 'Log geleert.';
 }
 
+let sessionLost = false;
+
+function stopOnSessionLoss() {
+  if (sessionLost) return;
+  sessionLost = true;
+  clearInterval(timer);
+  timer = null;
+  paused = true;
+  document.getElementById('pause-btn').textContent = '▶ Fortsetzen';
+  addLog('Session abgelaufen — bitte neu anmelden', false);
+}
+
 async function updateBlock(name) {
   const el  = document.getElementById('block-' + name);
   const ind = document.getElementById('ind-' + name);
@@ -213,13 +224,18 @@ async function updateBlock(name) {
 
   el.classList.add('updating');
   try {
-    const r = await fetch(DEMO_API + '?block=' + name, { method: 'POST' });
+    const r = await fetch(DEMO_API + '?block=' + name, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'fetch' },
+    });
+    if (r.status === 401) {
+      ind.classList.add('error');
+      stopOnSessionLoss();
+      return;
+    }
     const d = await r.json();
-    el.classList.remove('updating');
     if (d.html !== undefined) {
       el.innerHTML = d.html;
-      el.classList.add('flash');
-      setTimeout(() => el.classList.remove('flash'), 400);
       ind.classList.remove('error');
       tsEl.textContent = ts();
       addLog('Block "' + name + '" aktualisiert');
@@ -228,14 +244,23 @@ async function updateBlock(name) {
       ind.classList.add('error');
     }
   } catch (e) {
-    el.classList.remove('updating');
     ind.classList.add('error');
     addLog('Block "' + name + '": Netzwerkfehler', false);
+  } finally {
+    el.classList.remove('updating');
   }
 }
 
-function updateAll() {
-  BLOCKS.forEach(updateBlock);
+let updateRunning = false;
+
+async function updateAll() {
+  if (updateRunning) return; // Ticks nicht stapeln, wenn der Server langsamer als das Intervall ist
+  updateRunning = true;
+  try {
+    await Promise.all(BLOCKS.map(updateBlock));
+  } finally {
+    updateRunning = false;
+  }
 }
 
 function startTimer() {
@@ -257,11 +282,23 @@ function togglePause() {
     btn.textContent = '▶ Fortsetzen';
     addLog('Pausiert');
   } else {
+    sessionLost = false;
     startTimer();
     btn.textContent = '⏸ Pause';
     addLog('Fortgesetzt');
   }
 }
+
+// Unsichtbare Tabs nicht weiter pollen — beim Zurückkehren sofort aktualisieren
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    clearInterval(timer);
+    timer = null;
+  } else if (!paused) {
+    updateAll();
+    startTimer();
+  }
+});
 
 // Direkt beim Laden alle Blöcke holen, dann Intervall starten
 updateAll();
