@@ -4,6 +4,44 @@ Jedes Backup erhält eine fortlaufende Versionsnummer (v0.0.x).
 
 ---
 
+## [v0.0.8] — 2026-07-03
+
+### Hinzugefügt
+- **Live-Updates ohne Seitenreload auf allen Seiten** (`liveBlocks()`-Helper):
+  Spielfeld, Admin-Dashboard, Totenliste, Rollen, Statistik, FAQ, Spielerfragen —
+  Übertragung nur bei Änderungen (Hash/Versions-Probe), Countdown in der Kopfleiste,
+  Ladeintervall in den Spieler-Einstellungen wählbar (3–20 s)
+- **Spieler-Einstellungen am Konto** (`players.settings`, JSON) — gelten auf allen Geräten
+- **Versammlung zu zweit**: erster Spieler beantragt (sichtbar + Push), zweiter unterstützt,
+  erst dann steht der Termin; beenden nur durch die beiden Einberufer oder Admin
+- **Anklagen nur während laufender Versammlung** (Server-geprüft)
+- **Rollen-Flag `killer_sichtbar`**: Rolle und Mörder sehen sich gegenseitig (z. B. Dodo)
+- **Effekt-Paket**: Tiefen-Partikel, dichterer Nachtnebel, Sterne/Sonnenstrahlen in der
+  Phasen-Überblendung, Todes-Puls, Versammlungs-Glocke, Dodo-Sieges-Auftritt mit Federregen
+- CLAUDE.md mit Projekt-Regeln für KI-Assistenten
+
+### Behoben
+- Admin-Einstellungen: speichern jetzt automatisch; settings-INSERT scheiterte im
+  MariaDB-Strict-Modus; Formular konnte bei JS-Fehler Werte per GET in die URL stellen
+- Rolle erschien nach Spielstart nicht ohne Reload; Totenlisten-Popup schloss sich beim
+  Auto-Refresh; FAQ-Suche springt jetzt zum Treffer und wechselt den Tab
+- Rollen der Toten im Admin verborgen (kein Spoiler); Dorfbewohner-Raster in allen
+  Themes gleich; Cooldown-Eingabe begrenzt (0–10080); Testspieler kumulieren
+- Wichtige Pushes (Phasenwechsel, Tode, Hinrichtung) umgehen den Push-Cooldown
+- `session_write_close()` in den APIs — parallele Polls blockieren sich nicht mehr
+- Impressum/Datenschutz: TMG→DDG, TTDSG→TDDDG, Abschnittsnummern korrigiert
+
+### Entfernt
+- Hintergrundmusik-Feature samt `audio/`-Ordner; `demo_live.php` (Zweck erfüllt)
+
+### DB-Änderungen (in frischem Schema enthalten)
+- `players.settings TEXT NULL`
+- `assembly_requests.supporter_id INT NULL`; `scheduled_at` jetzt NULL-bar
+- `roles.killer_sichtbar TINYINT(1) DEFAULT 0`
+- `settings.label` mit DEFAULT '' (Strict-Mode)
+
+---
+
 ## [v0.0.7] — 2026-06-26
 
 ### Behoben

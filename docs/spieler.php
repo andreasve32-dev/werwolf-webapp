@@ -206,8 +206,9 @@ require TEMPLATE_PATH . '/base.php';
     <ul>
       <li>Alle Spieler reden, diskutieren und tauschen Verdächtigungen aus.</li>
       <li>Wer getötet wurde, wird bekannt gegeben und trägt sich in der App selbst aus.</li>
-      <li>Jeder lebende Spieler kann eine <strong>Bürgerversammlung einberufen</strong>, um
-          einen Verdächtigen anzuklagen und per Handzeichen hinrichten zu lassen.</li>
+      <li>Zwei lebende Spieler zusammen können eine <strong>Bürgerversammlung einberufen</strong>
+          (einer beantragt, ein zweiter unterstützt), um Verdächtige anzuklagen und per
+          Handzeichen hinrichten zu lassen.</li>
       <li>Der Admin verwaltet die Abstimmung und trägt das Ergebnis in die App ein.</li>
     </ul>
   </div>
@@ -230,22 +231,27 @@ require TEMPLATE_PATH . '/base.php';
 
   <div class="step-card animate-in" style="animation-delay:.13s">
     <div class="step-num">4</div>
-    <h3>Bürgerversammlung einberufen</h3>
+    <h3>Bürgerversammlung einberufen — zu zweit!</h3>
     <p>
       Als lebender Spieler kannst du im Spiel-Fenster auf <strong>„Bürgerversammlung
-      einberufen"</strong> tippen. Die Versammlung startet zur nächsten vollen Stunde —
-      alle Spieler erhalten eine Push-Benachrichtigung. Nur eine Versammlung gleichzeitig
-      ist möglich.
+      einberufen"</strong> tippen — damit stellst du einen <strong>Antrag</strong>, den alle
+      sehen. Erst wenn ein <strong>zweiter Spieler</strong> den Antrag unterstützt, steht die
+      Versammlung fest: Sie startet zur nächsten vollen Stunde, alle Spieler erhalten eine
+      Push-Benachrichtigung. Du kannst deinen Antrag jederzeit zurückziehen. Nur eine
+      Versammlung gleichzeitig ist möglich.
     </p>
   </div>
 
   <div class="step-card animate-in" style="animation-delay:.15s">
     <div class="step-num">5</div>
-    <h3>Abstimmen & Beenden</h3>
+    <h3>Anklagen, Abstimmen & Beenden</h3>
     <p>
-      Die Versammlung läuft, bis sie <strong>der Einberufende oder ein Admin</strong> beendet.
-      Wer angeklagt wird, entscheidet das Dorf per Handzeichen — der Admin trägt das Ergebnis
-      in der App ein. Wird niemand hingerichtet, endet die Versammlung einfach.
+      <strong>Anklagen sind nur möglich, während die Versammlung läuft</strong> — dann
+      erscheint die Anklage-Karte im Spiel-Fenster und du wählst einen Spieler aus der
+      Liste. Die Versammlung läuft, bis einer der <strong>beiden Einberufer oder die
+      Spielleitung</strong> sie beendet. Wer hingerichtet wird, entscheidet das Dorf per
+      Handzeichen — der Admin trägt das Ergebnis in der App ein. Wird niemand hingerichtet,
+      endet die Versammlung einfach.
     </p>
   </div>
 

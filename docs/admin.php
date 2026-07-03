@@ -114,7 +114,10 @@ require TEMPLATE_PATH . '/base.php';
       Unter <strong>Admin → Rollen</strong> stellst du ein, welche Rollen ins Spiel kommen
       und wie viele Exemplare davon. Die Anzahl der aktiven Rollen muss zur Spieleranzahl passen.
       Der <em>Bürger</em> ist die Auffüll-Rolle — er wird automatisch vergeben, bis alle Plätze
-      besetzt sind.
+      besetzt sind. Pro Rolle gibt es Eigenschafts-Häkchen, z.&nbsp;B.
+      <em>„Sichtbar untereinander"</em> (gleiche Rollen erkennen sich, etwa die Mörder) und
+      <em>„🔪👁 Gegenseitig sichtbar mit Killern"</em> (Rolle und Mörder sehen sich gegenseitig
+      in der Spielerliste — gedacht z.&nbsp;B. für den Dodo).
     </p>
     <div class="ui-mock" style="margin-top:.75rem">
       <span class="label">Rollen-Verwaltung (Beispiel für 8 Spieler)</span>
@@ -237,16 +240,19 @@ require TEMPLATE_PATH . '/base.php';
     <div class="step-num">6</div>
     <h3>Versammlung im Admin-Panel</h3>
     <p>
-      Wenn ein Spieler eine Versammlung einberuft, erscheint oben im Admin-Panel ein Banner
-      mit Name des Einberufenden und Startzeit. Du kannst die Versammlung als Admin jederzeit
-      über <strong>„✖ Versammlung beenden"</strong> im Banner schließen — zum Beispiel wenn
-      das Dorf fertig abgestimmt hat.
+      Eine Versammlung braucht <strong>zwei Einberufer</strong>: Der erste Spieler stellt
+      einen Antrag (Banner zeigt „wartet auf einen zweiten Einberufer"), erst mit der
+      Unterstützung eines zweiten Spielers steht der Termin zur nächsten vollen Stunde.
+      Spieler können <strong>nur während der laufenden Versammlung anklagen</strong>.
+      Beenden können die beiden Einberufer — oder du als Admin jederzeit über
+      <strong>„✖ Beenden"</strong> im Banner, zum Beispiel wenn das Dorf fertig
+      abgestimmt hat.
     </p>
     <div class="ui-mock" style="margin-top:.75rem">
       <span class="label">Bürgerversammlung-Banner (Admin-Panel)</span>
       <span class="info">🔔 Bürgerversammlung aktiv</span><br>
-      Einberufen von: <span class="action">Spielername</span> · gestartet 15:00 Uhr<br>
-      <span class="danger">[✖ Versammlung beenden]</span>
+      Einberufen von: <span class="action">Spieler A</span> und <span class="action">Spieler B</span> · Termin 15:00 Uhr<br>
+      <span class="danger">[✖ Beenden]</span>
     </div>
   </div>
 
@@ -301,12 +307,17 @@ require TEMPLATE_PATH . '/base.php';
 
   <div class="card animate-in" style="animation-delay:.19s">
     <div class="section-title">⚙️ Wichtige Einstellungen</div>
+    <p class="text-dim text-sm" style="margin-top:.4rem">
+      Jede Änderung wird <strong>automatisch gespeichert</strong> (kurze Bestätigung erscheint) —
+      der Speichern-Button unten dient nur als zusätzliche Absicherung.
+    </p>
     <table style="width:100%;border-collapse:collapse;font-size:.87rem;margin-top:.5rem">
       <tr style="border-bottom:1px solid var(--border)">
         <td style="padding:.5rem .25rem;color:var(--text);font-weight:600">Push-Cooldown</td>
         <td style="padding:.5rem .5rem;color:var(--text-dim)">
-          Mindestpause zwischen automatischen Push-Benachrichtigungen (Standard: 30 Min).
-          Verhindert Spam.
+          Mindestpause zwischen unwichtigen Push-Benachrichtigungen.
+          Wichtige Ereignisse (Spielstart/-ende, Phasenwechsel, Todesfälle,
+          Versammlungen) werden <strong>immer sofort</strong> zugestellt.
         </td>
       </tr>
       <tr style="border-bottom:1px solid var(--border)">
@@ -333,8 +344,9 @@ require TEMPLATE_PATH . '/base.php';
 
   <div class="tip-box animate-in" style="animation-delay:.2s">
     <strong>💡 Als Admin bist du auch Spieler.</strong> Deine eigene Rolle ist im Spieler-Fenster
-    sichtbar, aber du siehst bewusst <em>nicht</em> die Rollen der anderen lebenden Spieler —
-    damit du nicht betrügst. Tote Spieler kannst du im Admin-Panel einsehen.
+    sichtbar, aber du siehst bewusst <em>nicht</em> die Rollen der anderen Spieler —
+    auch nicht die der Toten im Admin-Panel — damit du nicht gespoilert wirst.
+    Aufgedeckte Rollen erscheinen wie für alle Spieler in der Totenliste.
   </div>
 
   <!-- ═══════════════════════════════════════════

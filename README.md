@@ -23,6 +23,9 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 ├── nutzungsbedingungen.php ← Nutzungsbedingungen
 ├── logout.php
 ├── sw.js               ← Service Worker (Web-Push)
+├── dump_roles_temp.php ← Rollen-Backup-Seite (Admin): roles-Tabelle als INSERT-Dump
+├── info.txt            ← Bug-/Feature-Liste (+ Gelöst-Historie unten)
+├── CLAUDE.md           ← Projekt-Regeln für KI-Assistenten (wird automatisch geladen)
 ├── CHANGELOG.md        ← Versionshistorie / Backup-Changelog
 │
 ├── admin/              ← Admin-Bereich (nur für eingeloggte Admins zugänglich)
@@ -59,8 +62,11 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 ├── templates/
 │   ├── base.php            ← <head> + Theme-Laden + öffnet <body>
 │   ├── base_end.php        ← schließt </body>, lädt JS
-│   ├── nav.php             ← Navigation (Top-Bar + Unternavigation, alle Seiten)
-│   └── role_form_fields.php ← wiederverwendbares Formular (Erstellen + Bearbeiten)
+│   ├── nav.php             ← Navigation (Top-Bar + Tab-Bar + Einstellungs-Sheet, alle Seiten)
+│   ├── role_form_fields.php ← wiederverwendbares Rollen-Formular (Erstellen + Bearbeiten)
+│   └── *_blocks.php / role_card.php / slogan_row.php
+│                           ← Render-Funktionen für die Live-Updates: Seite und
+│                             API-Endpunkt teilen sich dasselbe Markup (blocksResponse)
 │
 ├── assets/
 │   ├── css/
@@ -366,6 +372,10 @@ ab dem nächsten Seitenaufruf — kein Datei-Edit nötig:
 | `deaths_peace_text` | Text unter dem Friedhof-Bereich |
 | `login_logo` / `mini_logo` | Logo + Favicon (Pfade, via Upload gesetzt) |
 | `game_timezone` | PHP-Zeitzone (z. B. `Europe/Berlin`) |
+| `push_cooldown` | Mindestpause (Min.) zwischen *unwichtigen* Pushes — Spielereignisse gehen immer sofort raus |
+| `vapid_public_key` / `vapid_private_key` | Web-Push-Schlüssel (über Admin → Einstellungen generierbar) |
+
+Alle Änderungen im Admin-Einstellungsbereich werden **automatisch gespeichert**.
 
 ---
 
