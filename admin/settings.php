@@ -326,17 +326,6 @@ function settingsAccHead(string $icon, string $title): void {
     <p class="page-header__sub">Jeder Bereich speichert unabhängig — Änderungen wirken sofort nach dem Speichern dieses Bereichs.</p>
   </div>
 
-  <!-- Sprungmarken zu den Bereichen — öffnen den Bereich gleich mit -->
-  <div class="flex gap-xs mb-2" style="flex-wrap:wrap">
-    <a href="#sec-allgemein" class="btn btn--ghost btn--sm" onclick="openSettingsSection('allgemein')">🌐 Allgemein</a>
-    <a href="#sec-spiel"     class="btn btn--ghost btn--sm" onclick="openSettingsSection('spiel')">🐺 Spiel</a>
-    <a href="#sec-push"      class="btn btn--ghost btn--sm" onclick="openSettingsSection('push')">🔔 Push</a>
-    <a href="#sec-design"    class="btn btn--ghost btn--sm" onclick="openSettingsSection('design')">🎨 Design</a>
-    <a href="#sec-bilder"    class="btn btn--ghost btn--sm" onclick="openSettingsSection('bilder')">🖼️ Bilder</a>
-    <a href="#sec-system"    class="btn btn--ghost btn--sm" onclick="openSettingsSection('system')">⚙️ System</a>
-    <a href="#sec-texte"     class="btn btn--ghost btn--sm" onclick="openSettingsSection('texte')">📝 Texte</a>
-  </div>
-
   <?php if ($migrationNeeded): ?>
   <div class="alert alert--error mb-2">
     <strong>⚠️ settings-Tabelle fehlt!</strong><br>
@@ -822,17 +811,21 @@ $page['inline_js'] = sprintf(
 );
 $page['inline_js'] .= <<<'JS'
 
-// Akkordeon: Bereiche starten zugeklappt, per Klick auf den Header öffnen/schließen
+// Akkordeon: Bereiche starten zugeklappt, per Klick auf den Header öffnen/schließen.
+// Immer nur EIN Bereich gleichzeitig offen — beim Öffnen schließen alle anderen.
 function toggleSettingsAcc(btn) {
   const body = btn.nextElementSibling;
   const open = btn.getAttribute('aria-expanded') === 'true';
+  if (!open) {
+    document.querySelectorAll('.settings-acc__head[aria-expanded="true"]').forEach(other => {
+      if (other !== btn) {
+        other.setAttribute('aria-expanded', 'false');
+        other.nextElementSibling.hidden = true;
+      }
+    });
+  }
   btn.setAttribute('aria-expanded', String(!open));
   body.hidden = open;
-}
-// Öffnet einen Bereich gezielt (z. B. über die Sprungmarken-Leiste oben)
-function openSettingsSection(id) {
-  const head = document.querySelector('#sec-' + id + ' > .settings-acc__head');
-  if (head && head.getAttribute('aria-expanded') !== 'true') toggleSettingsAcc(head);
 }
 
 // Session-Dauer lesbar darstellen

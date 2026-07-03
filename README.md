@@ -380,11 +380,12 @@ System/Texte) — jeder Bereich hat sein eigenes Formular, speichert automatisch
 bei jeder Änderung **und** über einen eigenen „Speichern"-Button, unabhängig
 von allen anderen Bereichen. Ein ungültiger Wert in einem Bereich blockiert
 dadurch nie das Speichern der anderen. Alle Bereiche sind als Akkordeon
-aufgebaut (starten zugeklappt, sparen Platz vor allem am Handy). Sprungmarken
-oben auf der Seite öffnen den gewünschten Bereich direkt mit, ein „↑ Nach
-oben"-Link am Ende jedes Bereichs führt zurück zur Sprungmarken-Leiste. Im
-Push-Bereich lässt sich außerdem jederzeit eine Test-Benachrichtigung
-auslösen (an das eigene Gerät oder an alle).
+aufgebaut (starten zugeklappt, sparen Platz vor allem am Handy) — es kann
+immer nur ein Bereich gleichzeitig offen sein, das Öffnen eines anderen
+schließt den vorherigen automatisch. Ein „↑ Nach oben"-Link am Ende jedes
+Bereichs führt zurück zum Seitenkopf. Im Push-Bereich lässt sich außerdem
+jederzeit eine Test-Benachrichtigung auslösen (an das eigene Gerät oder an
+alle).
 
 ---
 

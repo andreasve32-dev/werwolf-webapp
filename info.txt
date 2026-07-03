@@ -106,6 +106,7 @@ Günslinger: Weiter schießen nach Killer-Treffer — Wenn Günslinger einen Kil
 [Feature] Admin-Einstellungen: Bereiche als Akkordeon statt durchgehender Liste
       → Alle 7 Bereiche starten zugeklappt und öffnen sich einzeln per Klick
         auf den Titel (Chevron dreht sich beim Öffnen) — spart Platz, vor
-        allem am Handy; Sprungmarken oben öffnen den Zielbereich automatisch
-        mit; jeder Bereich hat unten einen "↑ Nach oben"-Link zurück zur
-        Sprungmarken-Leiste
+        allem am Handy; immer nur EIN Bereich gleichzeitig offen (Öffnen
+        eines Bereichs schließt automatisch alle anderen); Sprungmarken-
+        Leiste oben wieder entfernt (durch Exklusiv-Akkordeon überflüssig);
+        jeder Bereich hat unten einen "↑ Nach oben"-Link zurück zum Seitenkopf
