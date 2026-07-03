@@ -209,7 +209,7 @@ CREATE TABLE assembly_requests (
   game_id      INT NOT NULL,
   player_id    INT NOT NULL,
   supporter_id INT NULL,                     -- zweiter Einberufer (NULL = wartet noch auf Unterstützung)
-  scheduled_at INT NULL,                     -- Termin; wird erst beim zweiten Einberufer gesetzt
+  scheduled_at INT NULL,                     -- Termin: wird erst beim zweiten Einberufer gesetzt
   notified     TINYINT(1) NOT NULL DEFAULT 0,
   called_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   ended_at     TIMESTAMP NULL DEFAULT NULL, -- NULL = aktiv, gesetzt = vom Admin beendet
