@@ -1,6 +1,7 @@
 <?php
 // Copyright (c) 2026 Andreas Vetter
 require_once dirname(__DIR__) . '/core/bootstrap.php';
+require_once TEMPLATE_PATH . '/slogan_row.php';
 Auth::requireAdmin();
 
 $daySlogans   = Database::query("SELECT id, text, active FROM slogans WHERE phase='day'   ORDER BY created_at");
@@ -78,29 +79,6 @@ require TEMPLATE_PATH . '/base.php';
 </div>
 
 <?php
-function sloganRow(array $s): string {
-    $id     = (int)$s['id'];
-    $text   = htmlspecialchars($s['text'], ENT_QUOTES, 'UTF-8');
-    $active = (bool)(int)$s['active'];
-    $opacity = $active ? '1' : '.45';
-    return <<<HTML
-    <div class="flex-between" id="slogan-row-{$id}"
-         style="padding:.55rem .1rem;border-bottom:1px solid var(--border);gap:.5rem;opacity:{$opacity}">
-      <span class="text-sm" style="flex:1">{$text}</span>
-      <div class="flex gap-xs" style="flex-shrink:0">
-        <button class="btn btn--ghost btn--sm" onclick="toggleSlogan({$id})" title="Aktiv / Inaktiv">
-          <span id="slogan-icon-{$id}">
-HTML . ($active ? '✓' : '○') . <<<HTML
-          </span>
-        </button>
-        <button class="btn btn--danger btn--sm" onclick="deleteSlogan({$id})" title="Löschen">✕</button>
-      </div>
-    </div>
-    HTML;
-}
-?>
-
-<?php
 $page['inline_js'] = sprintf('const API_BASE=%s;', json_encode(API_URL));
 $page['inline_js'] .= <<<'JS'
 
@@ -111,8 +89,13 @@ async function addSlogan() {
   const r = await apiFetch(API_BASE+'/admin.php', {action:'add_slogan', game_id:0, text, phase});
   const el = document.getElementById('add-result');
   if (r.ok) {
-    el.innerHTML = '<div class="alert alert--success mt-1">Gespeichert — Seite wird neu geladen …</div>';
-    setTimeout(() => location.reload(), 900);
+    el.innerHTML = '<div class="alert alert--success mt-1">Gespeichert!</div>';
+    if (r.html) {
+      document.getElementById(phase+'-empty')?.remove();
+      document.getElementById(phase+'-list').insertAdjacentHTML('beforeend', r.html);
+      updateCounts();
+    }
+    document.getElementById('new-text').value = '';
   } else {
     el.innerHTML = `<div class="alert alert--error mt-1">${r.error||'Fehler'}</div>`;
   }

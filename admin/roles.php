@@ -1,6 +1,7 @@
 <?php
 // Copyright (c) 2026 Andreas Vetter
 require_once dirname(__DIR__) . '/core/bootstrap.php';
+require_once TEMPLATE_PATH . '/role_card.php';
 Auth::requireAdmin();
 
 $roles = allRoles();
@@ -30,61 +31,17 @@ require TEMPLATE_PATH . '/base.php';
   </div>
 
   <!-- Bestehende Rollen -->
-  <div class="section-title">Bestehende Rollen (<?= count($roles) ?>)</div>
+  <div class="section-title">Bestehende Rollen (<span id="roles-count"><?= count($roles) ?></span>)</div>
 
   <?php if (empty($roles)): ?>
-  <div class="card text-center text-dim" style="padding:2rem">Noch keine Rollen angelegt.</div>
-  <?php else: ?>
+  <div class="card text-center text-dim" id="roles-empty-hint" style="padding:2rem">Noch keine Rollen angelegt.</div>
+  <?php endif; ?>
 
-  <div style="display:flex;flex-direction:column;gap:1rem">
+  <div id="roles-list" style="display:flex;flex-direction:column;gap:1rem">
     <?php foreach ($roles as $r): ?>
-    <div class="card animate-in role-card <?= !$r['active']?'role-card--inactive':'' ?>" id="role-card-<?= (int)$r['id'] ?>">
-      <div class="flex-between" style="align-items:flex-start">
-        <div class="flex gap-md" style="align-items:flex-start">
-          <span class="role-icon-frame"><?= roleIconHtml($r, 'lg') ?></span>
-          <div>
-            <div class="flex gap-sm" style="align-items:center">
-              <span style="font-family:var(--font-display);font-size:1.1rem;color:var(--text-bright)"><?= e($r['name']) ?></span>
-              <?php if (!$r['active']): ?><span class="tag tag--lobby" data-inactive-tag>Inaktiv</span><?php endif; ?>
-              <?php if (!empty($r['fill'])): ?><span class="tag tag--lobby">⬚ Auffüll-Rolle</span><?php endif; ?>
-              <?php if (!empty($r['sichtbar'])): ?><span class="tag tag--day">👁️ Sichtbar untereinander</span><?php endif; ?>
-              <?php if (!empty($r['befragen'])): ?><span class="tag tag--night">🔍 Darf Tote befragen</span><?php endif; ?>
-              <?php if (!empty($r['auto_eintrag'])): ?><span class="tag tag--running">⭐ Star</span><?php endif; ?>
-              <?php if (!empty($r['is_killer'])): ?><span class="tag tag--dead">🔪 Killer</span><?php endif; ?>
-            </div>
-            <div class="text-dim text-sm mt-1"><?= e($r['description'] ?: 'Keine Beschreibung') ?></div>
-            <div class="text-xs text-dim mt-1">
-              Anzahl: <strong class="text-accent"><?= (int)$r['amount'] ?></strong> &middot;
-              Cooldown: <strong class="text-accent"><?= (int)$r['cooldown'] ?></strong> Min.
-            </div>
-            <?php if ($r['rules']): ?>
-            <div class="text-xs text-dim mt-1 italic">📜 <?= e($r['rules']) ?></div>
-            <?php endif; ?>
-          </div>
-        </div>
-        <div class="flex gap-xs" style="flex-shrink:0">
-          <button class="btn btn--ghost btn--sm" onclick="toggleEdit(<?= (int)$r['id'] ?>)">✎</button>
-          <button class="btn btn--ghost btn--sm" data-toggle-btn onclick="toggleActive(<?= (int)$r['id'] ?>)"><?= $r['active']?'⏸':'▶' ?></button>
-          <button class="btn btn--danger btn--sm" onclick="deleteRole(<?= (int)$r['id'] ?>,'<?= e($r['name']) ?>')">✕</button>
-        </div>
-      </div>
-
-      <!-- Edit-Formular (versteckt) -->
-      <div id="edit-form-<?= (int)$r['id'] ?>" class="mt-2" style="display:none;border-top:1px solid var(--border);padding-top:1rem">
-        <?php
-          $editRole = $r;
-          include TEMPLATE_PATH . '/role_form_fields.php';
-        ?>
-        <div class="flex gap-sm mt-2">
-          <button type="button" class="btn btn--primary" onclick="updateRole(<?= (int)$r['id'] ?>)">Speichern</button>
-          <button type="button" class="btn btn--ghost" onclick="toggleEdit(<?= (int)$r['id'] ?>)">Abbrechen</button>
-        </div>
-        <div id="edit-result-<?= (int)$r['id'] ?>" class="mt-1"></div>
-      </div>
-    </div>
+    <?= render_role_card($r) ?>
     <?php endforeach; ?>
   </div>
-  <?php endif; ?>
 
 </div>
 
@@ -175,6 +132,11 @@ async function uploadIconFile(prefix){
   }
 }
 
+function _bumpRolesCount(delta) {
+  const el = document.getElementById('roles-count');
+  if (el) el.textContent = String(Math.max(0, parseInt(el.textContent, 10) + delta));
+}
+
 async function createRole(){
   const data = collectFormData('rf-');
   if(!data.name){ showToast('Name erforderlich','error'); return; }
@@ -183,7 +145,12 @@ async function createRole(){
   const el = document.getElementById('create-result');
   if(r.ok){
     el.innerHTML = '<div class="alert alert--success">Rolle erstellt!</div>';
-    setTimeout(()=>location.reload(), 800);
+    if (r.html) {
+      document.getElementById('roles-empty-hint')?.remove();
+      document.getElementById('roles-list').insertAdjacentHTML('beforeend', r.html);
+      _bumpRolesCount(1);
+    }
+    document.getElementById('role-create-form')?.reset();
   } else {
     el.innerHTML = `<div class="alert alert--error">${r.error||'Fehler'}</div>`;
   }
@@ -199,12 +166,13 @@ async function updateRole(id){
   if(!data.name){ showToast('Name erforderlich','error'); return; }
   const r = await apiFetch(API_BASE+'/admin.php', Object.assign({action:'role_update', role_id:id}, data));
   if(r.error==='session_expired')return;
-  const el = document.getElementById('edit-result-'+id);
   if(r.ok){
-    el.innerHTML = '<div class="alert alert--success">Gespeichert!</div>';
-    setTimeout(()=>location.reload(), 800);
+    const card = document.getElementById('role-card-'+id);
+    if (r.html && card) card.outerHTML = r.html;
+    showToast('Gespeichert!','success');
   } else {
-    el.innerHTML = `<div class="alert alert--error">${r.error||'Fehler'}</div>`;
+    const el = document.getElementById('edit-result-'+id);
+    if (el) el.innerHTML = `<div class="alert alert--error">${r.error||'Fehler'}</div>`;
   }
 }
 
@@ -246,7 +214,12 @@ async function deleteRole(id,name){
   if(!confirm('Rolle "'+name+'" wirklich löschen? Spieler mit dieser Rolle verlieren sie (werden zu "keine Rolle").')) return;
   const r = await apiFetch(API_BASE+'/admin.php', {action:'role_delete', role_id:id});
   if(r.error==='session_expired')return;
-  if(r.ok){ showToast('Gelöscht','success'); setTimeout(()=>location.reload(), 500); }
+  if(r.ok){
+    const card = document.getElementById('role-card-'+id);
+    if (card) { card.style.transition='opacity .3s'; card.style.opacity='0'; setTimeout(()=>card.remove(),320); }
+    _bumpRolesCount(-1);
+    showToast('Gelöscht','success');
+  }
   else showToast(r.error||'Fehler','error');
 }
 JS;

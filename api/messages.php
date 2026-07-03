@@ -5,6 +5,10 @@
 require_once dirname(__DIR__) . '/core/bootstrap.php';
 Auth::requireLogin();
 
+// Session-Lock freigeben: kein Endpunkt hier schreibt $_SESSION, aber ohne
+// write_close serialisiert PHP alle parallelen Poll-Requests desselben Nutzers.
+session_write_close();
+
 $body   = jsonBody();
 $action = $body['action'] ?? '';
 $player = Auth::player();
@@ -71,6 +75,23 @@ switch ($action) {
         $newState = $row['published'] ? 0 : 1;
         Database::execute("UPDATE messages SET published = ? WHERE id = ?", [$newState, $mid]);
         jsonOk($newState ? 'Im FAQ veröffentlicht.' : 'Aus FAQ entfernt.', ['published' => $newState]);
+
+    case 'get_new_messages':
+        if (!$player['is_admin']) jsonError('Kein Zugriff.', 403);
+        require_once TEMPLATE_PATH . '/messages_blocks.php';
+        $afterId = (int)($body['after_id'] ?? 0);
+        $newMsgs = Database::query(
+            "SELECT m.id, m.message, m.reply, m.created_at, m.replied_at, m.read_by_player, m.published,
+                    p.display_name, p.username
+             FROM messages m JOIN players p ON p.id = m.player_id
+             WHERE m.id > ? ORDER BY m.created_at ASC",
+            [$afterId]
+        );
+        $pendingRow = Database::queryOne("SELECT COUNT(*) AS cnt FROM messages WHERE reply IS NULL");
+        jsonResponse([
+            'rows'    => array_map(fn($m) => ['id' => (int)$m['id'], 'html' => render_message_row($m)], $newMsgs),
+            'pending' => (int)($pendingRow['cnt'] ?? 0),
+        ]);
 
     case 'pending_count':
         if (!$player['is_admin']) jsonError('Kein Zugriff.', 403);

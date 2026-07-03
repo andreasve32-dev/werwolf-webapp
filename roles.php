@@ -3,12 +3,10 @@
 // Öffentliche Rollengalerie: zeigt alle aktiven Rollen als Kacheln.
 // Kein is_killer, kein fill — nur das, was Spieler wissen dürfen.
 require_once __DIR__ . '/core/bootstrap.php';
+require_once TEMPLATE_PATH . '/roles_blocks.php';
 Auth::requireLogin();
 
-$roles = Database::query(
-    "SELECT id, name, description, rules, icon_path, cooldown, sichtbar
-     FROM roles WHERE active = 1 ORDER BY sort_order, name"
-);
+$roles = activeRoles();
 
 $page = ['title' => 'Rollen'];
 require TEMPLATE_PATH . '/base.php';
@@ -22,33 +20,7 @@ require TEMPLATE_PATH . '/base.php';
     <p class="page-header__sub">Alle aktiven Rollen in diesem Spiel.</p>
   </div>
 
-  <?php if (empty($roles)): ?>
-    <div class="card text-center text-dim" style="padding:2.5rem">
-      Noch keine aktiven Rollen konfiguriert.
-    </div>
-  <?php else: ?>
-  <div class="roles-gallery">
-    <?php foreach ($roles as $r): ?>
-    <div class="rg-card animate-in" onclick="openRoleCard(<?= (int)$r['id'] ?>)" style="cursor:pointer" title="<?= e($r['name']) ?> — Karte anzeigen">
-      <div class="rg-card__icon"
-           style="background-image:url('<?= e(roleIconUrl($r)) ?>')"
-           role="img" aria-label="<?= e($r['name']) ?>"></div>
-      <div class="rg-card__name"><?= e($r['name']) ?></div>
-      <?php if ($r['description']): ?>
-        <div class="rg-card__desc"><?= e($r['description']) ?></div>
-      <?php endif; ?>
-      <div class="rg-card__meta">
-        <?php if (!empty($r['sichtbar'])): ?>
-          <span class="tag tag--day" style="font-size:.68rem">👁️ Sichtbar untereinander</span>
-        <?php endif; ?>
-        <?php if ($r['cooldown'] > 0): ?>
-          <span class="tag tag--lobby" style="font-size:.68rem">⏳ <?= (int)$r['cooldown'] ?> Min.</span>
-        <?php endif; ?>
-      </div>
-    </div>
-    <?php endforeach; ?>
-  </div>
-  <?php endif; ?>
+  <div id="roles-gallery-block"><?= render_roles_gallery($roles) ?></div>
 
 </div>
 
@@ -213,7 +185,7 @@ $rolesJson = json_encode(array_map(fn($r) => [
     'cooldown'    => (int)$r['cooldown'],
 ], $roles), JSON_UNESCAPED_UNICODE);
 
-$page['inline_js'] = "const ROLES_DATA = {$rolesJson};" . <<<'JS'
+$page['inline_js'] = "let ROLES_DATA = {$rolesJson};" . sprintf('const API_BASE=%s;', json_encode(API_URL)) . <<<'JS'
 
 // Body-Klassen aus Einstellungen
 if (localStorage.getItem('ww_fx_rolecard') === 'false') document.body.classList.add('fx-rolecard-off');
@@ -261,6 +233,14 @@ function closeRoleCard() {
   _rolesModalSparkTimer = null;
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeRoleCard(); });
+
+const rolesPoll = liveBlocks({
+  fetcher: (hash) => apiFetch(API_BASE+'/game.php', {action:'get_roles', blocks_hash: hash}),
+  targets: {'roles-gallery-block':'roles-gallery-block'},
+  countdownId: 'poll-countdown',
+  onData: (data) => { if (Array.isArray(data.roles)) ROLES_DATA = data.roles; },
+});
+rolesPoll.start();
 JS;
 require TEMPLATE_PATH . '/base_end.php';
 ?>

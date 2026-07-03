@@ -77,6 +77,131 @@ function escHtml(s) {
                   .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
+// ── Countdown-Anzeige "nächste Aktualisierung in Xs" ──────────
+// Wiederverwendbar von liveBlocks() und von handgerollten Poll-Loops
+// (z.B. game.php's loadPlayers()-Intervall).
+function pollCountdown(elementId) {
+  const el = document.getElementById(elementId);
+  let remaining = 0, timer = null;
+
+  function render() {
+    // Kurzformat, damit die Anzeige auch in der schmalen Handy-Navigation Platz hat
+    if (el) el.textContent = remaining > 0 ? ('🔄 ' + remaining + 's') : '🔄 …';
+  }
+  function tick() {
+    if (remaining > 0) remaining--;
+    render();
+  }
+  function start() {
+    if (timer) clearInterval(timer);
+    timer = setInterval(tick, 1000);
+  }
+  function stop() {
+    if (timer) clearInterval(timer);
+    timer = null;
+  }
+  function reset(intervalMs) {
+    remaining = Math.ceil(intervalMs / 1000);
+    render();
+    if (!timer) start();
+  }
+
+  return { reset, start, stop };
+}
+
+// ── Live-Block Polling (fetch-basiert, kein Seitenreload) ─────
+// Ohne config.interval wird das global in den Spieler-Einstellungen gewählte
+// Ladeintervall (ww_poll_interval) verwendet — und bei Änderung der Einstellung
+// live neu gestartet (siehe restartAllLiveBlocks() in nav.php).
+function liveBlocks(config) {
+  let timer = null, inFlight = false, running = false;
+  let serverHash = null;        // Hash der zuletzt empfangenen Blocks (Server sendet
+                                // bei unverändertem Inhalt nur {hash} ohne blocks)
+  const hiddenByUs = new Set(); // Blöcke, deren display:none WIR gesetzt haben
+  const lastHtml   = new Map(); // Block-Key → zuletzt angewendeter HTML-String
+  const countdown = config.countdownId ? pollCountdown(config.countdownId) : null;
+
+  function currentInterval() {
+    return config.interval || parseInt(localStorage.getItem('ww_poll_interval') || '6000', 10) || 6000;
+  }
+
+  async function tick() {
+    if (inFlight) return; // Overlap-Guard: Tick überspringen, falls voriger Request noch läuft
+    inFlight = true;
+    if (countdown) countdown.reset(currentInterval());
+    try {
+      const data = await config.fetcher(serverHash);
+      if (!data || data.error) return;
+      if (data.hash !== undefined) serverHash = data.hash;
+      // "Änderung" = neue Blocks angekommen, ODER Endpunkt ohne Hash/Blocks
+      // (reine onData-Nutzung wie Badge-Polls). Hash-Antwort ohne Blocks
+      // bedeutet: Inhalt unverändert → weder DOM noch onData anfassen.
+      let changed = !data.blocks && data.hash === undefined;
+      if (data.blocks) {
+        for (const [key, id] of Object.entries(config.targets || {})) {
+          if (data.blocks[key] === undefined) continue;
+          if (lastHtml.has(key) && lastHtml.get(key) === data.blocks[key]) continue; // unverändert — DOM/Zustand unangetastet lassen
+          lastHtml.set(key, data.blocks[key]);
+          changed = true;
+          const el = document.getElementById(id);
+          if (!el) continue;
+          el.innerHTML = data.blocks[key];
+          if (data.blocks[key] === '') {
+            el.style.display = 'none';
+            hiddenByUs.add(key);
+          } else if (hiddenByUs.has(key)) {
+            // Nur wieder einblenden, wenn WIR es vorher versteckt hatten —
+            // andernfalls überschreibt jeder Poll-Tick z.B. einen manuell
+            // eingeklappten Zustand (siehe togglePlayers()).
+            el.style.display = '';
+            hiddenByUs.delete(key);
+          }
+        }
+      }
+      if (changed && typeof config.onData === 'function') config.onData(data);
+    } finally {
+      inFlight = false;
+    }
+  }
+
+  function start() {
+    running = true;
+    tick();
+    if (timer) clearInterval(timer);
+    timer = setInterval(tick, currentInterval());
+  }
+  function stop() {
+    running = false;
+    if (timer) clearInterval(timer);
+    timer = null;
+    if (countdown) countdown.stop();
+  }
+  function restart() { if (running) start(); } // Intervall neu einlesen + Timer neu aufsetzen
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (timer) { clearInterval(timer); timer = null; }
+      if (countdown) countdown.stop();
+    } else if (running) {
+      start(); // sofort refreshen + Intervall neu starten
+    }
+  });
+
+  // Nur registrieren, wenn kein fest verdrahtetes Intervall vorgegeben wurde —
+  // sonst würde eine Einstellungs-Änderung einen bewusst fixen Poller stören.
+  if (!config.interval) {
+    if (!window._liveBlockInstances) window._liveBlockInstances = [];
+    window._liveBlockInstances.push({ restart });
+  }
+
+  return { start, stop, restart, refreshNow: tick };
+}
+
+/** Alle laufenden liveBlocks()-Instanzen mit dem aktuellen ww_poll_interval neu starten. */
+function restartAllLiveBlocks() {
+  (window._liveBlockInstances || []).forEach(inst => inst.restart());
+}
+
 // ── Theme-Switch ─────────────────────────────────────────────
 function switchTheme(e, theme) {
   e.preventDefault();

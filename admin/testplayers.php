@@ -20,6 +20,7 @@ if (($_GET['action'] ?? '') === 'create') {
     $hash  = hashPassword(TEST_PASSWORD);
     $created = 0;
     $skipped = 0;
+    $rows    = [];
     for ($i = 1; $i <= $count; $i++) {
         $username     = TEST_PREFIX . str_pad($i, 2, '0', STR_PAD_LEFT);
         $display_name = TEST_DISPLAY_PX . str_pad($i, 2, '0', STR_PAD_LEFT);
@@ -32,9 +33,10 @@ if (($_GET['action'] ?? '') === 'create') {
             'INSERT INTO players (username, display_name, password_hash, is_admin) VALUES (?,?,?,0)',
             [$username, $display_name, $hash]
         );
+        $rows[] = ['id' => Database::lastId(), 'username' => $username, 'display_name' => $display_name];
         $created++;
     }
-    echo json_encode(['ok' => true, 'created' => $created, 'skipped' => $skipped]);
+    echo json_encode(['ok' => true, 'created' => $created, 'skipped' => $skipped, 'rows' => $rows]);
     exit;
 }
 
@@ -200,6 +202,21 @@ function updateCounts(delta) {
   if (hint) hint.style.display = count === 0 ? '' : 'none';
 }
 
+function _tpRowHtml(p) {
+  const row = document.createElement('div');
+  row.className = 'panel';
+  row.id = 'tp-' + p.id;
+  row.style.cssText = 'padding:.55rem 1rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap';
+  row.innerHTML =
+    '<div class="flex gap-sm" style="align-items:center">' +
+      '<span style="font-family:var(--font-display);font-size:.9rem;color:var(--text-bright)">' + escHtml(p.display_name) + '</span>' +
+      '<span class="text-dim text-xs">Login: <code style="font-family:monospace">' + escHtml(p.username) + '</code></span>' +
+    '</div>' +
+    '<button type="button" class="btn btn--ghost btn--sm" title="Löschen">🗑</button>';
+  row.querySelector('button').addEventListener('click', () => deleteOne(p.id, p.display_name));
+  return row;
+}
+
 async function createPlayers() {
   const count  = parseInt(document.getElementById('create-count').value) || 1;
   const result = document.getElementById('create-result');
@@ -212,7 +229,11 @@ async function createPlayers() {
         ? '✓ ' + data.created + ' Testspieler angelegt' + (data.skipped > 0 ? ' (' + data.skipped + ' bereits vorhanden, übersprungen).' : '.')
         : 'Alle ' + data.skipped + ' ausgewählten Spieler existieren bereits.';
       showResult(result, true, msg);
-      if (data.created > 0) setTimeout(() => location.reload(), 900);
+      if (data.created > 0) {
+        const list = document.getElementById('test-list');
+        (data.rows || []).forEach(p => list.appendChild(_tpRowHtml(p)));
+        updateCounts(data.created);
+      }
     } else {
       showResult(result, false, data.error || 'Fehler');
     }

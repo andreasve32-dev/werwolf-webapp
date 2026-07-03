@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Andreas Vetter
 // Spielfeld (Spieler-Ansicht): Rolle anzeigen, Tod melden, abstimmen, Nachrichten.
 require_once __DIR__ . '/core/bootstrap.php';
+require_once TEMPLATE_PATH . '/game_blocks.php';
 Auth::requireLogin();
 
 $player  = Auth::player();
@@ -48,19 +49,20 @@ if ($gameId && ($game['status'] ?? '') === 'running') {
 $page = [
     'title'    => 'Spielfeld',
     'inline_js' => sprintf(
-        'const GAME_ID=%s,PLAYER_ID=%s,MY_ALIVE=%s,GAME_STATUS=%s,GAME_PHASE=%s,API_BASE=%s,DAY_SLOGANS=%s,NIGHT_SLOGANS=%s,MY_COOLDOWN_MINS=%s,MY_COOLDOWN_STARTED=%s,ASSEMBLY_DATA=%s,MY_IS_ADMIN=%s;',
+        'const GAME_ID=%s,PLAYER_ID=%s,API_BASE=%s,DAY_SLOGANS=%s,NIGHT_SLOGANS=%s,MY_COOLDOWN_MINS=%s,MY_COOLDOWN_STARTED=%s,ASSEMBLY_DATA=%s,MY_IS_ADMIN=%s;'
+        . 'let MY_ALIVE=%s,GAME_STATUS=%s,GAME_PHASE=%s;',
         json_encode($gameId),
         json_encode($player['id']),
-        json_encode($myGP ? (bool)$myGP['is_alive'] : false),
-        json_encode($game['status'] ?? null),
-        json_encode($game['phase']  ?? null),
         json_encode(API_URL),
         json_encode($daySlogans),
         json_encode($nightSlogans),
         json_encode($myRole ? (int)$myRole['cooldown'] : 0),
         json_encode($myGP['cooldown_started_at'] ?? null),
         json_encode($currentAssembly),
-        json_encode((bool)$player['is_admin'])
+        json_encode((bool)$player['is_admin']),
+        json_encode($myGP ? (bool)$myGP['is_alive'] : false),
+        json_encode($game['status'] ?? null),
+        json_encode($game['phase']  ?? null)
     ),
 ];
 require TEMPLATE_PATH . '/base.php';
@@ -161,30 +163,7 @@ require TEMPLATE_PATH . '/base.php';
         </a>
         <?php endif; ?>
 
-        <?php if ($status === 'lobby'): ?>
-          <?php if (!$myGP): ?>
-            <button class="btn btn--primary btn--full" onclick="joinGame()">
-              🚪 Dem Spiel beitreten
-            </button>
-          <?php else: ?>
-            <div class="alert alert--info">Du bist beigetreten. Warte auf Spielstart.</div>
-          <?php endif; ?>
-
-        <?php elseif ($status === 'running' && !$myGP): ?>
-          <div class="alert alert--warn">⚠️ Das Spiel läuft bereits — du kannst nicht mehr beitreten.</div>
-
-        <?php elseif ($status === 'running' && $myGP && !$myGP['is_alive']): ?>
-          <div class="alert alert--error">☠ Du bist tot. Beobachte das Geschehen.</div>
-
-        <?php endif; ?>
-
-        <!-- Tot-Melden-Button (nur wenn Spiel läuft und Spieler noch lebt) -->
-        <?php if ($status === 'running' && $myGP && $myGP['is_alive']): ?>
-        <button class="btn btn--danger btn--full mt-2" onclick="openDeathModal()"
-                style="border-style:dashed;opacity:.85">
-          ☠️ Meinen Tod melden
-        </button>
-        <?php endif; ?>
+        <div id="my-status-actions"><?= render_my_status_actions($game, $myGP) ?></div>
 
         <!-- Rollenbeschreibung & Regeln -->
         <?php if ($myRole && $myGP && $myGP['is_alive'] && $status === 'running'): ?>
@@ -217,17 +196,6 @@ require TEMPLATE_PATH . '/base.php';
           <?php endif; ?>
         <?php endif; ?>
 
-        <?php if (BACKGROUND_MUSIC): ?>
-        <!-- Musik-Steuerung -->
-        <div class="flex-between mt-2 pt-1" style="border-top:1px solid var(--border);align-items:center">
-          <span class="text-dim text-sm">🎵 Musik</span>
-          <div class="flex gap-xs">
-            <button class="btn btn--ghost btn--sm" id="music-btn-play" onclick="musicPlay()">▶ Play</button>
-            <button class="btn btn--ghost btn--sm" id="music-btn-stop" onclick="musicStop()" disabled>⏹ Stop</button>
-          </div>
-        </div>
-        <?php endif; ?>
-
         <div class="mt-2 pt-1" style="border-top:1px solid var(--border);text-align:center">
           <a href="<?= APP_URL ?>/docs/spieler.php" class="btn btn--ghost btn--sm btn--full">
             📖 Spieler-Anleitung
@@ -236,8 +204,8 @@ require TEMPLATE_PATH . '/base.php';
       </div>
 
       <!-- ── Versammlungs-Karte (immer sichtbar wenn Spiel läuft) ── -->
-      <?php if ($status === 'running'): ?>
-      <div class="card animate-in mt-2" style="animation-delay:.1s" id="assembly-schedule-card">
+      <div class="card animate-in mt-2" id="assembly-schedule-card"
+           style="animation-delay:.1s<?= $status === 'running' ? '' : ';display:none' ?>">
         <div class="section-title">🏛️ Bürgerversammlung</div>
 
         <!-- Einberufen-Button: nur für lebende Spieler, nur wenn keine läuft -->
@@ -278,11 +246,11 @@ require TEMPLATE_PATH . '/base.php';
           </button>
         </div>
       </div>
-      <?php endif; ?>
 
       <!-- Anklagen (nur tagsüber, lebendig) -->
-      <?php if ($status === 'running' && $phase === 'day' && $myGP && $myGP['is_alive']): ?>
-      <div class="card animate-in mt-2" style="animation-delay:.12s" id="assembly-card">
+      <?php $showAccuse = $status === 'running' && $phase === 'day' && $myGP && $myGP['is_alive']; ?>
+      <div class="card animate-in mt-2" id="assembly-card"
+           style="animation-delay:.12s<?= $showAccuse ? '' : ';display:none' ?>">
         <div class="section-title">⚖️ Anklagen</div>
         <p class="text-dim text-sm mb-2">
           Wähle einen Spieler aus der Liste aus und klag ihn vor der Versammlung an.
@@ -299,7 +267,6 @@ require TEMPLATE_PATH . '/base.php';
         </button>
         <div id="vote-result" class="mt-1"></div>
       </div>
-      <?php endif; ?>
     </div>
 
     <!-- ── Rechte Spalte: Spielerliste ── -->
@@ -510,14 +477,35 @@ require TEMPLATE_PATH . '/base.php';
 
 <?php
 $page['inline_js'] .= <<<'JS'
-let selectedTarget = null;
+let selectedTarget    = null;
+let _lastStatusHtml   = null; // zuletzt gerendertes my-status-actions-Fragment
+let _lastPlayersHtml  = null; // zuletzt gerenderte Spielerliste
 
 async function joinGame() {
   if (!GAME_ID) { showToast('Kein aktives Spiel vorhanden.', 'error'); return; }
   const r = await apiFetch(API_BASE+'/game.php',{action:'join',game_id:GAME_ID});
   if(r.error==='session_expired')return;
-  if(r.ok){showToast('Beigetreten!','success');setTimeout(()=>location.reload(),700);}
+  if(r.ok){showToast('Beigetreten!','success');await gamePoll.refreshNow();}
   else showToast(r.error||'Fehler','error');
+}
+
+let _lastBannerKey = GAME_STATUS + ':' + GAME_PHASE;
+function _updatePhaseBanner(status, phase) {
+  // Textinhalt bleibt der Sprüche-Rotation (_startSloganRotation/_setBannerText)
+  // überlassen — hier nur die Hintergrundfarbe/Klasse synchron halten und,
+  // falls das Spiel bei offenem Tab von Lobby auf Running wechselt, die
+  // Rotation nachträglich anstoßen (beim ersten Laden war sie noch aus).
+  const key = status + ':' + phase;
+  if (key === _lastBannerKey) return; // unverändert — kein Flackern bei jedem Poll
+  _lastBannerKey = key;
+  const banner = document.getElementById('phase-banner');
+  if (!banner) return;
+  banner.className = 'phase-banner phase-banner--' + (status === 'running' ? phase : 'lobby');
+  if (status !== 'running') {
+    _setBannerText('🏰 Warte auf Spielstart');
+  } else if (!_sloganTimer && !_bannerBeraet) {
+    _startSloganRotation();
+  }
 }
 
 function renderRoleIcon(iconPath){
@@ -526,23 +514,41 @@ function renderRoleIcon(iconPath){
   return `<span class="player-card__icon-photo" style="background-image:url('${fullUrl}')"></span>`;
 }
 
-async function loadPlayers() {
-  if(!GAME_ID){
-    document.getElementById('player-list').innerHTML='<p class="text-dim" style="grid-column:1/-1;padding:1rem">Kein Spiel aktiv.</p>';
-    return;
-  }
-  const r = await apiFetch(API_BASE+'/game.php',{action:'get_players',game_id:GAME_ID});
+function renderGameState(r) {
   if(!r.players){
-    if(r.error !== 'session_expired')
-      document.getElementById('player-list').innerHTML='<p class="text-dim" style="grid-column:1/-1;padding:1rem">Spieler konnten nicht geladen werden.</p>';
+    document.getElementById('player-list').innerHTML='<p class="text-dim" style="grid-column:1/-1;padding:1rem">Spieler konnten nicht geladen werden.</p>';
     return;
   }
+
+  if (r.game) {
+    // Status-Wechsel (Lobby→Läuft, Läuft→Beendet, Reset): einmalig komplett neu
+    // laden — Rollen-Karte, Cooldown-Konstanten und Karten-Modal werden nur beim
+    // Seitenaufbau gerendert und wären sonst veraltet (Spieler sähe seine Rolle nicht).
+    if (GAME_STATUS !== r.game.status) { location.reload(); return; }
+    GAME_STATUS = r.game.status;
+    GAME_PHASE  = r.game.phase;
+    _updatePhaseBanner(GAME_STATUS, GAME_PHASE);
+  }
+  if (r.me) {
+    MY_ALIVE = r.me.is_alive;
+    const actionsEl = document.getElementById('my-status-actions');
+    if (actionsEl && r.my_status_html !== undefined && r.my_status_html !== _lastStatusHtml) {
+      actionsEl.innerHTML = r.my_status_html;
+      _lastStatusHtml = r.my_status_html;
+    }
+    const assemblyCard = document.getElementById('assembly-schedule-card');
+    if (assemblyCard) assemblyCard.style.display = GAME_STATUS === 'running' ? '' : 'none';
+    const accuseCard = document.getElementById('assembly-card');
+    if (accuseCard) accuseCard.style.display =
+      (GAME_STATUS === 'running' && GAME_PHASE === 'day' && r.me.in_game && MY_ALIVE) ? '' : 'none';
+  }
+
   if(r.players.length===0){
     document.getElementById('player-list').innerHTML='<p class="text-dim" style="grid-column:1/-1;padding:1rem">Noch keine Spieler im Spiel.</p>';
     return;
   }
   const list=document.getElementById('player-list');
-  list.innerHTML=r.players.map(p=>{
+  const html=r.players.map(p=>{
     const dead=!p.is_alive;
     const canSel=!dead&&p.player_id!=PLAYER_ID&&MY_ALIVE&&GAME_STATUS==='running';
     const pName=p.display_name;
@@ -559,6 +565,16 @@ async function loadPlayers() {
       ${roleHtml}
     </div>`;
   }).join('');
+  // Nur bei tatsächlicher Änderung schreiben — verhindert Reflow/Flackern
+  // und den Verlust der aktuellen Auswahl-Markierung bei jedem Poll-Tick
+  if (html !== _lastPlayersHtml) {
+    list.innerHTML = html;
+    _lastPlayersHtml = html;
+    // Auswahl-Markierung nach Neuaufbau wiederherstellen
+    if (selectedTarget !== null) {
+      document.getElementById('pc-' + selectedTarget)?.classList.add('selected');
+    }
+  }
 }
 
 // ── Banner-Slogan-Rotation ───────────────────────────────────
@@ -702,20 +718,25 @@ async function callAssembly() {
   }
 }
 
-async function _assemblyPoll() {
-  const r = await apiFetch(API_BASE+'/game.php', {action:'get_assembly', game_id:GAME_ID});
-  if (r && r.assembly) {
-    _assemblyData = r.assembly;
-    _assemblyRender();
-  }
-}
-
-// Initialer Render + Ticker + Polling alle 45 s
-if (GAME_STATUS === 'running') {
-  _assemblyRender();
-  setInterval(_assemblyRender, 1000);
-  setInterval(_assemblyPoll, 45000);
-}
+// Versammlungs-Poll: läuft über liveBlocks() im eingestellten Ladeintervall
+// (kein countdownId — den Nav-Countdown steuert der Haupt-Poller der Seite).
+// Läuft immer, damit ein Lobby→Running-Wechsel bei offenem Tab auch ohne
+// Reload den Versammlungs-Countdown startet — Sichtbarkeit der Karte selbst
+// wird separat in renderGameState() über #assembly-schedule-card gesteuert.
+const assemblyPoll = liveBlocks({
+  fetcher: () => apiFetch(API_BASE+'/game.php', {action:'get_assembly', game_id:GAME_ID}),
+  onData: (r) => {
+    if ('assembly' in r) {
+      // auch null übernehmen — sonst bleibt der Countdown stehen,
+      // wenn ein anderer Spieler/Admin die Versammlung beendet
+      _assemblyData = r.assembly;
+      _assemblyRender();
+    }
+  },
+});
+_assemblyRender();
+setInterval(_assemblyRender, 1000); // reiner Anzeige-Ticker (kein Serverkontakt)
+assemblyPoll.start();
 
 
 
@@ -766,8 +787,21 @@ function _spawnSpark(wrap) {
 // Modal: Funken nur solange offen
 let _modalSparkTimer = null;
 
-loadPlayers();
-setInterval(()=>{loadPlayers();},6000);
+// Zentrale Poll-Schleife über den gemeinsamen liveBlocks()-Helper:
+// Overlap-Guard, Pause bei verstecktem Tab und Intervall-Neustart bei
+// geänderter Einstellung kommen damit automatisch mit.
+const gamePoll = liveBlocks({
+  fetcher: () => {
+    if (!GAME_ID) {
+      document.getElementById('player-list').innerHTML='<p class="text-dim" style="grid-column:1/-1;padding:1rem">Kein Spiel aktiv.</p>';
+      return Promise.resolve(null);
+    }
+    return apiFetch(API_BASE+'/game.php', {action:'get_players', game_id:GAME_ID});
+  },
+  countdownId: 'poll-countdown',
+  onData: renderGameState,
+});
+gamePoll.start();
 
 function openRoleCard() {
   const el = document.getElementById('role-card-overlay');
@@ -880,47 +914,27 @@ async function loadInbox() {
 // ── Ungelesene Badge + Toast beim Laden / Polling ────────────
 let _lastUnread = -1; // -1 = erster Aufruf → kein Toast beim Seitenstart
 
-async function checkUnread() {
-  const r = await apiFetch(MSG_API, {action:'unread_count'});
-  if (r.error || r.unread === undefined) return;
+// Badge-Poll im eingestellten Ladeintervall (liveBlocks: Tab-Pause + Overlap-Guard)
+liveBlocks({
+  fetcher: () => apiFetch(MSG_API, {action:'unread_count'}),
+  onData: (r) => { if (r.unread !== undefined) _applyUnread(r.unread); },
+}).start();
+
+function _applyUnread(unread) {
   const badge = document.getElementById('msg-badge');
   if (badge) {
-    if (r.unread > 0) { badge.textContent = r.unread; badge.style.display = 'inline-block'; }
-    else              { badge.style.display = 'none'; }
+    if (unread > 0) { badge.textContent = unread; badge.style.display = 'inline-block'; }
+    else            { badge.style.display = 'none'; }
   }
-  if (_lastUnread >= 0 && r.unread > _lastUnread) {
+  if (_lastUnread >= 0 && unread > _lastUnread) {
     showToast('📬 Der Spielleiter hat dir geantwortet!', 'info', 5000);
   }
-  _lastUnread = r.unread;
+  _lastUnread = unread;
 }
-
-checkUnread();
-setInterval(checkUnread, 30000);
 MSGJS;
 
-if ($player['is_admin']) {
-    $page['inline_js'] .= <<<'ADMJS'
-
-// ── Admin: unbeantwortete Fragen ─────────────────────────────
-let _lastAdminPending = -1;
-
-async function checkAdminPending() {
-  const r = await apiFetch(MSG_API, {action:'pending_count'});
-  if (r.error || r.pending === undefined) return;
-  const hint  = document.getElementById('admin-pending-hint');
-  const count = document.getElementById('admin-pending-count');
-  if (hint)  hint.style.display  = r.pending > 0 ? 'flex' : 'none';
-  if (count) count.textContent   = r.pending;
-  if (_lastAdminPending >= 0 && r.pending > _lastAdminPending) {
-    showToast('✉️ Neue Spielerfrage eingegangen!', 'info', 5000);
-  }
-  _lastAdminPending = r.pending;
-}
-
-checkAdminPending();
-setInterval(checkAdminPending, 30000);
-ADMJS;
-}
+// (Admin-Hinweis „unbeantwortete Spielerfragen" wird vom globalen
+//  pending_count-Poll in templates/base_end.php mitbedient.)
 
 // ── Tod-Melden ───────────────────────────────────────────────
 $page['inline_js'] .= <<<'DEATHJS'
@@ -959,7 +973,8 @@ async function confirmDeath() {
   });
   if (r.ok) {
     res.innerHTML = '<div class="alert alert--success">☠️ Du wurdest als tot eingetragen.</div>';
-    setTimeout(() => location.reload(), 1200);
+    setTimeout(closeDeathModal, 1200);
+    await gamePoll.refreshNow();
   } else {
     res.innerHTML = `<div class="alert alert--error">${escHtml(r.error || 'Fehler')}</div>`;
     btn.disabled = false;

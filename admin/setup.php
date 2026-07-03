@@ -644,7 +644,7 @@ function runSetup() {
         const _cdTimer = setInterval(() => {
           _cd--;
           _btnLogin.textContent = 'Zur Anmeldung → (' + _cd + ')';
-          if (_cd <= 0) { clearInterval(_cdTimer); localStorage.removeItem('ww_music'); localStorage.removeItem('ww_music_t'); window.location.href = _btnLogin.href; }
+          if (_cd <= 0) { clearInterval(_cdTimer); window.location.href = _btnLogin.href; }
         }, 1000);
       } else {
         step5.querySelector('.wizard-step__dot').textContent = '✕';

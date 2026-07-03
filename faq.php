@@ -3,6 +3,7 @@
 // FAQ & Rollenregeln: nur vom Admin veröffentlichte Antworten erscheinen hier.
 // Spieler stellen Fragen über das Nachrichtenformular auf game.php.
 require_once __DIR__ . '/core/bootstrap.php';
+require_once TEMPLATE_PATH . '/faq_blocks.php';
 Auth::requireLogin();
 
 $faqEntries = Database::query(
@@ -11,10 +12,7 @@ $faqEntries = Database::query(
      ORDER BY replied_at DESC"
 );
 
-$roles = Database::query(
-    "SELECT id, name, description, rules, icon_path, cooldown, sichtbar
-     FROM roles WHERE active = 1 ORDER BY sort_order, name"
-);
+$roles = activeRoles();
 
 $page = ['title' => 'FAQ & Regeln'];
 require TEMPLATE_PATH . '/base.php';
@@ -56,93 +54,12 @@ require TEMPLATE_PATH . '/base.php';
 
   <!-- ── FAQ-Panel ────────────────────────────────────────────── -->
   <div id="panel-faq" role="tabpanel">
-    <?php if (empty($faqEntries)): ?>
-    <div class="card text-center" style="padding:3rem 1.5rem">
-      <div style="font-size:2rem;margin-bottom:.75rem">🔕</div>
-      <p class="text-dim">Noch keine FAQ-Einträge vorhanden.</p>
-      <p class="text-dim text-sm">
-        Du kannst dem Spielleiter über die Schaltfläche<br>
-        „✉️ Frage stellen" auf der Spielseite eine Frage senden.
-      </p>
-    </div>
-    <?php else: ?>
-    <div id="faq-list" style="display:flex;flex-direction:column;gap:.75rem">
-      <?php foreach ($faqEntries as $i => $entry): ?>
-      <div class="faq-item card animate-in"
-           style="animation-delay:<?= $i * 0.04 ?>s;padding:0;overflow:hidden"
-           data-search="<?= e(strtolower($entry['message'] . ' ' . $entry['reply'])) ?>">
-
-        <!-- Frage (Akkordeon-Header) -->
-        <button class="faq-item__q" onclick="toggleFaq(this)" aria-expanded="false">
-          <span class="faq-item__q-icon">Q</span>
-          <span class="faq-item__q-text"><?= e($entry['message']) ?></span>
-          <span class="faq-item__chevron">▼</span>
-        </button>
-
-        <!-- Antwort (eingeklappt) -->
-        <div class="faq-item__a" hidden>
-          <span class="faq-item__a-icon">A</span>
-          <div class="faq-item__a-text"><?= nl2br(e($entry['reply'])) ?></div>
-        </div>
-
-      </div>
-      <?php endforeach; ?>
-    </div>
-    <p id="faq-empty" class="text-dim text-center" style="display:none;padding:2rem">
-      Keine Einträge für diese Suchanfrage gefunden.
-    </p>
-    <?php endif; ?>
+    <div id="faq-content"><?= render_faq_list($faqEntries) ?></div>
   </div>
 
   <!-- ── Rollen-Panel ─────────────────────────────────────────── -->
   <div id="panel-roles" role="tabpanel" style="display:none">
-    <?php if (empty($roles)): ?>
-    <div class="card text-center" style="padding:3rem 1.5rem">
-      <p class="text-dim">Keine aktiven Rollen konfiguriert.</p>
-    </div>
-    <?php else: ?>
-    <div id="roles-list" style="display:flex;flex-direction:column;gap:.6rem">
-      <?php foreach ($roles as $i => $r): ?>
-      <div class="role-rule-item animate-in"
-           style="animation-delay:<?= $i * 0.04 ?>s"
-           data-search="<?= e(strtolower($r['name'] . ' ' . $r['description'] . ' ' . $r['rules'])) ?>">
-
-        <!-- Kopfzeile (klickbar) -->
-        <button class="role-rule-item__head" onclick="toggleRole(this)" aria-expanded="false">
-          <span class="role-rule-item__icon"
-                style="background-image:url('<?= e(roleIconUrl($r)) ?>')"></span>
-          <span class="role-rule-item__name"><?= e($r['name']) ?></span>
-          <div class="role-rule-item__tags">
-            <?php if (!empty($r['sichtbar'])): ?>
-              <span class="tag tag--day" style="font-size:.66rem">👁️ Sichtbar</span>
-            <?php endif; ?>
-            <?php if ($r['cooldown'] > 0): ?>
-              <span class="tag tag--lobby" style="font-size:.66rem">⏳ <?= (int)$r['cooldown'] ?> Min.</span>
-            <?php endif; ?>
-          </div>
-          <span class="role-rule-item__chevron">▼</span>
-        </button>
-
-        <!-- Regeltext (eingeklappt) -->
-        <div class="role-rule-item__body" hidden>
-          <?php if ($r['description']): ?>
-          <p class="role-rule-item__desc"><?= e($r['description']) ?></p>
-          <?php endif; ?>
-          <?php if ($r['rules']): ?>
-          <div class="role-rule-item__rules">
-            <span class="role-rule-item__rules-label">📜 Regeln</span>
-            <?= e($r['rules']) ?>
-          </div>
-          <?php endif; ?>
-        </div>
-
-      </div>
-      <?php endforeach; ?>
-    </div>
-    <p id="roles-empty" class="text-dim text-center" style="display:none;padding:2rem">
-      Keine Rollen für diese Suchanfrage gefunden.
-    </p>
-    <?php endif; ?>
+    <div id="roles-rules-content"><?= render_roles_rules_list($roles) ?></div>
   </div>
 
 </div>
@@ -299,7 +216,8 @@ require TEMPLATE_PATH . '/base.php';
 </style>
 
 <?php
-$page['inline_js'] = <<<'JS'
+$page['inline_js'] = sprintf('const API_BASE=%s;', json_encode(API_URL));
+$page['inline_js'] .= <<<'JS'
 let _activeTab = 'faq';
 
 // ── Tab wechseln ─────────────────────────────────────────────
@@ -314,12 +232,18 @@ function switchTab(tab) {
 }
 
 // ── Akkordeon FAQ ─────────────────────────────────────────────
+// Offene Einträge merken (per Fragetext/Rollenname), damit ein Live-Update
+// des Blocks die Leseposition nicht zerstört.
+const _openFaqItems  = new Set();
+const _openRoleItems = new Set();
+
 function toggleFaq(btn) {
   const body = btn.nextElementSibling;
   const open  = btn.getAttribute('aria-expanded') === 'true';
   btn.setAttribute('aria-expanded', String(!open));
-  if (open) body.hidden = true;
-  else       body.hidden = false;
+  body.hidden = open;
+  const key = btn.querySelector('.faq-item__q-text')?.textContent.trim();
+  if (key) { if (open) _openFaqItems.delete(key); else _openFaqItems.add(key); }
 }
 
 // ── Akkordeon Rollen ──────────────────────────────────────────
@@ -327,8 +251,26 @@ function toggleRole(btn) {
   const body = btn.nextElementSibling;
   const open  = btn.getAttribute('aria-expanded') === 'true';
   btn.setAttribute('aria-expanded', String(!open));
-  if (open) body.hidden = true;
-  else       body.hidden = false;
+  body.hidden = open;
+  const key = btn.querySelector('.role-rule-item__name')?.textContent.trim();
+  if (key) { if (open) _openRoleItems.delete(key); else _openRoleItems.add(key); }
+}
+
+function _restoreOpenItems() {
+  document.querySelectorAll('#faq-list .faq-item__q').forEach(btn => {
+    const key = btn.querySelector('.faq-item__q-text')?.textContent.trim();
+    if (key && _openFaqItems.has(key)) {
+      btn.setAttribute('aria-expanded', 'true');
+      if (btn.nextElementSibling) btn.nextElementSibling.hidden = false;
+    }
+  });
+  document.querySelectorAll('#roles-list .role-rule-item__head').forEach(btn => {
+    const key = btn.querySelector('.role-rule-item__name')?.textContent.trim();
+    if (key && _openRoleItems.has(key)) {
+      btn.setAttribute('aria-expanded', 'true');
+      if (btn.nextElementSibling) btn.nextElementSibling.hidden = false;
+    }
+  });
 }
 
 // ── Volltext-Suche ────────────────────────────────────────────
@@ -409,6 +351,18 @@ document.addEventListener('keydown', e => {
     s.value = ''; applySearch(''); s.blur();
   }
 });
+
+// ── Live-Update: FAQ & Rollenregeln ────────────────────────────
+const faqPoll = liveBlocks({
+  fetcher: (hash) => apiFetch(API_BASE+'/game.php', {action:'get_faq', blocks_hash: hash}),
+  targets: {'faq-content':'faq-content', 'roles-rules-content':'roles-rules-content'},
+  countdownId: 'poll-countdown',
+  onData: () => {
+    _restoreOpenItems(); // vom Nutzer geöffnete Einträge wieder aufklappen
+    applySearch(document.getElementById('faq-search').value);
+  },
+});
+faqPoll.start();
 JS;
 require TEMPLATE_PATH . '/base_end.php';
 ?>

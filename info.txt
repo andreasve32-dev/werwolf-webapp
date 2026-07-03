@@ -1,0 +1,34 @@
+🐛 Gefundene Bugs
+
+Anklagen ohne Versammlung möglich — Spieler kann angeklagt werden, obwohl keine Versammlung aktiv ist
+Versammlungs-Button zeigt falschen Status — Pause-Icon suggeriert "pausiert", Zustand ist aber "aktiv" (Logik muss umgekehrt werden)
+Suche springt nicht zum Treffer — Volltextsuche findet Eintrag, klappt ihn aber nicht auf; öffnet stattdessen beide Bereiche (FAQ + Rollenregeln) gleichzeitig
+Cooldown-Wert: Integer-Overflow — Zu hohe Zahl ergibt "Netzwerkfehler" statt klarer Fehlermeldung (Int11 in DB hat Grenze)
+Cooldown startet bei falschem Wert — Nach Klick beginnt Timer nicht bei 0, sondern bei 20 Sekunden
+Rollen-Liste ändert Aussehen je nach Theme — Style-Inkonsistenz zwischen verschiedenen Designs
+Rollen der Toten im Admin-Menü sichtbar — Rolle von toten Spielern wird im Admin-Bereich angezeigt (sollte verborgen sein)
+Paar: zweiter Spieler stirbt nicht automatisch — Muss sich manuell als tot melden
+Testspieler anlegen kumuliert nicht — 5 anlegen, nochmal 5 → kein Neuzugang; man muss auf 10 gehen damit 5 weitere entstehen
+Push-Benachrichtigungen kommen verspätet/nicht — 5-Minuten-Cooldown zwischen Nachrichten war unbekannt und unkonfigurierbar
+Datenbank-Fehler bei Push-Einstellung — Ein/Aus-Toggle für Push-Benachrichtigungen hat noch einen DB-Bug
+Weitergeleitet
+---
+💡 Neue Ideen & Features
+
+Voting-System — Mindestens 2 Spieler müssen für eine Hinrichtung stimmen
+Rollen-Presets — Gespeicherte Rollensets für verschiedene Spielerzahlen (z.B. "7 Spieler"-Preset, "8 Spieler"-Preset)
+Sheriff als bekannte Rolle — Permanent allen Spielern sichtbar; erhält nach jedem Kill zufällig einen garantierten Nicht-Killer angezeigt
+Detektiv überarbeitet — Nach X Kills (= Anzahl der Killer) bekommt Detektiv einen zufälligen Nicht-Killer angezeigt; Fähigkeit ist passiv, kein Cooldown
+Leichenfresser-Killer — Killt wie normal, aber Leichen können danach nicht vom Nekromant befragt werden und hinterlassen keine Orts-/Zeitspuren
+Auftragskiller — Bekommt zufälliges Ziel zugewiesen; nach Kill neues Ziel (5 min Cooldown)
+Schläfer/Verräter-Rolle — Killer der nach X Stunden die Seite wechselt; alle anderen Killer werden vorab gewarnt: "Einer von euch ist ein Verräter" (verzögerter Switch)
+Hellseherin: permanente Rollensicht — Kann dauerhaft die Rolle eines untersuchten Spielers einsehen statt Einmal-Cooldown
+Detektiv: Leichen befragen — Bekommt von der Leiche einen Spieler genannt, der definitiv nicht der Killer war
+Cooldown-Platzhalter in Beschreibungen — Variable in Rollentext, die automatisch den aktuellen Cooldown-Wert einfügt
+Startseite = Rollenkarte — App öffnet immer direkt die eigene Rollenkarte
+Auto-Timeout zur Rollenkarte — Nach X Minuten Inaktivität automatisch zurück zur Rollenkarte
+Live-Update ohne Seiten-Reload — AJAX/JavaScript für Echtzeit-Updates
+Admin: Tote wiederbeleben — Spieler wieder ins Spiel bringen ohne neue Runde zu starten
+Zombie-Spielmodus — Alternativer Modus: Alle starten als Söldner, nach 1–5h zufälliger Zombie-Start, Infizierte bekehren weitere Spieler
+Dodo-Animation bei Hinrichtung — Große Karte/Effekt wenn Dodo gehängt wird
+Günslinger: Weiter schießen nach Killer-Treffer — Wenn Günslinger einen Killer erwischt, darf er weiter schießen

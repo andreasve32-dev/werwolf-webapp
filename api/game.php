@@ -13,6 +13,10 @@ if(!Database::queryOne("SELECT id FROM players WHERE id=?",[$playerId])){
     exit;
 }
 
+// Session-Lock freigeben: kein Endpunkt hier schreibt $_SESSION, aber ohne
+// write_close serialisiert PHP alle parallelen Poll-Requests desselben Nutzers.
+session_write_close();
+
 $input=jsonBody();
 $action=$input['action']??'';
 $gameId=(int)($input['game_id']??0);
@@ -70,7 +74,17 @@ switch($action){
         $p['role_sichtbar']  = 0;
       }
     }
-    echo json_encode(['players'=>$players]);break;
+    unset($p);
+
+    $g = Database::queryOne("SELECT status, phase, round FROM games WHERE id=?", [$gameId]);
+    $myGPRow = Database::queryOne("SELECT * FROM game_players WHERE game_id=? AND player_id=?", [$gameId, $playerId]);
+    require_once TEMPLATE_PATH . '/game_blocks.php';
+    echo json_encode([
+      'players'        => $players,
+      'game'           => $g ? ['status'=>$g['status'],'phase'=>$g['phase'],'round'=>(int)$g['round']] : null,
+      'me'             => ['in_game'=>(bool)$myGPRow, 'is_alive'=>$myGPRow ? (bool)$myGPRow['is_alive'] : false],
+      'my_status_html' => render_my_status_actions($g, $myGPRow),
+    ]);break;
 
   case 'vote':
     $tid=(int)($input['target_id']??0);
@@ -206,6 +220,99 @@ switch($action){
     Database::execute("UPDATE assembly_requests SET ended_at=NOW() WHERE id=?", [$assembly['id']]);
     echo json_encode(['ok'=>true]);
     break;
+
+  case 'get_faq':
+    require_once TEMPLATE_PATH . '/faq_blocks.php';
+    $faqEntries = Database::query(
+        "SELECT message, reply FROM messages
+         WHERE published = 1 AND reply IS NOT NULL
+         ORDER BY replied_at DESC"
+    );
+    $faqRoles = activeRoles();
+    blocksResponse([
+        'faq-content'          => render_faq_list($faqEntries),
+        'roles-rules-content'  => render_roles_rules_list($faqRoles),
+    ], $input['blocks_hash'] ?? null);
+
+  case 'get_roles':
+    require_once TEMPLATE_PATH . '/roles_blocks.php';
+    $galleryRoles = activeRoles();
+    blocksResponse(
+        ['roles-gallery-block' => render_roles_gallery($galleryRoles)],
+        $input['blocks_hash'] ?? null,
+        ['roles' => roles_data_json($galleryRoles)]
+    );
+
+  case 'get_stats':
+    // Billige Versions-Probe VOR der teuren Statistik-Berechnung (~11 Aggregat-
+    // Queries): ändert sich an deaths/votes/games nichts, genügt eine Antwort
+    // mit unveränderter Version und der Client behält seine Anzeige.
+    $statsVer = Database::queryOne(
+        "SELECT CONCAT(
+            (SELECT COUNT(*) FROM deaths), '-', (SELECT COALESCE(MAX(id),0) FROM deaths), '-',
+            (SELECT COUNT(*) FROM votes),  '-', (SELECT COALESCE(MAX(id),0) FROM votes),  '-',
+            (SELECT COUNT(*) FROM games),  '-', (SELECT COUNT(*) FROM games WHERE status='finished')
+         ) AS v"
+    )['v'] ?? '';
+    if (($input['version'] ?? null) === $statsVer) {
+        echo json_encode(['version' => $statsVer]);
+        break;
+    }
+    require_once TEMPLATE_PATH . '/stats_blocks.php';
+    $sState = stats_compute_state();
+    echo json_encode([
+        'version' => $statsVer,
+        'blocks'  => ['stats-content' => render_stats_content($sState)],
+        'stats'   => [
+            'cause'   => $sState['causePieData'],
+            'phase'   => $sState['phasePieData'],
+            'rounds'  => $sState['roundBarData'],
+            'accused' => $sState['accuseBarData'],
+        ],
+        'players' => $sState['playerDetails'],
+    ]);
+    break;
+
+  case 'get_deaths':
+    require_once TEMPLATE_PATH . '/deaths_blocks.php';
+    $dGame = currentGame() ?: Database::queryOne("SELECT * FROM games ORDER BY id DESC LIMIT 1");
+    $dState = deaths_compute_state($dGame['id'] ?? null, Auth::player());
+    blocksResponse(
+        ['deaths-content' => render_deaths_content($dState)],
+        $input['blocks_hash'] ?? null
+    );
+
+  case 'save_setting':
+    $key = (string)($input['key'] ?? '');
+    $val = (string)($input['value'] ?? '');
+    $allowedKeys = [
+        'ww_atmosphere', 'ww_poll_interval',
+        'ww_fx_particles', 'ww_fx_ripple', 'ww_fx_phase', 'ww_fx_skulls',
+        'ww_fx_anims', 'ww_fx_fog', 'ww_fx_rolecard', 'ww_fx_rolename',
+    ];
+    if (!in_array($key, $allowedKeys, true)) jsonError('Ungültiger Schlüssel');
+    if (mb_strlen($val) > 20) jsonError('Wert zu lang');
+    // JSON_SET statt Read-Modify-Write: zwei schnell aufeinanderfolgende Toggles
+    // (parallele Requests) überschreiben sich sonst gegenseitig.
+    try {
+        Database::execute(
+            "UPDATE players SET settings = JSON_SET(COALESCE(settings, '{}'), CONCAT('$.', ?), ?) WHERE id=?",
+            [$key, $val, $playerId]
+        );
+    } catch (\Throwable $e) {
+        // Spalte fehlt vermutlich noch (ältere Installation) — nachlegen und einmal wiederholen
+        ensurePlayerSettingsColumn();
+        try {
+            Database::execute(
+                "UPDATE players SET settings = JSON_SET(COALESCE(settings, '{}'), CONCAT('$.', ?), ?) WHERE id=?",
+                [$key, $val, $playerId]
+            );
+        } catch (\Throwable $e2) {
+            error_log('save_setting fehlgeschlagen: ' . $e2->getMessage());
+            jsonError('Einstellung konnte nicht gespeichert werden (DB-Update nötig?)', 500);
+        }
+    }
+    echo json_encode(['ok'=>true]);break;
 
   case 'get_log':
     $deaths=Database::query(

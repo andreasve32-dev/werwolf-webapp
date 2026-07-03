@@ -12,7 +12,6 @@
 $currentFile = basename($_SERVER['PHP_SELF']);
 $inAdmin     = strpos($_SERVER['REQUEST_URI'], '/admin') !== false;
 $player      = Auth::player();
-$hasMusic    = defined('BACKGROUND_MUSIC') && BACKGROUND_MUSIC;
 ?>
 
 <!-- ── Theme-Backdrop & -Sheet ────────────────────────────── -->
@@ -43,22 +42,6 @@ $hasMusic    = defined('BACKGROUND_MUSIC') && BACKGROUND_MUSIC;
     <button class="settings-close-btn" onclick="closeSettingsSheet()" aria-label="Schließen">✕</button>
   </div>
 
-  <?php if ($hasMusic): ?>
-  <!-- Musik -->
-  <div class="settings-section">
-    <div class="settings-label">🎵 Musik</div>
-    <div class="settings-row">
-      <span class="settings-row__name">Lautstärke</span>
-      <div class="settings-row__ctrl">
-        <input type="range" id="set-vol" min="0" max="100" step="5"
-               class="vol-slider"
-               oninput="settingVol(this.value/100)">
-        <span id="set-vol-label" class="text-dim text-xs" style="min-width:2.5rem;text-align:right">25%</span>
-      </div>
-    </div>
-  </div>
-  <?php endif; ?>
-
   <!-- Benachrichtigungen -->
   <?php if (Auth::check()): ?>
   <div class="settings-section" id="push-settings-section"
@@ -74,6 +57,25 @@ $hasMusic    = defined('BACKGROUND_MUSIC') && BACKGROUND_MUSIC;
     <div id="push-hint" class="text-dim text-xs" style="display:none;padding:.4rem 0 0;line-height:1.5"></div>
   </div>
   <?php endif; ?>
+
+  <!-- Aktualisierung -->
+  <div class="settings-section">
+    <div class="settings-label">🔄 Aktualisierung</div>
+    <div class="settings-row">
+      <div>
+        <span class="settings-row__name">Ladeintervall</span>
+        <div class="text-dim text-xs" style="margin-top:.15rem">Wie oft sich Inhalte auf allen Seiten automatisch aktualisieren</div>
+      </div>
+      <div class="settings-row__ctrl">
+        <select id="set-poll-interval" class="form-input" style="width:auto" onchange="settingPollInterval(this.value)">
+          <option value="3000">3 Sekunden</option>
+          <option value="6000">6 Sekunden</option>
+          <option value="10000">10 Sekunden</option>
+          <option value="20000">20 Sekunden</option>
+        </select>
+      </div>
+    </div>
+  </div>
 
   <!-- Atmosphäre -->
   <div class="settings-section">
@@ -188,6 +190,7 @@ $hasMusic    = defined('BACKGROUND_MUSIC') && BACKGROUND_MUSIC;
         <?php endif; ?>
         <span><?= APP_NAME ?></span>
       </a>
+      <span class="nav__poll-countdown" id="poll-countdown"></span>
       <div class="flex gap-xs" style="align-items:center">
 
         <!-- Handy: Globe öffnet Theme-Sheet -->
@@ -283,6 +286,18 @@ $hasMusic    = defined('BACKGROUND_MUSIC') && BACKGROUND_MUSIC;
 </nav>
 
 <script>
+// ── Einstellung geräteübergreifend speichern ──────────────────
+const SETTINGS_API = <?= json_encode(API_URL . '/game.php') ?>;
+async function saveSetting(key, value) {
+  if (typeof apiFetch !== 'function') return;
+  const r = await apiFetch(SETTINGS_API, {action:'save_setting', key, value:String(value)});
+  // Fehlgeschlagene Speicherung sichtbar machen — sonst revidiert der nächste
+  // Seitenaufruf die Wahl still (base.php spiegelt den alten DB-Wert zurück).
+  if (r && r.error && r.error !== 'session_expired') {
+    showToast('⚠️ Einstellung konnte nicht am Konto gespeichert werden — gilt nur auf diesem Gerät.', 'error', 5000);
+  }
+}
+
 // ── Push-Toggle ──────────────────────────────────────────────
 async function initPushToggle() {
   const el   = document.getElementById('set-push');
@@ -367,14 +382,6 @@ function closeThemeSheet() {
 function openSettingsSheet() {
   closeThemeSheet();
 
-  // Lautstärke
-  const vol = parseFloat(localStorage.getItem('ww_fx_vol') || '0.25');
-  const slider = document.getElementById('set-vol');
-  if (slider) {
-    slider.value = Math.round(vol * 100);
-    document.getElementById('set-vol-label').textContent = Math.round(vol * 100) + '%';
-  }
-
   // Effekt-Toggles (Standard: an)
   ['particles','ripple','phase','skulls','anims','fog','rolecard','rolename'].forEach(k => {
     const el = document.getElementById('set-' + k);
@@ -384,6 +391,10 @@ function openSettingsSheet() {
   // Atmosphäre-Toggle
   const dnEl = document.getElementById('set-daynight');
   if (dnEl) { dnEl.checked = localStorage.getItem('ww_atmosphere') !== '0'; }
+
+  // Ladeintervall
+  const pollEl = document.getElementById('set-poll-interval');
+  if (pollEl) { pollEl.value = localStorage.getItem('ww_poll_interval') || '6000'; }
 
 
   document.getElementById('settings-sheet').classList.add('open');
@@ -398,6 +409,7 @@ function closeSettingsSheet() {
 // ── Effekt ein-/ausschalten & speichern ──────────────────────
 function settingToggle(key, val) {
   localStorage.setItem('ww_fx_' + key, String(val));
+  saveSetting('ww_fx_' + key, val);
   if (key === 'anims') {
     document.body.classList.toggle('no-fx-anims', !val);
     return;
@@ -419,6 +431,7 @@ function settingToggle(key, val) {
 // ── Atmosphäre-Toggle (rein visuell) ─────────────────────────
 function toggleDayNight(on) {
   localStorage.setItem('ww_atmosphere', on ? '1' : '0');
+  saveSetting('ww_atmosphere', on ? '1' : '0');
   if (on) {
     var h = new Date().getHours();
     document.documentElement.setAttribute('data-daynight', (h >= 6 && h < 22) ? 'day' : 'night');
@@ -427,12 +440,10 @@ function toggleDayNight(on) {
   }
 }
 
-// ── Lautstärke ändern & speichern ───────────────────────────
-function settingVol(val) {
-  val = Math.max(0, Math.min(1, parseFloat(val)));
-  localStorage.setItem('ww_fx_vol', val);
-  const label = document.getElementById('set-vol-label');
-  if (label) label.textContent = Math.round(val * 100) + '%';
-  if (window._aud) window._aud.volume = val;
+// ── Ladeintervall ändern & speichern ─────────────────────────
+function settingPollInterval(val) {
+  localStorage.setItem('ww_poll_interval', String(val));
+  saveSetting('ww_poll_interval', val);
+  if (typeof restartAllLiveBlocks === 'function') restartAllLiveBlocks();
 }
 </script>

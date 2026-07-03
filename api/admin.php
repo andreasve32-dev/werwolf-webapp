@@ -12,6 +12,10 @@ if(!Database::queryOne("SELECT id FROM players WHERE id=? AND is_admin=1",[$_adm
     exit;
 }
 
+// Session-Lock freigeben: kein Endpunkt hier schreibt $_SESSION, aber ohne
+// write_close serialisiert PHP alle parallelen Poll-Requests desselben Nutzers.
+session_write_close();
+
 $input=jsonBody();
 $action=$input['action']??'';
 $gameId=(int)($input['game_id']??0);
@@ -208,7 +212,7 @@ switch($action){
     $me = Database::queryOne("SELECT id FROM game_players WHERE game_id=? AND player_id=?", [$gameId, $_adminId]);
     if (!$me) err('Du bist nicht als Spieler im Spiel');
     Database::execute("UPDATE game_players SET role_id=? WHERE game_id=? AND player_id=?", [$roleId, $gameId, $_adminId]);
-    ok('🎭 Rolle gesetzt: ' . $role['name']);break;
+    ok('🎭 Rolle gesetzt: ' . $role['name'], ['role_name' => $role['name']]);break;
 
   case 'add_player':
     $pid=(int)($input['player_id']??0);
@@ -239,7 +243,9 @@ switch($action){
     if ($count >= 20) err('Maximal 20 Sprüche pro Phase erlaubt');
     try {
         Database::execute("INSERT INTO slogans (text, phase) VALUES (?,?)", [$text, $phase]);
-        ok('Spruch gespeichert');
+        $newSloganId = Database::lastId();
+        require_once TEMPLATE_PATH . '/slogan_row.php';
+        ok('Spruch gespeichert', ['html' => sloganRow(['id'=>$newSloganId,'text'=>$text,'active'=>1])]);
     } catch (\Throwable $e) { err('Dieser Spruch existiert bereits'); }
     break;
 
@@ -295,7 +301,10 @@ switch($action){
         (int)($input['sort_order'] ?? 0),
       ]
     );
-    ok('🎭 Rolle erstellt', ['role_id' => Database::lastId()]);break;
+    $newRoleId = Database::lastId();
+    require_once TEMPLATE_PATH . '/role_card.php';
+    $newRole = Database::queryOne("SELECT * FROM roles WHERE id=?", [$newRoleId]);
+    ok('🎭 Rolle erstellt', ['role_id' => $newRoleId, 'html' => render_role_card($newRole)]);break;
 
   case 'role_update':
     $roleId = (int)($input['role_id'] ?? 0);
@@ -324,7 +333,9 @@ switch($action){
         $roleId,
       ]
     );
-    ok('🎭 Rolle aktualisiert');break;
+    require_once TEMPLATE_PATH . '/role_card.php';
+    $updatedRole = Database::queryOne("SELECT * FROM roles WHERE id=?", [$roleId]);
+    ok('🎭 Rolle aktualisiert', ['html' => render_role_card($updatedRole)]);break;
 
   case 'role_delete':
     $roleId = (int)($input['role_id'] ?? 0);
@@ -339,6 +350,22 @@ switch($action){
     $newActive = $r['active'] ? 0 : 1;
     Database::execute("UPDATE roles SET active=? WHERE id=?",[$newActive,$roleId]);
     ok('Status geändert', ['active' => $newActive]);break;
+
+  case 'get_dashboard':
+    require_once TEMPLATE_PATH . '/admin_dashboard_blocks.php';
+    $g = Database::queryOne("SELECT id FROM games WHERE id=?", [$gameId]);
+    if (!$g) err('Spiel nicht gefunden');
+    $dashState = admin_compute_state($gameId);
+    blocksResponse([
+        'win-banner'        => admin_render_win_banner($dashState),
+        'assembly-banner'   => admin_render_assembly_banner($dashState),
+        'game-controls'     => admin_render_game_controls($dashState),
+        'player-list-body'  => admin_render_player_list($dashState),
+        'add-players-card'  => admin_render_add_players($dashState),
+        'role-preview-card' => admin_render_role_preview($dashState),
+        'voting-card'       => admin_render_voting($dashState),
+        'kill-quick-card'   => admin_render_kill_quick($dashState),
+    ], $input['blocks_hash'] ?? null);break;
 
   default:
     err('Unbekannte Aktion');

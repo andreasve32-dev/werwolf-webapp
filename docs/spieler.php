@@ -343,7 +343,8 @@ require TEMPLATE_PATH . '/base.php';
     <div class="section-title">⚙️ Deine Einstellungen</div>
     <p class="text-dim text-sm" style="margin-bottom:.75rem;line-height:1.6">
       Über den <strong>⚙️ Optionen</strong>-Tab erreichst du deine persönlichen Einstellungen.
-      Alle Werte werden lokal auf deinem Gerät gespeichert — keine Auswirkung auf andere Spieler.
+      Sie werden an deinem Konto gespeichert und gelten damit auf allen deinen Geräten —
+      keine Auswirkung auf andere Spieler.
     </p>
     <div style="display:grid;gap:.5rem">
       <div style="padding:.6rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md)">
@@ -359,8 +360,8 @@ require TEMPLATE_PATH . '/base.php';
         <div class="text-dim text-xs">Partikel, Nebel, Phasen-Überblendung, Karten-Flammeneffekt, Schädelregen — alle einzeln ein-/ausschaltbar.</div>
       </div>
       <div style="padding:.6rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md)">
-        <div class="text-sm" style="font-weight:600;margin-bottom:.2rem">🎵 Hintergrundmusik</div>
-        <div class="text-dim text-xs">Falls vom Admin aktiviert: Play/Stop-Buttons erscheinen im Spielfenster unten links.</div>
+        <div class="text-sm" style="font-weight:600;margin-bottom:.2rem">🔄 Ladeintervall</div>
+        <div class="text-dim text-xs">Wie oft sich Spielstatus, Listen und Statistiken automatisch aktualisieren (3–20 Sekunden). Der Countdown oben in der Mitte zeigt die Zeit bis zur nächsten Aktualisierung.</div>
       </div>
     </div>
   </div>

@@ -49,6 +49,19 @@ $showNav = $page['nav'] ?? true;
   <link rel="icon" type="image/png" href="<?= e(assetUrl($_faviconPath)) ?>">
   <?php endif; ?>
 
+  <?php if (Auth::check()): ?>
+  <!-- Persönliche Einstellungen aus der DB in localStorage spiegeln (geräteübergreifend,
+       localStorage bleibt nur schneller lokaler Zwischenspeicher für synchrone Lesezugriffe
+       wie den Atmosphäre-Check direkt darunter). Fehlende Schlüssel = Standardwert, werden
+       bewusst NICHT überschrieben, damit der jeweilige Default-Code-Pfad weiter greift. -->
+  <script>
+  (function(){
+    var s = <?= json_encode(playerSettings(Auth::player()['id'])) ?>;
+    Object.keys(s).forEach(function(k){ localStorage.setItem(k, String(s[k])); });
+  })();
+  </script>
+  <?php endif; ?>
+
   <!-- Atmosphäre: nur setzen wenn Funktion aktiviert (ww_atmosphere !== '0') -->
   <script>
   (function(){

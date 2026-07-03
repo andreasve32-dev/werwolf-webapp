@@ -1,6 +1,7 @@
 <?php
 // Copyright (c) 2026 Andreas Vetter
 require_once dirname(__DIR__) . '/core/bootstrap.php';
+require_once TEMPLATE_PATH . '/messages_blocks.php';
 Auth::requireAdmin();
 
 $messages = Database::query(
@@ -10,7 +11,8 @@ $messages = Database::query(
      JOIN players p ON p.id = m.player_id
      ORDER BY (m.reply IS NULL) DESC, m.created_at DESC"
 );
-$pending = count(array_filter($messages, fn($m) => $m['reply'] === null));
+$pending  = count(array_filter($messages, fn($m) => $m['reply'] === null));
+$maxMsgId = $messages ? max(array_column($messages, 'id')) : 0;
 
 $page = ['title' => 'Spielerfragen'];
 require TEMPLATE_PATH . '/base.php';
@@ -22,133 +24,29 @@ require TEMPLATE_PATH . '/base.php';
     <span class="page-header__icon">✉️</span>
     <h1>Spielerfragen</h1>
     <p class="page-header__sub">
-      <?php if ($pending > 0): ?>
-        <span class="tag tag--running"><?= $pending ?> unbeantwortet</span>
-        &middot;
-      <?php endif; ?>
+      <span id="pending-badge"><?php if ($pending > 0): ?><span class="tag tag--running"><?= $pending ?> unbeantwortet</span> &middot; <?php endif; ?></span>
       <a href="<?= APP_URL ?>/admin/">← zurück zur Spielleitung</a>
     </p>
   </div>
 
-  <?php if (empty($messages)): ?>
-  <div class="card card--glow animate-in">
-    <p class="text-dim text-center" style="padding:2rem">
-      Noch keine Nachrichten von Spielern.
-    </p>
-  </div>
-  <?php else: ?>
   <div class="card card--glow animate-in">
     <div id="msg-list" style="display:flex;flex-direction:column;gap:.75rem">
+      <?php if (empty($messages)): ?>
+      <p class="text-dim text-center" id="msg-list-empty" style="padding:2rem">
+        Noch keine Nachrichten von Spielern.
+      </p>
+      <?php else: ?>
       <?php foreach ($messages as $msg): ?>
-      <?php $isNew = ($msg['reply'] === null); ?>
-      <div class="panel msg-panel" id="msg-<?= (int)$msg['id'] ?>"
-           style="padding:.9rem 1rem<?= $isNew ? ';border-left:3px solid var(--accent)' : ';opacity:.75' ?>">
-
-        <!-- Kopfzeile: Name + Zeit + Badge + Aktionen + Chevron -->
-        <div class="flex-between" style="flex-wrap:wrap;gap:.4rem;<?= !$isNew ? 'cursor:pointer' : '' ?>"
-             <?= !$isNew ? 'onclick="toggleCollapse(' . (int)$msg['id'] . ')" title="Auf-/Zuklappen"' : '' ?>>
-          <div class="flex gap-sm" style="align-items:center;flex-wrap:wrap">
-            <span style="font-family:var(--font-display);font-size:.92rem;color:var(--text-bright)">
-              <?= e($msg['display_name']) ?>
-            </span>
-            <span class="text-dim text-xs">
-              <?= e(date('d.m.Y H:i', strtotime($msg['created_at']))) ?>
-            </span>
-            <?php if ($isNew): ?>
-              <span class="tag tag--running" style="font-size:.65rem">Neu</span>
-            <?php else: ?>
-              <span class="tag" style="font-size:.65rem;background:var(--panel-bg);color:var(--text-dim)">✓ Beantwortet</span>
-            <?php endif; ?>
-            <?php if ($msg['published']): ?>
-              <span class="tag tag--alive" style="font-size:.65rem" id="pub-tag-<?= (int)$msg['id'] ?>">📢 Im FAQ</span>
-            <?php else: ?>
-              <span id="pub-tag-<?= (int)$msg['id'] ?>" style="display:none" class="tag tag--alive" style="font-size:.65rem">📢 Im FAQ</span>
-            <?php endif; ?>
-            <!-- Vorschau der Frage wenn zugeklappt -->
-            <?php if (!$isNew): ?>
-            <span class="msg-preview text-dim" id="preview-<?= (int)$msg['id'] ?>"
-                  style="font-size:.8rem;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-              <?= e(mb_substr($msg['message'], 0, 80)) ?>
-            </span>
-            <?php endif; ?>
-          </div>
-          <div class="flex gap-xs" onclick="event.stopPropagation()">
-            <?php if (!$isNew): ?>
-            <button class="btn btn--ghost btn--sm" id="pub-btn-<?= (int)$msg['id'] ?>"
-                    title="<?= $msg['published'] ? 'Aus FAQ entfernen' : 'Als FAQ veröffentlichen' ?>"
-                    onclick="togglePublish(<?= (int)$msg['id'] ?>, <?= $msg['published'] ? 'true' : 'false' ?>)">
-              <?= $msg['published'] ? '📢 Veröffentlicht' : '📢 FAQ freigeben' ?>
-            </button>
-            <?php endif; ?>
-            <button class="btn btn--ghost btn--sm" title="Löschen"
-                    onclick="deleteMsg(<?= (int)$msg['id'] ?>)">🗑</button>
-            <?php if (!$isNew): ?>
-            <span class="msg-chevron" id="chevron-<?= (int)$msg['id'] ?>"
-                  style="font-size:.8rem;color:var(--text-dim);padding:.1rem .2rem;line-height:1;transition:transform .2s;display:inline-block;transform:rotate(0deg)">▼</span>
-            <?php endif; ?>
-          </div>
-        </div>
-
-        <!-- Aufklappbarer Inhalt -->
-        <div id="body-<?= (int)$msg['id'] ?>"
-             style="<?= !$isNew ? 'display:none;' : '' ?>margin-top:.75rem">
-
-          <!-- Frage des Spielers -->
-          <div style="background:var(--panel-bg);border:1px solid var(--border);border-radius:8px;
-                      padding:.6rem .85rem;margin-bottom:.6rem;font-size:.9rem;line-height:1.5">
-            <?= e($msg['message']) ?>
-          </div>
-
-          <!-- Antwort-Bereich -->
-          <div id="reply-display-<?= (int)$msg['id'] ?>"
-               style="<?= $isNew ? 'display:none' : '' ?>">
-            <?php if ($msg['reply']): ?>
-            <div style="background:var(--input-bg,var(--card-bg));border-left:3px solid var(--accent-border);
-                        border-radius:0 8px 8px 0;padding:.6rem .85rem;font-size:.88rem;line-height:1.5">
-              <div class="text-dim text-xs mb-1">
-                Deine Antwort &middot; <?= e(date('d.m.Y H:i', strtotime($msg['replied_at']))) ?>
-              </div>
-              <p style="margin:0;color:var(--text-bright)" id="reply-text-display-<?= (int)$msg['id'] ?>">
-                <?= e($msg['reply']) ?>
-              </p>
-              <button class="btn btn--ghost btn--sm mt-1"
-                      onclick="openEditReply(<?= (int)$msg['id'] ?>, <?= htmlspecialchars(json_encode($msg['reply']), ENT_QUOTES) ?>)">
-                ✏️ Bearbeiten
-              </button>
-            </div>
-            <?php endif; ?>
-          </div>
-
-          <div id="reply-form-<?= (int)$msg['id'] ?>"
-               style="<?= $isNew ? '' : 'display:none' ?>">
-            <textarea class="form-input"
-                      id="reply-text-<?= (int)$msg['id'] ?>"
-                      placeholder="Antwort eingeben …" rows="2"
-                      style="width:100%;font-size:.85rem;resize:vertical;margin-bottom:.4rem"
-                      maxlength="1000"></textarea>
-            <div class="flex gap-xs">
-              <button class="btn btn--primary btn--sm"
-                      onclick="sendReply(<?= (int)$msg['id'] ?>)">✓ Antworten</button>
-              <?php if (!$isNew): ?>
-              <button class="btn btn--ghost btn--sm"
-                      onclick="cancelEdit(<?= (int)$msg['id'] ?>)">Abbrechen</button>
-              <?php endif; ?>
-            </div>
-            <div id="reply-result-<?= (int)$msg['id'] ?>" style="display:none;margin-top:.4rem"></div>
-          </div>
-
-        </div><!-- /body -->
-
-      </div>
+      <?= render_message_row($msg) ?>
       <?php endforeach; ?>
+      <?php endif; ?>
     </div>
   </div>
-  <?php endif; ?>
 
 </div>
 
 <?php
-$page['inline_js'] = sprintf('const MSG_API = %s;', json_encode(API_URL . '/messages.php'));
+$page['inline_js'] = sprintf('const MSG_API = %s; let _maxMsgId = %d;', json_encode(API_URL . '/messages.php'), $maxMsgId);
 $page['inline_js'] .= <<<'JS'
 
 function toggleCollapse(id) {
@@ -164,6 +62,44 @@ function toggleCollapse(id) {
   if (panel)   panel.style.opacity     = open ? '.75'  : '1';
 }
 
+function _replyDisplayFragment(id, text) {
+  const now = new Date().toLocaleString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'background:var(--input-bg,var(--card-bg));border-left:3px solid var(--accent-border);' +
+    'border-radius:0 8px 8px 0;padding:.6rem .85rem;font-size:.88rem;line-height:1.5';
+  wrap.innerHTML =
+    '<div class="text-dim text-xs mb-1">Deine Antwort &middot; ' + escHtml(now) + '</div>' +
+    '<p style="margin:0;color:var(--text-bright)" id="reply-text-display-' + id + '">' + escHtml(text) + '</p>' +
+    '<button type="button" class="btn btn--ghost btn--sm mt-1" id="edit-reply-btn-' + id + '">✏️ Bearbeiten</button>';
+  const editBtn = wrap.querySelector('#edit-reply-btn-' + id);
+  if (editBtn) editBtn.addEventListener('click', () => openEditReply(id, text));
+  return wrap;
+}
+
+function _applyReplyToDom(id, text) {
+  const panel   = document.getElementById('msg-' + id);
+  const display = document.getElementById('reply-display-' + id);
+  const form    = document.getElementById('reply-form-' + id);
+
+  if (display) {
+    display.innerHTML = '';
+    display.appendChild(_replyDisplayFragment(id, text));
+    display.style.display = '';
+  }
+  if (form) form.style.display = 'none';
+  if (panel) { panel.style.borderLeft = 'none'; panel.style.opacity = '.75'; }
+
+  const header = panel ? panel.querySelector('.flex-between') : null;
+  const newTag = header ? header.querySelector('.tag--running') : null;
+  if (newTag) {
+    newTag.className = 'tag';
+    newTag.style.background = 'var(--panel-bg)';
+    newTag.style.color = 'var(--text-dim)';
+    newTag.style.fontSize = '.65rem';
+    newTag.textContent = '✓ Beantwortet';
+  }
+}
+
 async function sendReply(id) {
   const ta  = document.getElementById('reply-text-' + id);
   const rd  = document.getElementById('reply-result-' + id);
@@ -174,7 +110,7 @@ async function sendReply(id) {
   if (r.error === 'session_expired') return;
   if (r.ok) {
     showToast('Antwort gesendet.', 'success');
-    setTimeout(() => location.reload(), 800);
+    _applyReplyToDom(id, txt);
   } else {
     if (rd) { rd.style.display=''; rd.innerHTML='<div class="alert alert--error" style="padding:.3rem .7rem;font-size:.82rem">'+escHtml(r.error||'Fehler')+'</div>'; }
   }
@@ -226,6 +162,32 @@ async function deleteMsg(id) {
     showToast(r.error || 'Fehler', 'error');
   }
 }
+
+// ── Live-Update: neue Spielerfragen ohne Reload nachladen ─────
+// Läuft über den gemeinsamen liveBlocks()-Helper (onData-only-Modus):
+// Overlap-Guard, Tab-Pause und Intervall-Neustart kommen automatisch mit.
+const msgPoll = liveBlocks({
+  fetcher: () => apiFetch(MSG_API, {action:'get_new_messages', after_id:_maxMsgId}),
+  countdownId: 'poll-countdown',
+  onData: (r) => {
+    if (!Array.isArray(r.rows)) return;
+    if (r.rows.length) {
+      document.getElementById('msg-list-empty')?.remove();
+      const list = document.getElementById('msg-list');
+      r.rows.forEach(row => {
+        list.insertAdjacentHTML('afterbegin', row.html);
+        if (row.id > _maxMsgId) _maxMsgId = row.id;
+      });
+    }
+    if (typeof r.pending === 'number') {
+      const badge = document.getElementById('pending-badge');
+      if (badge) badge.innerHTML = r.pending > 0
+        ? '<span class="tag tag--running">' + r.pending + ' unbeantwortet</span> &middot; '
+        : '';
+    }
+  },
+});
+msgPoll.start();
 JS;
 require TEMPLATE_PATH . '/base_end.php';
 ?>

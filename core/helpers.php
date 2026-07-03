@@ -31,6 +31,21 @@ function jsonOk(string $msg = 'OK', array $extra = []): never {
     jsonResponse(array_merge(['ok' => true, 'message' => $msg], $extra));
 }
 
+/**
+ * HTML-Blocks für liveBlocks()-Polling senden — aber nur, wenn sich am
+ * Inhalt etwas geändert hat: der Client schickt den Hash der zuletzt
+ * empfangenen Blocks mit (blocks_hash); stimmt er überein, geht nur
+ * {hash} zurück und der Client lässt DOM und Zustand unangetastet
+ * (kein Flackern, kein Transfer der unveränderten Fragmente).
+ */
+function blocksResponse(array $blocks, ?string $clientHash, array $extra = []): never {
+    $hash = md5(json_encode($blocks, JSON_UNESCAPED_UNICODE));
+    if ($clientHash !== null && $clientHash === $hash) {
+        jsonResponse(['hash' => $hash]);
+    }
+    jsonResponse(array_merge(['hash' => $hash, 'blocks' => $blocks], $extra));
+}
+
 /** Redirect */
 function redirect(string $path): never {
     header('Location: ' . APP_URL . $path);
@@ -138,6 +153,42 @@ function roleIconHtml(?array $roleRow, string $size = 'md'): string {
         '<span class="role-icon role-icon--%s role-icon--photo" style="background-image:url(\'%s\')" role="img" aria-label="%s"></span>',
         e($size), e($url), e($label)
     );
+}
+
+/**
+ * Persönliche UI-Einstellungen eines Spielers laden (geräteübergreifend).
+ * Nur die vom Spieler tatsächlich geänderten Schlüssel sind enthalten —
+ * fehlende Schlüssel bedeuten "Standardwert" (siehe jeweiliger Frontend-Code).
+ *
+ * Selbstheilend: fehlt die Spalte `players.settings` noch (ältere Installation,
+ * kein manuelles ALTER TABLE ausgeführt), wird sie beim ersten Zugriff automatisch
+ * angelegt statt die Seite mit einem SQL-Fehler abzubrechen.
+ */
+function playerSettings(int $playerId): array {
+    try {
+        $row = Database::queryOne("SELECT settings FROM players WHERE id=?", [$playerId]);
+    } catch (\Throwable $e) {
+        ensurePlayerSettingsColumn();
+        return [];
+    }
+    if (!$row || !$row['settings']) return [];
+    $decoded = json_decode($row['settings'], true);
+    return is_array($decoded) ? $decoded : [];
+}
+
+/** Legt players.settings nach, falls die Spalte (noch) fehlt. */
+function ensurePlayerSettingsColumn(): void {
+    try {
+        Database::execute("ALTER TABLE players ADD COLUMN settings TEXT NULL");
+    } catch (\Throwable $e) {
+        // Spalte existiert vermutlich schon (Race mit einem parallelen Request) oder
+        // der DB-Nutzer hat keine ALTER-Rechte — einzelner Request soll dadurch nicht
+        // abstürzen, aber der Fehler muss im Server-Log auffindbar sein:
+        // ohne ALTER-Rechte manuell ausführen: ALTER TABLE players ADD COLUMN settings TEXT NULL;
+        if (stripos($e->getMessage(), 'Duplicate column') === false) {
+            error_log('players.settings konnte nicht angelegt werden: ' . $e->getMessage());
+        }
+    }
 }
 
 /** Aktuelles Game laden (läuft oder Lobby) */

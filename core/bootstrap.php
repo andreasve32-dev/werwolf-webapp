@@ -37,7 +37,6 @@ define('SESSION_LIFETIME',   (int)($_cfg['session_lifetime'] ?? 604800));
 define('MIN_PLAYERS',        (int)($_cfg['min_players']      ?? 4));
 define('MAX_PLAYERS',        (int)($_cfg['max_players']      ?? 30));
 define('DEFAULT_ROLE_ICON',  $_cfg['default_role_icon'] ?? 'assets/icons/roles/_default.png');
-define('BACKGROUND_MUSIC',   $_cfg['background_music']  ?? 'background.mp3');
 define('LOGIN_TITLE',        $_cfg['login_title']       ?? 'Willkommen zurück');
 define('LOGIN_SUBTITLE',     $_cfg['login_subtitle']    ?? 'Das Dorf schläft … doch die Wölfe nicht.');
 define('REGISTER_SUBTITLE',  $_cfg['register_subtitle'] ?? 'Tritt dem Dorf bei');

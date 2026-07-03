@@ -33,10 +33,11 @@
   let   _lastPending = 0;
   let   _firstPoll   = true; // kein Toast beim Seitenstart
 
-  async function _pollAdminMsgs() {
-    try {
-      const r = await apiFetch(_msgApi, {action:'pending_count'});
-      if (!r || r.error || r.pending === undefined) return;
+  // Badge-Poll im eingestellten Ladeintervall (liveBlocks: Tab-Pause + Overlap-Guard)
+  liveBlocks({
+    fetcher: () => apiFetch(_msgApi, {action:'pending_count'}),
+    onData: (r) => {
+      if (r.pending === undefined) return;
       // nav-msg-badge (versteckt, nur Zustandsträger) + admin-msg-badge (sichtbar auf index.php)
       [document.getElementById('nav-msg-badge'), document.getElementById('admin-msg-badge')]
         .forEach(badge => {
@@ -44,61 +45,22 @@
           if (r.pending > 0) { badge.textContent = r.pending; badge.style.display = 'inline-block'; }
           else               { badge.style.display = 'none'; }
         });
+      // Hinweis-Link auf game.php (existiert nur dort)
+      const hint  = document.getElementById('admin-pending-hint');
+      const count = document.getElementById('admin-pending-count');
+      if (hint)  hint.style.display = r.pending > 0 ? 'flex' : 'none';
+      if (count) count.textContent  = r.pending;
       if (!_firstPoll && r.pending > _lastPending) {
         showToast('✉️ Neue Spielerfrage eingegangen!', 'info', 5000);
       }
       _firstPoll   = false;
       _lastPending = r.pending;
-    } catch(e) {}
-  }
-
-  setInterval(_pollAdminMsgs, 30000);
+    },
+  }).start();
 })();
 </script>
 <?php endif; ?>
 
-<?php if (defined('BACKGROUND_MUSIC') && BACKGROUND_MUSIC): ?>
-<script>
-(function() {
-  window._aud = new Audio('<?= e(APP_URL) ?>/audio/<?= e(BACKGROUND_MUSIC) ?>');
-  _aud.loop   = true;
-  _aud.volume = Math.max(0, Math.min(1, parseFloat(localStorage.getItem('ww_fx_vol') || '0.25')));
-
-  const _t = parseFloat(localStorage.getItem('ww_music_t') || '0');
-  if (_t > 0) _aud.currentTime = _t;
-
-  window.addEventListener('beforeunload', () => {
-    localStorage.setItem('ww_music_t', String(_aud.currentTime));
-  });
-
-  function _setBtns(playing) {
-    const bp = document.getElementById('music-btn-play');
-    const bs = document.getElementById('music-btn-stop');
-    if (bp) bp.disabled =  playing;
-    if (bs) bs.disabled = !playing;
-  }
-
-  if (localStorage.getItem('ww_music') === '1') {
-    _aud.play().then(() => _setBtns(true)).catch(() => {});
-  }
-
-  window.musicPlay = function() {
-    _aud.play().then(() => {
-      localStorage.setItem('ww_music', '1');
-      _setBtns(true);
-    }).catch(() => {});
-  };
-
-  window.musicStop = function() {
-    _aud.pause();
-    _aud.currentTime = 0;
-    localStorage.removeItem('ww_music');
-    localStorage.removeItem('ww_music_t');
-    _setBtns(false);
-  };
-})();
-</script>
-<?php endif; ?>
 <?php if (empty($page['skip_consent'])): ?>
 <script>
 window.acceptConsent = function () {

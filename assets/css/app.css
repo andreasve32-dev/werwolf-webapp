@@ -29,7 +29,7 @@ a:hover{color:var(--accent-bright)}
 
 /* Nav */
 .nav{position:sticky;top:0;z-index:200;background:var(--nav-bg);border-bottom:1px solid var(--border);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);padding:.6rem 0}
-.nav__inner{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.nav__inner{display:flex;align-items:center;justify-content:space-between;gap:1rem;position:relative}
 .nav__logo{font-family:var(--font-display);font-size:1.15rem;color:var(--accent);display:flex;align-items:center;gap:.45rem;font-weight:700}
 .nav__logo-img{height:28px;width:auto;object-fit:contain}
 .nav__links{display:flex;align-items:center;gap:.2rem}
@@ -194,6 +194,23 @@ body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
   cursor: pointer;
 }
 .theme-trigger:active { transform: scale(.92); }
+
+/* ── Live-Update-Countdown (zentriert in der oberen Nav-Leiste) ── */
+.nav__poll-countdown {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: .68rem;
+  color: var(--text-dim);
+  letter-spacing: .02em;
+  opacity: .8;
+  white-space: nowrap;
+  pointer-events: none;
+}
+@media (max-width: 640px) {
+  .nav__poll-countdown { font-size: .6rem; } /* Kurzformat "🔄 12s" passt auch neben Logo/Icons */
+}
 
 /* ── Bottom Tab-Bar ─────────────────────────────────────── */
 .tabbar {

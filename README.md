@@ -76,8 +76,6 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 │   │   └── effects.js      ← Visuelle Effekte (Partikel, Nebel, Phasenübergänge)
 │   └── icons/roles/        ← Rollen-Icons (PNG/JPG), inkl. .htaccess-Schutz
 │
-├── audio/              ← Hintergrundmusik (MP3)
-│
 ├── docs/               ← Anleitungen (Login erforderlich; Admin-Seite nur für Admins)
 │   ├── index.php       ← Übersichtsseite mit Links zu Spieler- und Admin-Anleitung
 │   ├── spieler.php     ← Spieler-Anleitung: Rollen, Ablauf, Versammlung, Push, iPhone
@@ -362,7 +360,6 @@ ab dem nächsten Seitenaufruf — kein Datei-Edit nötig:
 | `login_title` / `login_subtitle` | Texte auf der Anmeldeseite |
 | `register_subtitle` | Text auf der Registrierungsseite |
 | `min_players` / `max_players` | Spielerzahl-Grenzen |
-| `background_music` | Dateiname in `assets/audio/` (leer = kein Player) |
 | `default_role_icon` | Fallback-Icon-Pfad für Rollen ohne eigenes Icon |
 | `session_lifetime` | Anmeldedauer in Sekunden |
 | `deaths_empty_title` / `deaths_empty_sub` | Texte auf leerer Todesliste |

@@ -75,23 +75,33 @@ require TEMPLATE_PATH . '/base.php';
 
       <h3 class="text-sm mb-1" style="font-weight:600;margin-top:1rem">2.4 Lokaler Browserspeicher (localStorage)</h3>
       <p class="text-sm text-dim" style="line-height:1.7">
-        Im lokalen Speicher des Browsers werden folgende Präferenzen gespeichert,
-        die das Gerät nicht verlassen:
+        Im lokalen Speicher des Browsers werden folgende Präferenzen gespeichert.
+        Rein technische Werte verlassen das Gerät nicht; die Anzeige-Einstellungen
+        aus dem Menüpunkt „Optionen" werden zusätzlich am Spielerkonto gespeichert,
+        damit sie beim Wechsel des Geräts erhalten bleiben (siehe 2.5).
       </p>
       <div style="overflow-x:auto;margin:.5rem 0">
         <table class="table text-sm">
           <thead><tr><th>Schlüssel</th><th>Inhalt</th></tr></thead>
           <tbody>
             <tr><td><code>ww_theme</code></td><td>Design-Einstellung</td></tr>
-            <tr><td><code>ww_music</code>, <code>ww_music_t</code></td><td>Musik-Status und -position</td></tr>
-            <tr><td><code>ww_fx_vol</code></td><td>Effekt-Lautstärke</td></tr>
             <tr><td><code>ww_consent</code></td><td>Zustimmung zu Nutzungsbedingungen und Datenschutz</td></tr>
             <tr><td><code>ww_push_dismissed</code></td><td>Entscheidung zum Push-Hinweis</td></tr>
-            <tr><td><code>ww_atmosphere</code></td><td>Tag/Nacht-Atmosphäre aktiviert (1) oder deaktiviert (0)</td></tr>
             <tr><td><code>ww_last_phase</code></td><td>Zuletzt angezeigte Spielphase für Übergangsanimation</td></tr>
+            <tr><td><code>ww_atmosphere</code>, <code>ww_poll_interval</code>, <code>ww_fx_*</code></td><td>Anzeige-Einstellungen (Effekte, Atmosphäre, Ladeintervall) — zusätzlich am Spielerkonto gespeichert, siehe 2.5</td></tr>
           </tbody>
         </table>
       </div>
+
+      <h3 class="text-sm mb-1" style="font-weight:600;margin-top:1rem">2.5 Anzeige-Einstellungen im Spielerkonto</h3>
+      <p class="text-sm text-dim" style="line-height:1.7">
+        Die im Menüpunkt „Optionen" wählbaren Anzeige-Einstellungen (visuelle Effekte,
+        Tag/Nacht-Atmosphäre, Ladeintervall der automatischen Aktualisierung) werden am
+        Spielerkonto gespeichert, damit sie beim Anmelden auf einem anderen Gerät
+        übernommen werden. Es werden keine Rückschlüsse auf das Verhalten außerhalb der
+        Anwendung gezogen.<br>
+        <em>Rechtsgrundlage:</em> Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung).
+      </p>
 
       <h3 class="text-sm mb-1" style="font-weight:600;margin-top:1rem">2.5 Push-Benachrichtigungen (optional)</h3>
       <p class="text-sm text-dim" style="line-height:1.7">

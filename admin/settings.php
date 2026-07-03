@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'save')
     $allowed = [
         'app_name', 'app_version', 'app_debug', 'beta_mode', 'default_theme', 'login_title', 'login_subtitle',
         'min_players', 'max_players',
-        'background_music', 'default_role_icon', 'session_lifetime',
+        'default_role_icon', 'session_lifetime',
         'deaths_empty_title', 'deaths_empty_sub', 'deaths_peace_text',
         'login_logo', 'mini_logo', 'register_subtitle',
         'game_timezone',
@@ -79,7 +79,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'save')
             case 'deaths_empty_title':
             case 'deaths_empty_sub':
             case 'deaths_peace_text':
-            case 'background_music':
             case 'default_role_icon':
             case 'login_logo':
             case 'mini_logo':
@@ -199,7 +198,6 @@ $defaults = [
     'register_subtitle'  => REGISTER_SUBTITLE,
     'min_players'        => (string)MIN_PLAYERS,
     'max_players'        => (string)MAX_PLAYERS,
-    'background_music'   => BACKGROUND_MUSIC,
     'default_role_icon'  => DEFAULT_ROLE_ICON,
     'session_lifetime'   => (string)SESSION_LIFETIME,
     'deaths_empty_title' => DEATHS_EMPTY_TITLE,
@@ -500,24 +498,6 @@ require TEMPLATE_PATH . '/base.php';
             <span class="text-dim" style="font-size:.65rem"><?= e($theme['label']) ?></span>
           </label>
           <?php endforeach; ?>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Audio ──────────────────────────────────────────── -->
-    <div class="card animate-in mb-2" style="animation-delay:.1s">
-      <div class="section-title">🎵 Audio</div>
-
-      <div class="settings-row" style="padding:.6rem 0">
-        <div>
-          <span class="settings-row__name"><?= e($cfg['background_music']['label'] ?? 'Hintergrundmusik') ?></span>
-          <div class="text-dim text-xs mt-1"><?= e($cfg['background_music']['description'] ?? '') ?></div>
-        </div>
-        <div style="max-width:260px;width:100%">
-          <input class="form-input" type="text" name="background_music"
-                 value="<?= e($cfg['background_music']['value']) ?>"
-                 placeholder="z. B. background.mp3 — leer = kein Player"
-                 maxlength="255">
         </div>
       </div>
     </div>
