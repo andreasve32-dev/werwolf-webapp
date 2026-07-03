@@ -710,9 +710,12 @@ async function saveSettings(e) {
   e.preventDefault();
   const btn = document.getElementById('save-btn');
   const res = document.getElementById('save-result');
-  btn.disabled = true;
-  btn.textContent = 'Speichern…';
-  res.style.display = 'none';
+  const silent = e === null; // Auto-Save: dezenter Toast statt großem Hinweis
+  if (!silent) {
+    btn.disabled = true;
+    btn.textContent = 'Speichern…';
+    res.style.display = 'none';
+  }
 
   const form = document.getElementById('settings-form');
   const data = {};
@@ -731,15 +734,21 @@ async function saveSettings(e) {
     });
     const d = await r.json();
     if (d.ok) {
-      res.innerHTML = `<div class="alert alert--success">✓ ${escHtml(d.message || 'Gespeichert.')}</div>`;
+      if (silent) {
+        showToast('✓ Einstellungen gespeichert', 'success', 1800);
+      } else {
+        res.innerHTML = `<div class="alert alert--success">✓ ${escHtml(d.message || 'Gespeichert.')}</div>`;
+        res.style.display = '';
+        res.scrollIntoView({behavior:'smooth', block:'nearest'});
+      }
     } else {
       const errList = d.errors
         ? Object.values(d.errors).map(e => `<li>${escHtml(e)}</li>`).join('')
         : 'Unbekannter Fehler.';
       res.innerHTML = `<div class="alert alert--error"><ul style="margin:0;padding-left:1.2rem">${errList}</ul></div>`;
+      res.style.display = '';
+      res.scrollIntoView({behavior:'smooth', block:'nearest'});
     }
-    res.style.display = '';
-    res.scrollIntoView({behavior:'smooth', block:'nearest'});
   } catch(err) {
     res.innerHTML = `<div class="alert alert--error">Netzwerkfehler: ${escHtml(err.message)}</div>`;
     res.style.display = '';
@@ -748,6 +757,14 @@ async function saveSettings(e) {
   btn.disabled = false;
   btn.textContent = '💾 Einstellungen speichern';
 }
+
+// Auto-Speichern wie bei den Spieler-Einstellungen: jede Änderung wird
+// sofort gespeichert — der Speichern-Button bleibt als Absicherung
+let _autoSaveTimer = null;
+document.getElementById('settings-form')?.addEventListener('change', () => {
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(() => saveSettings(null), 500);
+});
 
 async function uploadLogo() {
   const input = document.getElementById('logo-file');
