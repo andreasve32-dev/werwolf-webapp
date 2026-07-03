@@ -2,12 +2,9 @@
 
 Anklagen ohne Versammlung möglich — Spieler kann angeklagt werden, obwohl keine Versammlung aktiv ist
 Versammlungs-Button zeigt falschen Status — Pause-Icon suggeriert "pausiert", Zustand ist aber "aktiv" (Logik muss umgekehrt werden)
-Cooldown-Wert: Integer-Overflow — Zu hohe Zahl ergibt "Netzwerkfehler" statt klarer Fehlermeldung (Int11 in DB hat Grenze)
 Cooldown startet bei falschem Wert — Nach Klick beginnt Timer nicht bei 0, sondern bei 20 Sekunden
 Rollen-Liste ändert Aussehen je nach Theme — Style-Inkonsistenz zwischen verschiedenen Designs
-Rollen der Toten im Admin-Menü sichtbar — Rolle von toten Spielern wird im Admin-Bereich angezeigt (sollte verborgen sein)
 Paar: zweiter Spieler stirbt nicht automatisch — Muss sich manuell als tot melden
-Testspieler anlegen kumuliert nicht — 5 anlegen, nochmal 5 → kein Neuzugang; man muss auf 10 gehen damit 5 weitere entstehen
 Push-Benachrichtigungen kommen verspätet/nicht — 5-Minuten-Cooldown zwischen Nachrichten war unbekannt und unkonfigurierbar
 Datenbank-Fehler bei Push-Einstellung — Ein/Aus-Toggle für Push-Benachrichtigungen hat noch einen DB-Bug
 Weitergeleitet
