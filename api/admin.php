@@ -148,9 +148,9 @@ switch($action){
     $nr=$g['round']+($np==='day'?1:0);
     Database::execute("UPDATE games SET phase=?,round=? WHERE id=?",[$np,$nr,$gameId]);
     if($np==='day'){
-        WebPush::sendToGame($gameId,false,'☀️ Bürgerversammlung!','Tag '.$nr.' beginnt — kommt zusammen und stimmt ab.');
+        WebPush::sendToGame($gameId,true,'☀️ Bürgerversammlung!','Tag '.$nr.' beginnt — kommt zusammen und stimmt ab.');
     } else {
-        WebPush::sendToGame($gameId,false,'🌕 Die Nacht bricht herein','Runde '.$g['round'].' — haltet die Augen offen.');
+        WebPush::sendToGame($gameId,true,'🌕 Die Nacht bricht herein','Runde '.$g['round'].' — haltet die Augen offen.');
     }
     ok($np==='night'?"🌕 Nacht {$g['round']} beginnt":"☀️ Tag {$nr} beginnt");break;
 
@@ -167,7 +167,7 @@ switch($action){
     Database::execute("DELETE FROM votes WHERE game_id=? AND round=?",[$gameId,$g['round']]);
     $n=Database::queryOne("SELECT display_name FROM players WHERE id=?",[$pid]);
     $winner = checkAndEndGame($gameId);
-    if (!$winner) WebPush::sendToGame($gameId,false,'⚖️ Hinrichtung!',($n['display_name']??'Jemand').' wurde vom Dorf gehenkt.');
+    if (!$winner) WebPush::sendToGame($gameId,true,'⚖️ Hinrichtung!',($n['display_name']??'Jemand').' wurde vom Dorf gehenkt.');
     $winMsg = ['dodo'=>' 🐦 Dodo-Sieg!','citizen'=>' 🏘️ Bürger-Sieg!','killer'=>' 🔪 Mörder-Sieg!'];
     ok("⚖️ {$n['display_name']} wurde gehenkt.".($winner ? $winMsg[$winner] : ''), ['game_ended' => (bool)$winner, 'winner' => $winner]);break;
 
@@ -185,7 +185,7 @@ switch($action){
     recordDeath($gameId,$top['target_player_id'],$g['round'],'night');
     $n=Database::queryOne("SELECT display_name FROM players WHERE id=?",[$top['target_player_id']]);
     $winner = checkAndEndGame($gameId);
-    if (!$winner) WebPush::sendToGame($gameId,false,'💀 Ein Spieler ist tot',($n['display_name']??'Jemand').' wurde in der Nacht zerrissen.');
+    if (!$winner) WebPush::sendToGame($gameId,true,'💀 Ein Spieler ist tot',($n['display_name']??'Jemand').' wurde in der Nacht zerrissen.');
     $winMsg = ['dodo'=>' 🐦 Dodo-Sieg!','citizen'=>' 🏘️ Bürger-Sieg!','killer'=>' 🔪 Mörder-Sieg!'];
     ok("🐺 {$n['display_name']} wurde zerrissen!".($winner ? $winMsg[$winner] : ''), ['game_ended' => (bool)$winner, 'winner' => $winner]);break;
 
@@ -197,7 +197,7 @@ switch($action){
     recordDeath($gameId,$pid,$g['round'],$g['phase'],null,$isGehenkt);
     $kn=Database::queryOne("SELECT display_name FROM players WHERE id=?",[$pid]);
     $winner = checkAndEndGame($gameId);
-    if (!$winner) WebPush::sendToGame($gameId,false,'💀 Ein Spieler ist tot',($kn['display_name']??'Jemand').' ist aus dem Spiel ausgeschieden.');
+    if (!$winner) WebPush::sendToGame($gameId,true,'💀 Ein Spieler ist tot',($kn['display_name']??'Jemand').' ist aus dem Spiel ausgeschieden.');
     $winMsg = ['dodo'=>' 🐦 Dodo-Sieg!','citizen'=>' 🏘️ Bürger-Sieg!','killer'=>' 🔪 Mörder-Sieg!'];
     ok('Spieler gestorben'.($winner ? $winMsg[$winner] : ''), ['game_ended' => (bool)$winner, 'winner' => $winner]);break;
 
@@ -269,7 +269,7 @@ switch($action){
   case 'reset_game':
     foreach(['game_players','deaths','votes','night_actions'] as $t)
       Database::execute("DELETE FROM {$t} WHERE game_id=?",[$gameId]);
-    Database::execute("UPDATE games SET status='lobby',phase='day',round=0 WHERE id=?",[$gameId]);
+    Database::execute("UPDATE games SET status='lobby',phase='day',round=0,winner=NULL WHERE id=?",[$gameId]);
     ok('🔄 Spiel zurückgesetzt');break;
 
   case 'new_game':
@@ -286,7 +286,7 @@ switch($action){
     $cooldown = (int)($input['cooldown'] ?? 0);
     if ($cooldown < 0 || $cooldown > 10080) err('Cooldown: 0–10080 Minuten (max. 7 Tage).');
     Database::execute(
-      "INSERT INTO roles (name,cooldown,description,rules,active,amount,fill,icon_path,sichtbar,befragen,auto_eintrag,is_killer,sort_order) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      "INSERT INTO roles (name,cooldown,description,rules,active,amount,fill,icon_path,sichtbar,killer_sichtbar,befragen,auto_eintrag,is_killer,sort_order) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
       [
         $name,
         $cooldown,
@@ -297,6 +297,7 @@ switch($action){
         !empty($input['fill']) ? 1 : 0,
         trim($input['icon_path'] ?? '') ?: null,
         !empty($input['sichtbar']) ? 1 : 0,
+        !empty($input['killer_sichtbar']) ? 1 : 0,
         !empty($input['befragen']) ? 1 : 0,
         !empty($input['auto_eintrag']) ? 1 : 0,
         !empty($input['is_killer']) ? 1 : 0,
@@ -319,7 +320,7 @@ switch($action){
     $cooldown = (int)($input['cooldown'] ?? 0);
     if ($cooldown < 0 || $cooldown > 10080) err('Cooldown: 0–10080 Minuten (max. 7 Tage).');
     Database::execute(
-      "UPDATE roles SET name=?,cooldown=?,description=?,rules=?,active=?,amount=?,fill=?,icon_path=?,sichtbar=?,befragen=?,auto_eintrag=?,is_killer=?,sort_order=? WHERE id=?",
+      "UPDATE roles SET name=?,cooldown=?,description=?,rules=?,active=?,amount=?,fill=?,icon_path=?,sichtbar=?,killer_sichtbar=?,befragen=?,auto_eintrag=?,is_killer=?,sort_order=? WHERE id=?",
       [
         $name,
         $cooldown,
@@ -330,6 +331,7 @@ switch($action){
         !empty($input['fill']) ? 1 : 0,
         trim($input['icon_path'] ?? '') ?: null,
         !empty($input['sichtbar']) ? 1 : 0,
+        !empty($input['killer_sichtbar']) ? 1 : 0,
         !empty($input['befragen']) ? 1 : 0,
         !empty($input['auto_eintrag']) ? 1 : 0,
         !empty($input['is_killer']) ? 1 : 0,

@@ -72,6 +72,9 @@ function render_roles_rules_list(array $roles): string {
             <?php if (!empty($r['sichtbar'])): ?>
               <span class="tag tag--day" style="font-size:.66rem">👁️ Sichtbar</span>
             <?php endif; ?>
+            <?php if (!empty($r['killer_sichtbar'])): ?>
+              <span class="tag tag--dead" style="font-size:.66rem">🔪👁 Sichtbar mit Mördern</span>
+            <?php endif; ?>
             <?php if ($r['cooldown'] > 0): ?>
               <span class="tag tag--lobby" style="font-size:.66rem">⏳ <?= (int)$r['cooldown'] ?> Min.</span>
             <?php endif; ?>

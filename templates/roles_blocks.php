@@ -26,6 +26,9 @@ function render_roles_gallery(array $roles): string {
           <?php if (!empty($r['sichtbar'])): ?>
             <span class="tag tag--day" style="font-size:.68rem">👁️ Sichtbar untereinander</span>
           <?php endif; ?>
+          <?php if (!empty($r['killer_sichtbar'])): ?>
+            <span class="tag tag--dead" style="font-size:.68rem">🔪👁 Sichtbar mit Mördern</span>
+          <?php endif; ?>
           <?php if ($r['cooldown'] > 0): ?>
             <span class="tag tag--lobby" style="font-size:.68rem">⏳ <?= (int)$r['cooldown'] ?> Min.</span>
           <?php endif; ?>

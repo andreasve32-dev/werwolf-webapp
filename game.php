@@ -176,6 +176,11 @@ require TEMPLATE_PATH . '/base.php';
             👁️ Spieler mit derselben Rolle (<?= e($myRole['name']) ?>) erkennst du in der Spielerliste.
           </div>
           <?php endif; ?>
+          <?php if (!empty($myRole['killer_sichtbar'])): ?>
+          <div class="alert alert--warn mt-2">
+            🔪👁 Du erkennst die Mörder in der Spielerliste — aber Vorsicht: sie erkennen dich genauso.
+          </div>
+          <?php endif; ?>
           <?php if ($myRole['description']): ?>
           <div class="panel mt-2 text-sm">
             <strong class="text-accent">Deine Rolle:</strong> <?= e($myRole['description']) ?>

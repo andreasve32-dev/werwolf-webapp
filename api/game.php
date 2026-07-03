@@ -29,11 +29,13 @@ switch($action){
     echo json_encode(['ok'=>true,'message'=>'Beigetreten']);break;
 
   case 'get_players':
-    // Rollennamen und -Icons werden nur in drei Fällen herausgegeben:
-    // eigene Karte, toter Spieler (Rolle aufgedeckt) oder gleiche sichtbare Rolle.
+    // Rollennamen und -Icons werden nur in vier Fällen herausgegeben:
+    // eigene Karte, toter Spieler (Rolle aufgedeckt), gleiche sichtbare Rolle
+    // oder gegenseitige Killer-Sichtbarkeit (killer_sichtbar, z.B. Dodo↔Mörder).
     $players=Database::query(
       "SELECT gp.player_id, gp.is_alive, gp.role_id, p.display_name,
-              r.name AS role_name, r.icon_path AS role_icon_path, r.sichtbar AS role_sichtbar
+              r.name AS role_name, r.icon_path AS role_icon_path, r.sichtbar AS role_sichtbar,
+              r.is_killer AS role_is_killer, r.killer_sichtbar AS role_killer_sichtbar
        FROM game_players gp
        JOIN players p ON p.id=gp.player_id
        LEFT JOIN roles r ON r.id=gp.role_id
@@ -41,38 +43,51 @@ switch($action){
        ORDER BY gp.is_alive DESC, p.display_name",
       [$gameId]
     );
-    // Eigene Rolle + sichtbar-Status laden (für Sichtbarkeits-Vergleich)
+    // Eigene Rolle + Sichtbarkeits-Flags laden (für den Vergleich)
     $me=Database::queryOne(
-      "SELECT gp.role_id, r.sichtbar AS role_sichtbar
+      "SELECT gp.role_id, r.sichtbar AS role_sichtbar,
+              r.is_killer AS role_is_killer, r.killer_sichtbar AS role_killer_sichtbar
        FROM game_players gp LEFT JOIN roles r ON r.id=gp.role_id
        WHERE gp.game_id=? AND gp.player_id=?",
       [$gameId,$playerId]
     );
-    $myRoleId  = ($me && $me['role_id'] !== null) ? (int)$me['role_id'] : null;
-    $myVisible = $me ? (bool)((int)($me['role_sichtbar'] ?? 0)) : false;
+    $myRoleId         = ($me && $me['role_id'] !== null) ? (int)$me['role_id'] : null;
+    $myVisible        = $me ? (bool)((int)($me['role_sichtbar'] ?? 0)) : false;
+    $myIsKiller       = $me ? (bool)((int)($me['role_is_killer'] ?? 0)) : false;
+    $myKillerSichtbar = $me ? (bool)((int)($me['role_killer_sichtbar'] ?? 0)) : false;
 
     foreach($players as &$p){
-      $pRoleId  = $p['role_id'] !== null ? (int)$p['role_id'] : null;
-      $pVisible = (bool)((int)($p['role_sichtbar'] ?? 0));
-      $isMe     = (int)$p['player_id'] === (int)$playerId;
-      $isDead   = !((bool)$p['is_alive']);
+      $pRoleId         = $p['role_id'] !== null ? (int)$p['role_id'] : null;
+      $pVisible        = (bool)((int)($p['role_sichtbar'] ?? 0));
+      $pIsKiller       = (bool)((int)($p['role_is_killer'] ?? 0));
+      $pKillerSichtbar = (bool)((int)($p['role_killer_sichtbar'] ?? 0));
+      $isMe            = (int)$p['player_id'] === (int)$playerId;
+      $isDead          = !((bool)$p['is_alive']);
 
       // Echte Rolle sichtbar, wenn:
       //  a) Mein eigener Eintrag
       //  b) Spieler ist tot (Rolle wird aufgedeckt)
       //  c) Gleiche Rolle + beide sichtbar=1 (z.B. Mörder sehen Mörder)
+      //  d) Killer-Kreuz-Sichtbarkeit: meine Rolle hat killer_sichtbar und
+      //     der andere ist Killer — oder ich bin Killer und seine Rolle
+      //     hat killer_sichtbar (Dodo sieht Mörder, Mörder sehen Dodo)
       $sameVisibleRole = $myRoleId !== null
         && $pRoleId !== null
         && $pRoleId === $myRoleId
         && $myVisible
         && $pVisible;
+      $crossKillerVisible = ($myKillerSichtbar && $pIsKiller)
+                         || ($myIsKiller && $pKillerSichtbar);
 
-      if(!$isMe && !$isDead && !$sameVisibleRole){
+      if(!$isMe && !$isDead && !$sameVisibleRole && !$crossKillerVisible){
         // Rolle komplett ausblenden — kein Name, kein Icon
         $p['role_name']      = null;
         $p['role_icon_path'] = null;
         $p['role_sichtbar']  = 0;
       }
+      // Interne Flags nie an den Client geben — role_is_killer würde
+      // sonst die Mörder an ALLE verraten
+      unset($p['role_is_killer'], $p['role_killer_sichtbar']);
     }
     unset($p);
 

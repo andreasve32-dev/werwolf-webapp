@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS roles (
   amount       INT          NOT NULL DEFAULT 1,
   icon_path    VARCHAR(255) NULL,
   sichtbar     TINYINT(1)   NOT NULL DEFAULT 0,
+  killer_sichtbar TINYINT(1) NOT NULL DEFAULT 0,
   befragen     TINYINT(1)   NOT NULL DEFAULT 0,
   auto_eintrag TINYINT(1)   NOT NULL DEFAULT 0,
   is_killer    TINYINT(1)   NOT NULL DEFAULT 0,
@@ -222,12 +223,13 @@ ALTER TABLE players
 UPDATE players SET display_name = username WHERE display_name = '';
 
 ALTER TABLE roles
-  ADD COLUMN IF NOT EXISTS fill         TINYINT(1) NOT NULL DEFAULT 0 AFTER active,
-  ADD COLUMN IF NOT EXISTS sichtbar     TINYINT(1) NOT NULL DEFAULT 0 AFTER icon_path,
-  ADD COLUMN IF NOT EXISTS befragen     TINYINT(1) NOT NULL DEFAULT 0 AFTER sichtbar,
-  ADD COLUMN IF NOT EXISTS auto_eintrag TINYINT(1) NOT NULL DEFAULT 0 AFTER befragen,
-  ADD COLUMN IF NOT EXISTS is_killer    TINYINT(1) NOT NULL DEFAULT 0 AFTER auto_eintrag,
-  ADD COLUMN IF NOT EXISTS sort_order   INT        NOT NULL DEFAULT 0  AFTER is_killer;
+  ADD COLUMN IF NOT EXISTS fill            TINYINT(1) NOT NULL DEFAULT 0 AFTER active,
+  ADD COLUMN IF NOT EXISTS sichtbar        TINYINT(1) NOT NULL DEFAULT 0 AFTER icon_path,
+  ADD COLUMN IF NOT EXISTS killer_sichtbar TINYINT(1) NOT NULL DEFAULT 0 AFTER sichtbar,
+  ADD COLUMN IF NOT EXISTS befragen        TINYINT(1) NOT NULL DEFAULT 0 AFTER killer_sichtbar,
+  ADD COLUMN IF NOT EXISTS auto_eintrag    TINYINT(1) NOT NULL DEFAULT 0 AFTER befragen,
+  ADD COLUMN IF NOT EXISTS is_killer       TINYINT(1) NOT NULL DEFAULT 0 AFTER auto_eintrag,
+  ADD COLUMN IF NOT EXISTS sort_order      INT        NOT NULL DEFAULT 0  AFTER is_killer;
 
 ALTER TABLE games
   ADD COLUMN IF NOT EXISTS winner ENUM('killer','citizen','dodo') NULL DEFAULT NULL AFTER status;

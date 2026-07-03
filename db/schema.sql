@@ -49,6 +49,7 @@ CREATE TABLE roles (
   amount      INT          NOT NULL DEFAULT 1,    -- wie oft diese Rolle pro Spiel vorkommen soll (bei fill=1 ignoriert)
   icon_path   VARCHAR(255) NULL,                  -- lokaler Pfad zum Icon (PNG/JPG), z.B. assets/icons/roles/moerder.png
   sichtbar    TINYINT(1)   NOT NULL DEFAULT 0,    -- 1 = Spieler mit dieser Rolle erkennen sich gegenseitig
+  killer_sichtbar TINYINT(1) NOT NULL DEFAULT 0,  -- 1 = Rolle und Killer-Team sehen sich gegenseitig (z.B. Dodo)
   befragen    TINYINT(1)   NOT NULL DEFAULT 0,    -- 1 = Rolle darf Tote befragen (sieht ort/zeit in Todesliste)
   auto_eintrag TINYINT(1)  NOT NULL DEFAULT 0,    -- 1 = Ort+Zeit werden beim Sterben sofort automatisch eingetragen (Star)
   is_killer   TINYINT(1)   NOT NULL DEFAULT 0,    -- 1 = Killerteam (gewinnen wenn >= Überlebende Nicht-Killer)

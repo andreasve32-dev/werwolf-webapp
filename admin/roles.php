@@ -69,6 +69,7 @@ function collectFormData(prefix) {
     active: get('active')?.checked ? 1 : 0,
     fill: get('fill')?.checked ? 1 : 0,
     sichtbar: get('sichtbar')?.checked ? 1 : 0,
+    killer_sichtbar: get('killer_sichtbar')?.checked ? 1 : 0,
     befragen: get('befragen')?.checked ? 1 : 0,
     auto_eintrag: get('auto_eintrag')?.checked ? 1 : 0,
     is_killer: get('is_killer')?.checked ? 1 : 0,

@@ -63,3 +63,12 @@ Günslinger: Weiter schießen nach Killer-Treffer — Wenn Günslinger einen Kil
         Speicherroutine gefixt, Tabellen-Defaults ergänzt, VAPID-Schlüssel ist bereits erzeugt
 [Bug] Admin-Einstellungen: Formular übertrug bei JS-Fehler alle Werte per GET in der URL
       → method="POST" als Absicherung gesetzt
+[Feature] Rollen-Flag "Gegenseitig sichtbar mit Killern" (z.B. für den Dodo)
+      → Neues Häkchen in der Rollen-Verwaltung: Rolle und Mörder sehen sich gegenseitig
+        in der Spielerliste; Hinweis auf der Statuskarte; Tag in Rollen-Galerie/FAQ/Admin
+[Feature] Wichtige Push-Benachrichtigungen ohne Cooldown
+      → Phasenwechsel, Hinrichtung und Todesfälle umgehen jetzt den Push-Cooldown
+        (wie Spielstart/-ende und Versammlungen); der Cooldown greift nur noch
+        für unwichtige Benachrichtigungen
+[Bug] Spiel-Reset ließ den alten Gewinner (winner) stehen
+      → reset_game setzt winner jetzt auf NULL zurück

@@ -18,6 +18,7 @@ function render_role_card(array $r): string {
               <?php if (!$r['active']): ?><span class="tag tag--lobby" data-inactive-tag>Inaktiv</span><?php endif; ?>
               <?php if (!empty($r['fill'])): ?><span class="tag tag--lobby">⬚ Auffüll-Rolle</span><?php endif; ?>
               <?php if (!empty($r['sichtbar'])): ?><span class="tag tag--day">👁️ Sichtbar untereinander</span><?php endif; ?>
+              <?php if (!empty($r['killer_sichtbar'])): ?><span class="tag tag--dead">🔪👁 Sichtbar mit Killern</span><?php endif; ?>
               <?php if (!empty($r['befragen'])): ?><span class="tag tag--night">🔍 Darf Tote befragen</span><?php endif; ?>
               <?php if (!empty($r['auto_eintrag'])): ?><span class="tag tag--running">⭐ Star</span><?php endif; ?>
               <?php if (!empty($r['is_killer'])): ?><span class="tag tag--dead">🔪 Killer</span><?php endif; ?>

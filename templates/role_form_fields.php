@@ -104,6 +104,11 @@ $v       = fn(string $key, $default = '') => $isEdit ? ($editRole[$key] ?? $defa
     <label class="form-label" for="<?= $prefix ?>sichtbar" style="margin:0">Sichtbar untereinander</label>
   </div>
   <div class="form-group flex gap-sm" style="align-items:center">
+    <input type="checkbox" id="<?= $prefix ?>killer_sichtbar" <?= $v('killer_sichtbar', 0) ? 'checked' : '' ?>
+           style="width:18px;height:18px;accent-color:#f87171">
+    <label class="form-label" for="<?= $prefix ?>killer_sichtbar" style="margin:0">🔪👁 Gegenseitig sichtbar mit Killern (z.B. Dodo)</label>
+  </div>
+  <div class="form-group flex gap-sm" style="align-items:center">
     <input type="checkbox" id="<?= $prefix ?>befragen" <?= $v('befragen', 0) ? 'checked' : '' ?>
            style="width:18px;height:18px;accent-color:var(--accent)">
     <label class="form-label" for="<?= $prefix ?>befragen" style="margin:0">Darf Tote befragen</label>
