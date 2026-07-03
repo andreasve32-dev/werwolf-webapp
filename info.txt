@@ -27,3 +27,21 @@ Admin: Tote wiederbeleben — Spieler wieder ins Spiel bringen ohne neue Runde z
 Zombie-Spielmodus — Alternativer Modus: Alle starten als Söldner, nach 1–5h zufälliger Zombie-Start, Infizierte bekehren weitere Spieler
 Dodo-Animation bei Hinrichtung — Große Karte/Effekt wenn Dodo gehängt wird
 Günslinger: Weiter schießen nach Killer-Treffer — Wenn Günslinger einen Killer erwischt, darf er weiter schießen
+---
+✅ Gelöst (03.07.2026)
+
+[Bug] Seite refresht sich beim Befragen — Popup verschwindet durch automatisches Neuladen mitten im Vorgang
+      → Totenliste nutzt jetzt Live-Updates statt Komplett-Reload; Popup bleibt offen
+[Bug] Suche springt nicht zum Treffer — öffnete beide Bereiche (FAQ + Rollenregeln) gleichzeitig
+      → Suche wechselt automatisch zum Tab mit Treffern, scrollt zum ersten Treffer, schließt beim Leeren wieder
+[Bug] Cooldown-Wert: Integer-Overflow — Zu hohe Zahl ergab "Netzwerkfehler" statt klarer Fehlermeldung
+      → Begrenzung auf 0–10080 Minuten (7 Tage) mit klarer Fehlermeldung, auch im Formularfeld
+[Bug] Rollen der Toten im Admin-Menü sichtbar — sollte verborgen sein
+      → Admin-Spielerliste zeigt bei Toten keine Rolle mehr (kein Spoiler für mitspielenden Admin)
+[Bug] Testspieler anlegen kumuliert nicht — 5 anlegen, nochmal 5 → kein Neuzugang
+      → Es werden jetzt die nächsten freien Nummern belegt; 5 + 5 = 10
+[Bug] Große Rollenkarte: Spielerseite scheint hinter der Karte durch
+      → Overlay ist jetzt voll deckend bis zum Bildschirmrand
+[Feature] Live-Update ohne Seiten-Reload — AJAX/JavaScript für Echtzeit-Updates
+      → Komplett umgesetzt: alle Seiten aktualisieren sich ohne Reload, Intervall in den
+        Spieler-Einstellungen wählbar, Countdown in der Kopfleiste, Übertragung nur bei Änderungen
