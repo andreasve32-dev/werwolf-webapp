@@ -486,6 +486,7 @@ $page['inline_js'] .= <<<'JS'
 let selectedTarget    = null;
 let _lastStatusHtml   = null; // zuletzt gerendertes my-status-actions-Fragment
 let _lastPlayersHtml  = null; // zuletzt gerenderte Spielerliste
+let _knownDead        = null; // Spieler-IDs, die beim letzten Update tot waren
 
 async function joinGame() {
   if (!GAME_ID) { showToast('Kein aktives Spiel vorhanden.', 'error'); return; }
@@ -530,7 +531,16 @@ function renderGameState(r) {
     // Status-Wechsel (Lobby→Läuft, Läuft→Beendet, Reset): einmalig komplett neu
     // laden — Rollen-Karte, Cooldown-Konstanten und Karten-Modal werden nur beim
     // Seitenaufbau gerendert und wären sonst veraltet (Spieler sähe seine Rolle nicht).
-    if (GAME_STATUS !== r.game.status) { location.reload(); return; }
+    if (GAME_STATUS !== r.game.status) {
+      // Dodo-Sieg: erst den großen Auftritt zeigen, dann neu laden
+      if (r.game.status === 'finished' && r.game.winner === 'dodo' && window.FX?.dodoWin) {
+        GAME_STATUS = r.game.status;
+        const shown = FX.dodoWin();
+        setTimeout(() => location.reload(), shown ? 12500 : 800);
+        return;
+      }
+      location.reload(); return;
+    }
     GAME_STATUS = r.game.status;
     GAME_PHASE  = r.game.phase;
     _updatePhaseBanner(GAME_STATUS, GAME_PHASE);
@@ -547,6 +557,15 @@ function renderGameState(r) {
     if (assemblyCard) assemblyCard.style.display = GAME_STATUS === 'running' ? '' : 'none';
     _updateAccuseCard();
   }
+
+  // Neuer Todesfall seit dem letzten Update? → roter Vignetten-Puls
+  const deadNow = new Set(r.players.filter(p => !p.is_alive).map(p => String(p.player_id)));
+  if (_knownDead !== null && GAME_STATUS === 'running') {
+    for (const id of deadNow) {
+      if (!_knownDead.has(id)) { window.FX?.deathPulse?.(); break; }
+    }
+  }
+  _knownDead = deadNow;
 
   if(r.players.length===0){
     document.getElementById('player-list').innerHTML='<p class="text-dim" style="grid-column:1/-1;padding:1rem">Noch keine Spieler im Spiel.</p>';
@@ -666,6 +685,7 @@ function _updateAccuseCard() {
 // ── Bürgerversammlung einberufen ────────────────────────────────
 let _assemblyData = ASSEMBLY_DATA; // aus PHP: {scheduled_at, notified, caller} | null
 let _assemblyCountdownTimer = null;
+let _assemblyWasRunning = null; // null = erster Render (keine Glocke beim Seitenladen)
 
 function _assemblyRender() {
   const callSection      = document.getElementById('assembly-call-section');
@@ -676,6 +696,11 @@ function _assemblyRender() {
   // Anklage-Karte im Sekundentakt mitziehen: erscheint exakt beim
   // Versammlungsbeginn, verschwindet beim Beenden
   _updateAccuseCard();
+
+  // Glocken-Effekt genau in der Sekunde, in der die Versammlung beginnt
+  const _runNow = _assemblyIsRunning();
+  if (_assemblyWasRunning === false && _runNow) window.FX?.bellRing?.();
+  _assemblyWasRunning = _runNow;
 
   const canEnd = _assemblyData && (PLAYER_ID === _assemblyData.caller_id
                                    || PLAYER_ID === _assemblyData.supporter_id

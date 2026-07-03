@@ -24,7 +24,6 @@ Startseite = Rollenkarte — App öffnet immer direkt die eigene Rollenkarte
 Auto-Timeout zur Rollenkarte — Nach X Minuten Inaktivität automatisch zurück zur Rollenkarte
 Admin: Tote wiederbeleben — Spieler wieder ins Spiel bringen ohne neue Runde zu starten
 Zombie-Spielmodus — Alternativer Modus: Alle starten als Söldner, nach 1–5h zufälliger Zombie-Start, Infizierte bekehren weitere Spieler
-Dodo-Animation bei Hinrichtung — Große Karte/Effekt wenn Dodo gehängt wird
 Günslinger: Weiter schießen nach Killer-Treffer — Wenn Günslinger einen Killer erwischt, darf er weiter schießen
 ---
 ✅ Gelöst (03.07.2026)
@@ -51,3 +50,16 @@ Günslinger: Weiter schießen nach Killer-Treffer — Wenn Günslinger einen Kil
       → Erster Spieler stellt den Antrag (für alle sichtbar + Push), ein zweiter muss
         unterstützen, erst dann steht der Termin (nächste volle Stunde); beenden können
         nur die beiden Einberufer (oder die Spielleitung); Antragsteller kann zurückziehen
+[Feature] Dodo-Animation bei Hinrichtung — Große Karte/Effekt wenn Dodo gehängt wird
+      → Vollbild-Auftritt mit Federregen bei allen Spielern, sobald der Dodo gehängt wird;
+        über den Effekte-Schalter "Phasen-Überblendung" deaktivierbar
+[Feature] Effekte verbessert — Partikel mit Tiefenwirkung, dichterer Nachtnebel (5 Schichten),
+        Sterne/Sonnenstrahlen in der Phasen-Überblendung, roter Puls bei Todesfall,
+        Glocke bei Versammlungsbeginn; Partikel-Loop pausiert in versteckten Tabs (Akku)
+[Bug] Dorfbewohner-Block: Spaltenzahl je nach Theme unterschiedlich (z.B. Gothic)
+      → Feste Spaltenzahl (4 / mobil 3 / klein 2) statt auto-fill — in allen Themes identisch
+[Bug] Admin-Einstellungen wurden nicht gespeichert + kein VAPID-Key erstellbar
+      → settings-INSERT scheiterte im MariaDB-Strict-Modus (Pflichtfeld label ohne Default);
+        Speicherroutine gefixt, Tabellen-Defaults ergänzt, VAPID-Schlüssel ist bereits erzeugt
+[Bug] Admin-Einstellungen: Formular übertrug bei JS-Fehler alle Werte per GET in der URL
+      → method="POST" als Absicherung gesetzt

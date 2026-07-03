@@ -108,8 +108,10 @@ select.form-input option{background:var(--card-bg);color:var(--text-main)}
 .phase-banner--night{background:var(--phase-night-bg);border-color:var(--phase-night-border);color:var(--phase-night-text)}
 .phase-banner--lobby{background:var(--panel-bg);border-color:var(--border);color:var(--text-dim)}
 
-/* Player Grid */
-.player-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.65rem}
+/* Player Grid — feste Spaltenzahl statt auto-fill: an Breiten-Kippgrenzen
+   ergab auto-fill je nach Theme (Scrollbalken/Rendering-Differenzen) mal
+   3, mal 4 Spalten; fix ist in allen Themes identisch */
+.player-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.65rem}
 .player-card{background:var(--panel-bg);border:1px solid var(--border);border-radius:var(--radius);padding:.85rem .65rem;text-align:center;cursor:pointer;transition:all .18s;position:relative}
 .player-card:hover:not(.player-card--dead){border-color:var(--accent-border);background:var(--hover-bg)}
 .player-card.selected{border-color:var(--accent);background:var(--selected-bg);box-shadow:0 0 14px var(--accent-glow)}
@@ -167,7 +169,7 @@ select.form-input option{background:var(--card-bg);color:var(--text-main)}
   .grid-2,.grid-3{grid-template-columns:1fr}
   .nav__links .nav__link{padding:.25rem .5rem;font-size:.8rem}
   h1{font-size:1.6rem!important}
-  .player-grid{grid-template-columns:repeat(auto-fill,minmax(105px,1fr))}
+  .player-grid{grid-template-columns:repeat(3,1fr)}
 }
 
 /* ============================================================

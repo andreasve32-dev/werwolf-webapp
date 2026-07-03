@@ -282,7 +282,7 @@ CREATE TABLE settings (
   `key`       VARCHAR(80)   NOT NULL,
   value       TEXT          NOT NULL,
   type        ENUM('string','int','bool') NOT NULL DEFAULT 'string',
-  label       VARCHAR(100)  NOT NULL,
+  label       VARCHAR(100)  NOT NULL DEFAULT '',
   description VARCHAR(255)  NOT NULL DEFAULT '',
   sort_order  INT           NOT NULL DEFAULT 0,
   PRIMARY KEY (`key`)

@@ -119,10 +119,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'save')
 
     try {
         foreach ($values as $k => $v) {
+            // Volle Spaltenliste: label/type haben keinen DB-Default — im
+            // Strict-Mode schlägt der INSERT für neue Keys sonst fehl (Fehler 1364)
             Database::execute(
-                'INSERT INTO settings (`key`, value) VALUES (?,?)
+                'INSERT INTO settings (`key`, value, type, label, description, sort_order)
+                 VALUES (?,?,?,?,?,999)
                  ON DUPLICATE KEY UPDATE value = VALUES(value)',
-                [$k, $v]
+                [$k, $v, 'string', $k, '']
             );
         }
     } catch (Throwable $e) {
@@ -247,7 +250,10 @@ require TEMPLATE_PATH . '/base.php';
 
   <div id="save-result" style="display:none;margin-bottom:1rem"></div>
 
-  <form id="settings-form" onsubmit="saveSettings(event)"
+  <!-- method="POST" als Absicherung: falls ein JS-Fehler saveSettings()
+       verhindert, würde der Browser sonst nativ per GET submitten und
+       alle Einstellungswerte in der URL übertragen -->
+  <form id="settings-form" method="POST" onsubmit="saveSettings(event)"
         <?= $migrationNeeded ? 'style="opacity:.4;pointer-events:none"' : '' ?> >
 
     <!-- ── Allgemein ──────────────────────────────────────── -->
