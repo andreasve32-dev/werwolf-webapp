@@ -28,12 +28,18 @@ Günslinger: Weiter schießen nach Killer-Treffer — Wenn Günslinger einen Kil
 Sprachnachrichten an den Spielleiter — Im "Frage stellen"-Modal Auswahl Text/Sprachnachricht;
     Aufnahme per MediaRecorder-API (Mikrofon), Wiedergabe per <audio>-Player in der Admin-Nachrichtenverwaltung.
     Zu klären: Audioformat je nach Browser unterschiedlich (Chrome/Edge meist WebM/Opus, Safari eher MP4/AAC);
-    passt nicht zur FAQ-Anonymisierung (Stimme verrät Identität stärker als Text) — Sprachnachrichten
-    entweder von der FAQ-Übernahme ausschließen oder Admin tippt bei Übernahme eine Text-Zusammenfassung.
-    Zusatzidee: automatische Transkription per OpenAI-API (gpt-4o-mini-transcribe $0,003/Min. bzw.
+    passt nicht zur FAQ-Anonymisierung (Stimme verrät Identität stärker als Text), da Stimme die
+    Identität stärker verrät als Text — Sprachnachrichten daher von der FAQ-Übernahme ausschließen,
+    es sei denn die Transkriptions-Option (siehe unten) wird genutzt.
+  Option: automatische Transkription per OpenAI-API (gpt-4o-mini-transcribe $0,003/Min. bzw.
     gpt-4o-transcribe/whisper-1 $0,006/Min.) — bei typischen kurzen Fragen (15-30s) nur Bruchteile
     eines Cents pro Nachricht, Kosten also kein Hindernis; würde einen OpenAI-API-Key in der Config
     brauchen (bisher hat das Projekt keine externen API-Abhängigkeiten).
+  Erweiterung Admin-Bereich (Nachrichten-Verwaltung): Button "🎙️→📝 Audio zu Text" bei jeder
+    Sprachnachricht — schickt die Aufnahme an die OpenAI-Transkriptions-API und trägt das Ergebnis
+    direkt in das "FAQ-Text"-Feld ein (dasselbe Feld wie bei Text-Nachrichten, siehe messages.faq_question).
+    Admin muss den transkribierten Text dann nur noch gegenlesen/anonymisieren statt selbst mitzuschreiben,
+    bevor er die Antwort in die FAQ übernimmt.
 ---
 ✅ Gelöst (03.07.2026)
 
