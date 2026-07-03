@@ -434,6 +434,10 @@ require TEMPLATE_PATH . '/base.php';
             opacity:0;pointer-events:none;transition:opacity .22s ease,backdrop-filter .22s ease,background .22s ease">
   <div class="role-card-modal" onclick="event.stopPropagation()" style="max-width:380px;text-align:left;cursor:default">
     <div class="role-card-modal__title" style="font-size:1.25rem;margin-bottom:1rem">✉️ Frage an den Spielleiter</div>
+    <div class="alert alert--warn" style="font-size:.85rem;line-height:1.5;margin-bottom:.75rem;font-weight:600">
+      ⚠️ Keine Namen oder persönlichen Angaben in die Frage schreiben — beantwortete
+      Fragen können anonym in die öffentliche FAQ übernommen werden!
+    </div>
     <textarea id="ask-text" class="form-input"
               placeholder="Deine Frage …" rows="4" maxlength="500"
               style="width:100%;font-size:.9rem;resize:vertical;margin-bottom:.75rem;box-sizing:border-box"></textarea>

@@ -133,6 +133,7 @@ CREATE TABLE messages (
   game_id        INT NULL,
   player_id      INT NOT NULL,
   message        TEXT NOT NULL,
+  faq_question   TEXT NULL,        -- anonymisierte/bearbeitete Frage für die FAQ (NULL = message wird 1:1 verwendet)
   reply          TEXT NULL,
   created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   replied_at     TIMESTAMP NULL,

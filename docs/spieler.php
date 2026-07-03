@@ -338,6 +338,11 @@ require TEMPLATE_PATH . '/base.php';
       Unter <strong>„Posteingang"</strong> siehst du alle deine bisherigen Fragen und die
       Antworten des Admins. Neue Antworten werden dir per Badge und Toast-Meldung signalisiert.
     </p>
+    <p class="text-dim text-sm">
+      ⚠️ Beantwortete Fragen kann der Admin anonym in die öffentliche FAQ übernehmen —
+      dein Name erscheint dabei nie, aber der Text deiner Frage wird unverändert
+      übernommen. Schreib deshalb keine Namen oder andere persönlichen Angaben hinein.
+    </p>
   </div>
 
   <!-- ═══════════════════════════════════════════

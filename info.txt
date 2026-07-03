@@ -120,3 +120,19 @@ Günslinger: Weiter schießen nach Killer-Treffer — Wenn Günslinger einen Kil
         Verzeichnislisting geschützt (403 bei direktem Aufruf von /app/);
         alte Root-URLs (z. B. /game.php) leiten per 301 automatisch auf
         /app/… um — bestehende Bookmarks/PWA-Icons/Links bleiben nutzbar
+[Bug] Nach dem Beantworten einer Spielerfrage fehlte der "FAQ freigeben"-Button
+      bis zum nächsten Seiten-Reload
+      → sendReply() patchte bisher nur einzelne DOM-Stellen von Hand und vergaß
+        dabei den Button, der serverseitig nur bei bereits beantworteten Fragen
+        gerendert wird; behoben, indem reply/toggle_publish/set_faq_question
+        jetzt die komplette Zeile fertig gerendert zurückgeben (render_message_row)
+        und der Client sie 1:1 ersetzt — dieselbe Quelle wie beim Seitenaufbau
+[Feature] FAQ-Übernahme jetzt anonymisierbar
+      → Neuer Button "✏️ FAQ-Text" bei jeder beantworteten Frage: Admin kann vor
+        der Veröffentlichung einen eigenen, anonymisierten Text hinterlegen
+        (neue Spalte messages.faq_question) — die Original-Nachricht des Spielers
+        bleibt dabei unverändert erhalten, nur die öffentliche FAQ zeigt den
+        bearbeiteten Text (COALESCE(faq_question, message)); Hinweis beim
+        Fragenformular (auffällige Warnbox) und in der Spieler-Anleitung ergänzt:
+        keine Namen/persönlichen Angaben in Fragen schreiben, da sie anonym in
+        die FAQ übernommen werden können

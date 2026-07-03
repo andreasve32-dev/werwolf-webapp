@@ -7,7 +7,7 @@ require_once TEMPLATE_PATH . '/faq_blocks.php';
 Auth::requireLogin();
 
 $faqEntries = Database::query(
-    "SELECT message, reply FROM messages
+    "SELECT COALESCE(faq_question, message) AS message, reply FROM messages
      WHERE published = 1 AND reply IS NOT NULL
      ORDER BY replied_at DESC"
 );

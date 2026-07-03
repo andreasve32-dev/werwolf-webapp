@@ -4,6 +4,28 @@ Jedes Backup erhält eine fortlaufende Versionsnummer (v0.0.x).
 
 ---
 
+## [v0.0.11] — 2026-07-04
+
+### Behoben
+- **Spielerfragen: "FAQ freigeben"-Button fehlte nach dem Antworten** bis zum
+  nächsten Reload — `reply`/`toggle_publish`/`set_faq_question` geben jetzt die
+  fertig gerenderte Zeile zurück, der Client ersetzt sie komplett statt einzelne
+  DOM-Stellen manuell zu patchen.
+
+### Hinzugefügt
+- **FAQ-Übernahme anonymisierbar**: neuer Button „✏️ FAQ-Text" bei beantworteten
+  Fragen — Admin kann vor der Veröffentlichung einen eigenen, anonymisierten
+  Text hinterlegen (`messages.faq_question`), ohne die Original-Nachricht des
+  Spielers zu verändern.
+- Auffälliger Datenschutz-Hinweis im Fragenformular + in der Spieler-Anleitung:
+  keine Namen/persönlichen Angaben in Fragen, da sie anonym in die FAQ
+  übernommen werden können.
+
+### DB-Änderungen
+- `messages.faq_question TEXT NULL` (in `db/schema.sql` + idempotent in `db/init.sql`)
+
+---
+
 ## [v0.0.10] — 2026-07-04
 
 ### Geändert

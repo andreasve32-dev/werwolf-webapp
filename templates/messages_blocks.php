@@ -44,9 +44,11 @@ function render_message_row(array $msg): string {
           <?php if (!$isNew): ?>
           <button class="btn btn--ghost btn--sm" id="pub-btn-<?= (int)$msg['id'] ?>"
                   title="<?= $msg['published'] ? 'Aus FAQ entfernen' : 'Als FAQ veröffentlichen' ?>"
-                  onclick="togglePublish(<?= (int)$msg['id'] ?>, <?= $msg['published'] ? 'true' : 'false' ?>)">
+                  onclick="togglePublish(<?= (int)$msg['id'] ?>)">
             <?= $msg['published'] ? '📢 Veröffentlicht' : '📢 FAQ freigeben' ?>
           </button>
+          <button class="btn btn--ghost btn--sm" title="FAQ-Text anonymisieren/bearbeiten"
+                  onclick="toggleFaqEdit(<?= (int)$msg['id'] ?>)">✏️ FAQ-Text</button>
           <?php endif; ?>
           <button class="btn btn--ghost btn--sm" title="Löschen"
                   onclick="deleteMsg(<?= (int)$msg['id'] ?>)">🗑</button>
@@ -61,11 +63,27 @@ function render_message_row(array $msg): string {
       <div id="body-<?= (int)$msg['id'] ?>"
            style="<?= !$isNew ? 'display:none;' : '' ?>margin-top:.75rem">
 
-        <!-- Frage des Spielers -->
+        <!-- Frage des Spielers (Original, wird nie verändert) -->
         <div style="background:var(--panel-bg);border:1px solid var(--border);border-radius:8px;
                     padding:.6rem .85rem;margin-bottom:.6rem;font-size:.9rem;line-height:1.5">
           <?= e($msg['message']) ?>
         </div>
+
+        <!-- FAQ-Text bearbeiten (anonymisierte/gekürzte Version für die öffentliche FAQ) -->
+        <?php if (!$isNew): ?>
+        <div id="faq-edit-<?= (int)$msg['id'] ?>" style="display:none;margin-bottom:.6rem">
+          <label class="text-dim text-xs" style="display:block;margin-bottom:.25rem">
+            Text für die öffentliche FAQ (Namen/persönliche Angaben hier entfernen):
+          </label>
+          <textarea class="form-input" id="faq-text-<?= (int)$msg['id'] ?>" rows="2" maxlength="500"
+                    style="width:100%;font-size:.85rem;resize:vertical"><?= e($msg['faq_question'] ?? $msg['message']) ?></textarea>
+          <div class="flex gap-xs mt-1">
+            <button class="btn btn--primary btn--sm" onclick="saveFaqQuestion(<?= (int)$msg['id'] ?>)">✓ Speichern</button>
+            <button class="btn btn--ghost btn--sm" onclick="toggleFaqEdit(<?= (int)$msg['id'] ?>)">Abbrechen</button>
+          </div>
+          <div id="faq-edit-result-<?= (int)$msg['id'] ?>" style="display:none;margin-top:.4rem"></div>
+        </div>
+        <?php endif; ?>
 
         <!-- Antwort-Bereich -->
         <div id="reply-display-<?= (int)$msg['id'] ?>"

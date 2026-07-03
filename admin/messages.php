@@ -5,7 +5,7 @@ require_once TEMPLATE_PATH . '/messages_blocks.php';
 Auth::requireAdmin();
 
 $messages = Database::query(
-    "SELECT m.id, m.message, m.reply, m.created_at, m.replied_at, m.read_by_player, m.published,
+    "SELECT m.id, m.message, m.faq_question, m.reply, m.created_at, m.replied_at, m.read_by_player, m.published,
             p.display_name, p.username
      FROM messages m
      JOIN players p ON p.id = m.player_id
@@ -62,42 +62,25 @@ function toggleCollapse(id) {
   if (panel)   panel.style.opacity     = open ? '.75'  : '1';
 }
 
-function _replyDisplayFragment(id, text) {
-  const now = new Date().toLocaleString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'background:var(--input-bg,var(--card-bg));border-left:3px solid var(--accent-border);' +
-    'border-radius:0 8px 8px 0;padding:.6rem .85rem;font-size:.88rem;line-height:1.5';
-  wrap.innerHTML =
-    '<div class="text-dim text-xs mb-1">Deine Antwort &middot; ' + escHtml(now) + '</div>' +
-    '<p style="margin:0;color:var(--text-bright)" id="reply-text-display-' + id + '">' + escHtml(text) + '</p>' +
-    '<button type="button" class="btn btn--ghost btn--sm mt-1" id="edit-reply-btn-' + id + '">✏️ Bearbeiten</button>';
-  const editBtn = wrap.querySelector('#edit-reply-btn-' + id);
-  if (editBtn) editBtn.addEventListener('click', () => openEditReply(id, text));
-  return wrap;
-}
-
-function _applyReplyToDom(id, text) {
-  const panel   = document.getElementById('msg-' + id);
-  const display = document.getElementById('reply-display-' + id);
-  const form    = document.getElementById('reply-form-' + id);
-
-  if (display) {
-    display.innerHTML = '';
-    display.appendChild(_replyDisplayFragment(id, text));
-    display.style.display = '';
-  }
-  if (form) form.style.display = 'none';
-  if (panel) { panel.style.borderLeft = 'none'; panel.style.opacity = '.75'; }
-
-  const header = panel ? panel.querySelector('.flex-between') : null;
-  const newTag = header ? header.querySelector('.tag--running') : null;
-  if (newTag) {
-    newTag.className = 'tag';
-    newTag.style.background = 'var(--panel-bg)';
-    newTag.style.color = 'var(--text-dim)';
-    newTag.style.fontSize = '.65rem';
-    newTag.textContent = '✓ Beantwortet';
-  }
+// Ersetzt eine komplette Zeile durch das frisch vom Server gerenderte HTML
+// (nach Antworten/Veröffentlichen/FAQ-Text speichern) — dieselbe render_message_row()-
+// Funktion wie beim initialen Seitenaufbau, damit z. B. der FAQ-Button sofort nach
+// dem Antworten erscheint (vorher: manuelles DOM-Patchen, das ihn vergaß und erst
+// nach einem Seiten-Reload zeigte). Klappt die Zeile danach automatisch auf.
+function replaceMsgRow(id, html) {
+  const old = document.getElementById('msg-' + id);
+  if (!old) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  const fresh = tmp.firstElementChild;
+  if (!fresh) return;
+  old.replaceWith(fresh);
+  const body = document.getElementById('body-' + id);
+  if (body) body.style.display = '';
+  const chevron = document.getElementById('chevron-' + id);
+  if (chevron) chevron.style.transform = 'rotate(180deg)';
+  const preview = document.getElementById('preview-' + id);
+  if (preview) preview.style.display = 'none';
 }
 
 async function sendReply(id) {
@@ -110,7 +93,7 @@ async function sendReply(id) {
   if (r.error === 'session_expired') return;
   if (r.ok) {
     showToast('Antwort gesendet.', 'success');
-    _applyReplyToDom(id, txt);
+    if (r.html) replaceMsgRow(id, r.html);
   } else {
     if (rd) { rd.style.display=''; rd.innerHTML='<div class="alert alert--error" style="padding:.3rem .7rem;font-size:.82rem">'+escHtml(r.error||'Fehler')+'</div>'; }
   }
@@ -135,18 +118,38 @@ function cancelEdit(id) {
   if (form)    form.style.display    = 'none';
 }
 
-async function togglePublish(id, isPublished) {
+async function togglePublish(id) {
   const r = await apiFetch(MSG_API, {action:'toggle_publish', id});
   if (r.error === 'session_expired') return;
   if (r.ok) {
-    const btn = document.getElementById('pub-btn-' + id);
-    const tag = document.getElementById('pub-tag-' + id);
-    const nowPublished = r.published === 1;
-    if (btn) { btn.textContent = nowPublished ? '📢 Veröffentlicht' : '📢 FAQ freigeben'; }
-    if (tag) { tag.style.display = nowPublished ? '' : 'none'; }
     showToast(r.message || 'OK', 'success');
+    if (r.html) replaceMsgRow(id, r.html);
   } else {
     showToast(r.error || 'Fehler', 'error');
+  }
+}
+
+// FAQ-Text-Editor (anonymisierte Version der Frage) auf-/zuklappen
+function toggleFaqEdit(id) {
+  const body = document.getElementById('body-' + id);
+  if (body && body.style.display === 'none') toggleCollapse(id);
+  const box = document.getElementById('faq-edit-' + id);
+  if (box) box.style.display = box.style.display === 'none' ? '' : 'none';
+}
+
+async function saveFaqQuestion(id) {
+  const ta  = document.getElementById('faq-text-' + id);
+  const rd  = document.getElementById('faq-edit-result-' + id);
+  const txt = ta ? ta.value.trim() : '';
+  if (!txt) { showToast('FAQ-Text darf nicht leer sein.', 'error'); return; }
+
+  const r = await apiFetch(MSG_API, {action:'set_faq_question', id, question:txt});
+  if (r.error === 'session_expired') return;
+  if (r.ok) {
+    showToast('FAQ-Text gespeichert.', 'success');
+    if (r.html) replaceMsgRow(id, r.html);
+  } else {
+    if (rd) { rd.style.display=''; rd.innerHTML='<div class="alert alert--error" style="padding:.3rem .7rem;font-size:.82rem">'+escHtml(r.error||'Fehler')+'</div>'; }
   }
 }
 

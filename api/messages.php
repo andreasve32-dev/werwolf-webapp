@@ -13,6 +13,17 @@ $body   = jsonBody();
 $action = $body['action'] ?? '';
 $player = Auth::player();
 
+/** Lädt eine Nachricht inkl. Spielername für render_message_row(). */
+function fetchMessageRow(int $id): array {
+    return Database::queryOne(
+        "SELECT m.id, m.message, m.faq_question, m.reply, m.created_at, m.replied_at,
+                m.read_by_player, m.published, p.display_name, p.username
+         FROM messages m JOIN players p ON p.id = m.player_id
+         WHERE m.id = ?",
+        [$id]
+    );
+}
+
 switch ($action) {
 
     case 'send':
@@ -63,7 +74,8 @@ switch ($action) {
         );
         require_once CORE_PATH . '/WebPush.php';
         WebPush::sendToPlayer((int)$msgRow['player_id']);
-        jsonOk('Antwort gespeichert.');
+        require_once TEMPLATE_PATH . '/messages_blocks.php';
+        jsonOk('Antwort gespeichert.', ['html' => render_message_row(fetchMessageRow($mid))]);
 
     case 'toggle_publish':
         if (!$player['is_admin']) jsonError('Kein Zugriff.', 403);
@@ -74,14 +86,29 @@ switch ($action) {
         if (!$row['reply']) jsonError('Nur beantwortete Nachrichten können veröffentlicht werden.');
         $newState = $row['published'] ? 0 : 1;
         Database::execute("UPDATE messages SET published = ? WHERE id = ?", [$newState, $mid]);
-        jsonOk($newState ? 'Im FAQ veröffentlicht.' : 'Aus FAQ entfernt.', ['published' => $newState]);
+        require_once TEMPLATE_PATH . '/messages_blocks.php';
+        jsonOk($newState ? 'Im FAQ veröffentlicht.' : 'Aus FAQ entfernt.',
+            ['published' => $newState, 'html' => render_message_row(fetchMessageRow($mid))]);
+
+    case 'set_faq_question':
+        if (!$player['is_admin']) jsonError('Kein Zugriff.', 403);
+        $mid  = (int)($body['id'] ?? 0);
+        $text = trim($body['question'] ?? '');
+        if (!$mid)                  jsonError('Ungültige ID.');
+        if (mb_strlen($text) < 1)   jsonError('FAQ-Text darf nicht leer sein.');
+        if (mb_strlen($text) > 500) jsonError('FAQ-Text zu lang (max. 500 Zeichen).');
+        $row = Database::queryOne("SELECT id FROM messages WHERE id = ?", [$mid]);
+        if (!$row) jsonError('Nachricht nicht gefunden.', 404);
+        Database::execute("UPDATE messages SET faq_question = ? WHERE id = ?", [$text, $mid]);
+        require_once TEMPLATE_PATH . '/messages_blocks.php';
+        jsonOk('FAQ-Text gespeichert.', ['html' => render_message_row(fetchMessageRow($mid))]);
 
     case 'get_new_messages':
         if (!$player['is_admin']) jsonError('Kein Zugriff.', 403);
         require_once TEMPLATE_PATH . '/messages_blocks.php';
         $afterId = (int)($body['after_id'] ?? 0);
         $newMsgs = Database::query(
-            "SELECT m.id, m.message, m.reply, m.created_at, m.replied_at, m.read_by_player, m.published,
+            "SELECT m.id, m.message, m.faq_question, m.reply, m.created_at, m.replied_at, m.read_by_player, m.published,
                     p.display_name, p.username
              FROM messages m JOIN players p ON p.id = m.player_id
              WHERE m.id > ? ORDER BY m.created_at ASC",
