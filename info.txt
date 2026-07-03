@@ -25,7 +25,9 @@ Auto-Timeout zur Rollenkarte — Nach X Minuten Inaktivität automatisch zurück
 Admin: Tote wiederbeleben — Spieler wieder ins Spiel bringen ohne neue Runde zu starten
 Zombie-Spielmodus — Alternativer Modus: Alle starten als Söldner, nach 1–5h zufälliger Zombie-Start, Infizierte bekehren weitere Spieler
 Günslinger: Weiter schießen nach Killer-Treffer — Wenn Günslinger einen Killer erwischt, darf er weiter schießen
-Sprachnachrichten an den Spielleiter — Im "Frage stellen"-Modal Auswahl Text/Sprachnachricht;
+Sprachnachrichten an den Spielleiter — Warum: einige Spieler schreiben nur ungern lange Texte
+    und reden lieber direkt mit dem Spielleiter, Sprachnachricht senkt die Hemmschwelle.
+    Im "Frage stellen"-Modal Auswahl Text/Sprachnachricht;
     Aufnahme per MediaRecorder-API (Mikrofon), Wiedergabe per <audio>-Player in der Admin-Nachrichtenverwaltung.
     Zu klären: Audioformat je nach Browser unterschiedlich (Chrome/Edge meist WebM/Opus, Safari eher MP4/AAC);
     passt nicht zur FAQ-Anonymisierung (Stimme verrät Identität stärker als Text), da Stimme die
