@@ -76,12 +76,12 @@ switch($action){
     }
     unset($p);
 
-    $g = Database::queryOne("SELECT status, phase, round FROM games WHERE id=?", [$gameId]);
+    $g = Database::queryOne("SELECT status, phase, round, winner FROM games WHERE id=?", [$gameId]);
     $myGPRow = Database::queryOne("SELECT * FROM game_players WHERE game_id=? AND player_id=?", [$gameId, $playerId]);
     require_once TEMPLATE_PATH . '/game_blocks.php';
     echo json_encode([
       'players'        => $players,
-      'game'           => $g ? ['status'=>$g['status'],'phase'=>$g['phase'],'round'=>(int)$g['round']] : null,
+      'game'           => $g ? ['status'=>$g['status'],'phase'=>$g['phase'],'round'=>(int)$g['round'],'winner'=>$g['winner'] ?? null] : null,
       'me'             => ['in_game'=>(bool)$myGPRow, 'is_alive'=>$myGPRow ? (bool)$myGPRow['is_alive'] : false],
       'my_status_html' => render_my_status_actions($g, $myGPRow),
     ]);break;
