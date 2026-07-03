@@ -317,6 +317,31 @@ function applySearch(raw) {
   const rolesEmpty = document.getElementById('roles-empty');
   if (rolesEmpty) rolesEmpty.style.display = (roleItems.length > 0 && rolesVis === 0) ? '' : 'none';
 
+  // Suche geleert: von der Suche aufgeklappte Einträge wieder schließen —
+  // nur manuell geöffnete (in den _open*-Sets gemerkte) bleiben offen
+  if (!words.length) {
+    document.querySelectorAll('#faq-list .faq-item__q[aria-expanded="true"], #roles-list .role-rule-item__head[aria-expanded="true"]')
+      .forEach(btn => {
+        btn.setAttribute('aria-expanded', 'false');
+        if (btn.nextElementSibling) btn.nextElementSibling.hidden = true;
+      });
+    _restoreOpenItems();
+  }
+
+  // Hat nur der jeweils andere Bereich Treffer → automatisch dorthin wechseln
+  // (switchTab ruft applySearch erneut auf; die Bedingung greift dann nicht mehr)
+  if (words.length) {
+    if (_activeTab === 'faq'   && faqVis === 0   && rolesVis > 0) { switchTab('roles'); return; }
+    if (_activeTab === 'roles' && rolesVis === 0 && faqVis > 0)   { switchTab('faq');   return; }
+  }
+
+  // Zum ersten sichtbaren Treffer im aktiven Bereich springen
+  if (words.length) {
+    const sel   = _activeTab === 'faq' ? '#faq-list .faq-item' : '#roles-list .role-rule-item';
+    const first = Array.from(document.querySelectorAll(sel)).find(el => el.style.display !== 'none');
+    if (first) first.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+  }
+
   // Tab-Zähler aktualisieren
   const faqCount   = document.getElementById('tab-count-faq');
   const rolesCount = document.getElementById('tab-count-roles');

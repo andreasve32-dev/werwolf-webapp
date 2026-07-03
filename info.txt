@@ -2,7 +2,6 @@
 
 Anklagen ohne Versammlung möglich — Spieler kann angeklagt werden, obwohl keine Versammlung aktiv ist
 Versammlungs-Button zeigt falschen Status — Pause-Icon suggeriert "pausiert", Zustand ist aber "aktiv" (Logik muss umgekehrt werden)
-Suche springt nicht zum Treffer — Volltextsuche findet Eintrag, klappt ihn aber nicht auf; öffnet stattdessen beide Bereiche (FAQ + Rollenregeln) gleichzeitig
 Cooldown-Wert: Integer-Overflow — Zu hohe Zahl ergibt "Netzwerkfehler" statt klarer Fehlermeldung (Int11 in DB hat Grenze)
 Cooldown startet bei falschem Wert — Nach Klick beginnt Timer nicht bei 0, sondern bei 20 Sekunden
 Rollen-Liste ändert Aussehen je nach Theme — Style-Inkonsistenz zwischen verschiedenen Designs
@@ -27,7 +26,6 @@ Detektiv: Leichen befragen — Bekommt von der Leiche einen Spieler genannt, der
 Cooldown-Platzhalter in Beschreibungen — Variable in Rollentext, die automatisch den aktuellen Cooldown-Wert einfügt
 Startseite = Rollenkarte — App öffnet immer direkt die eigene Rollenkarte
 Auto-Timeout zur Rollenkarte — Nach X Minuten Inaktivität automatisch zurück zur Rollenkarte
-Live-Update ohne Seiten-Reload — AJAX/JavaScript für Echtzeit-Updates
 Admin: Tote wiederbeleben — Spieler wieder ins Spiel bringen ohne neue Runde zu starten
 Zombie-Spielmodus — Alternativer Modus: Alle starten als Söldner, nach 1–5h zufälliger Zombie-Start, Infizierte bekehren weitere Spieler
 Dodo-Animation bei Hinrichtung — Große Karte/Effekt wenn Dodo gehängt wird
