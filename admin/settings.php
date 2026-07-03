@@ -161,6 +161,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'vapid_
     exit;
 }
 
+// ── AJAX: Test-Push senden ──────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'test_push') {
+    header('Content-Type: application/json');
+    try {
+        require_once dirname(__DIR__) . '/core/WebPush.php';
+        $body   = json_decode(file_get_contents('php://input'), true) ?? [];
+        $target = ($body['target'] ?? 'me') === 'all' ? 'all' : 'me';
+
+        if ($target === 'me') {
+            $playerIds = Database::query(
+                'SELECT DISTINCT player_id FROM push_subscriptions WHERE player_id = ?',
+                [(int)Auth::player()['id']]
+            );
+            $devices = (int)(Database::queryOne(
+                'SELECT COUNT(*) AS c FROM push_subscriptions WHERE player_id = ?',
+                [(int)Auth::player()['id']]
+            )['c'] ?? 0);
+        } else {
+            $playerIds = Database::query('SELECT DISTINCT player_id FROM push_subscriptions');
+            $devices   = (int)(Database::queryOne('SELECT COUNT(*) AS c FROM push_subscriptions')['c'] ?? 0);
+        }
+
+        if (empty($playerIds)) {
+            echo json_encode(['ok' => false, 'error' => $target === 'me'
+                ? 'Kein Push-Abo für dein Konto — aktiviere Benachrichtigungen zuerst auf diesem Gerät.'
+                : 'Keine abonnierten Geräte in der Datenbank.']);
+            exit;
+        }
+        foreach ($playerIds as $row) {
+            WebPush::sendToPlayer((int)$row['player_id']);
+        }
+        echo json_encode(['ok' => true, 'message' => "Test-Push an {$devices} Gerät(e) gesendet — Benachrichtigung sollte gleich erscheinen."]);
+    } catch (Throwable $e) {
+        echo json_encode(['ok' => false, 'error' => 'Fehler: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
 // ── AJAX: Alle Push-Abonnements löschen ─────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'clear_subs') {
     header('Content-Type: application/json');
@@ -228,14 +266,75 @@ try {
 
 $page = ['title' => 'Server-Einstellungen'];
 require TEMPLATE_PATH . '/base.php';
+
+// Kleiner Helfer fürs Template: Speichern-Button + Ergebnis-Box am Ende einer Sektion
+function settingsSectionFooter(string $id): void {
+    ?>
+    <div class="flex gap-sm" style="justify-content:flex-end;align-items:center;margin-top:.75rem;padding-top:.6rem;border-top:1px solid var(--border)">
+      <div id="result-<?= e($id) ?>" class="text-xs" style="display:none;flex:1"></div>
+      <button type="submit" id="btn-<?= e($id) ?>" class="btn btn--primary btn--sm">💾 Speichern</button>
+    </div>
+    <?php
+    settingsBackToTop();
+}
+
+// Kleiner "Nach oben"-Link am Ende jedes Bereichs — springt zur Sprungmarken-Leiste
+function settingsBackToTop(): void {
+    ?>
+    <div class="text-center mt-2">
+      <a href="#settings-top" class="text-dim text-xs">↑ Nach oben</a>
+    </div>
+    <?php
+}
+
+// Klappbarer Sektions-Header: alle Bereiche starten zugeklappt, per Klick öffnen
+function settingsAccHead(string $icon, string $title): void {
+    ?>
+    <button type="button" class="settings-acc__head" aria-expanded="false" onclick="toggleSettingsAcc(this)">
+      <span class="settings-acc__title"><?= $icon ?> <?= e($title) ?></span>
+      <span class="settings-acc__chevron">▾</span>
+    </button>
+    <?php
+}
 ?>
+<style>
+.settings-acc__head {
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+  width: 100%; padding: 0; margin-bottom: 0;
+  background: none; border: none; cursor: pointer;
+  text-align: left; font-family: inherit;
+}
+.settings-acc__title {
+  font-family: var(--font-display, inherit);
+  font-size: 1.05rem; font-weight: 600;
+  color: var(--text-bright);
+}
+.settings-acc__head[aria-expanded="true"] .settings-acc__title { color: var(--accent); }
+.settings-acc__chevron {
+  flex-shrink: 0; font-size: .75rem; color: var(--text-dim);
+  transition: transform .22s ease;
+}
+.settings-acc__head[aria-expanded="true"] .settings-acc__chevron { transform: rotate(180deg); }
+.settings-acc__body { margin-top: 1rem; }
+</style>
 
 <div class="container page-wrap">
 
-  <div class="page-header">
+  <div class="page-header" id="settings-top">
     <span class="page-header__icon">🔧</span>
     <h1>Server-Einstellungen</h1>
-    <p class="page-header__sub">Werte werden in der Datenbank gespeichert und beim nächsten Seitenaufruf aktiv.</p>
+    <p class="page-header__sub">Jeder Bereich speichert unabhängig — Änderungen wirken sofort nach dem Speichern dieses Bereichs.</p>
+  </div>
+
+  <!-- Sprungmarken zu den Bereichen — öffnen den Bereich gleich mit -->
+  <div class="flex gap-xs mb-2" style="flex-wrap:wrap">
+    <a href="#sec-allgemein" class="btn btn--ghost btn--sm" onclick="openSettingsSection('allgemein')">🌐 Allgemein</a>
+    <a href="#sec-spiel"     class="btn btn--ghost btn--sm" onclick="openSettingsSection('spiel')">🐺 Spiel</a>
+    <a href="#sec-push"      class="btn btn--ghost btn--sm" onclick="openSettingsSection('push')">🔔 Push</a>
+    <a href="#sec-design"    class="btn btn--ghost btn--sm" onclick="openSettingsSection('design')">🎨 Design</a>
+    <a href="#sec-bilder"    class="btn btn--ghost btn--sm" onclick="openSettingsSection('bilder')">🖼️ Bilder</a>
+    <a href="#sec-system"    class="btn btn--ghost btn--sm" onclick="openSettingsSection('system')">⚙️ System</a>
+    <a href="#sec-texte"     class="btn btn--ghost btn--sm" onclick="openSettingsSection('texte')">📝 Texte</a>
   </div>
 
   <?php if ($migrationNeeded): ?>
@@ -248,17 +347,13 @@ require TEMPLATE_PATH . '/base.php';
   </div>
   <?php endif; ?>
 
-  <div id="save-result" style="display:none;margin-bottom:1rem"></div>
-
-  <!-- method="POST" als Absicherung: falls ein JS-Fehler saveSettings()
-       verhindert, würde der Browser sonst nativ per GET submitten und
-       alle Einstellungswerte in der URL übertragen -->
-  <form id="settings-form" method="POST" onsubmit="saveSettings(event)"
-        <?= $migrationNeeded ? 'style="opacity:.4;pointer-events:none"' : '' ?> >
+  <div <?= $migrationNeeded ? 'style="opacity:.4;pointer-events:none"' : '' ?>>
 
     <!-- ── Allgemein ──────────────────────────────────────── -->
-    <div class="card card--glow animate-in mb-2">
-      <div class="section-title">🌐 Allgemein</div>
+    <form id="form-allgemein" class="settings-section" method="POST" onsubmit="saveSection(event,'form-allgemein')">
+    <div class="card card--glow animate-in mb-2" id="sec-allgemein" style="scroll-margin-top:1rem">
+      <?php settingsAccHead('🌐', 'Allgemein'); ?>
+      <div class="settings-acc__body" hidden>
 
       <div class="settings-row" style="padding:.6rem 0">
         <div>
@@ -355,11 +450,17 @@ require TEMPLATE_PATH . '/base.php';
                  maxlength="60" placeholder="Europe/Berlin">
         </div>
       </div>
+
+      <?php settingsSectionFooter('allgemein'); ?>
+      </div>
     </div>
+    </form>
 
     <!-- ── Spiel ──────────────────────────────────────────── -->
-    <div class="card animate-in mb-2" style="animation-delay:.05s">
-      <div class="section-title">🐺 Spiel</div>
+    <form id="form-spiel" class="settings-section" method="POST" onsubmit="saveSection(event,'form-spiel')">
+    <div class="card animate-in mb-2" style="animation-delay:.05s;scroll-margin-top:1rem" id="sec-spiel">
+      <?php settingsAccHead('🐺', 'Spiel'); ?>
+      <div class="settings-acc__body" hidden>
 
       <div class="settings-row" style="padding:.6rem 0">
         <div>
@@ -388,28 +489,36 @@ require TEMPLATE_PATH . '/base.php';
         </div>
         <a href="<?= APP_URL ?>/admin/slogans.php" class="btn btn--ghost btn--sm">Sprüche verwalten →</a>
       </div>
+
+      <?php settingsSectionFooter('spiel'); ?>
+      </div>
     </div>
+    </form>
 
     <!-- ── Push-Benachrichtigungen ─────────────────────────── -->
-    <div class="card animate-in mb-2" style="animation-delay:.07s">
-      <div class="section-title">🔔 Push-Benachrichtigungen</div>
+    <div class="card animate-in mb-2" style="animation-delay:.07s;scroll-margin-top:1rem" id="sec-push">
+      <?php settingsAccHead('🔔', 'Push-Benachrichtigungen'); ?>
+      <div class="settings-acc__body" hidden>
 
-      <div class="settings-row" style="padding:.6rem 0">
-        <div>
-          <span class="settings-row__name">Cooldown (Minuten)</span>
-          <div class="text-dim text-xs mt-1">
-            Mindestwartezeit zwischen zwei automatischen Push-Nachrichten (Kill, Phasenwechsel).
-            Spielstart und Spielende ignorieren diesen Wert immer.
-            <strong>0 = kein Cooldown.</strong>
+      <form id="form-push" class="settings-section" method="POST" onsubmit="saveSection(event,'form-push')">
+        <div class="settings-row" style="padding:.6rem 0">
+          <div>
+            <span class="settings-row__name">Cooldown (Minuten)</span>
+            <div class="text-dim text-xs mt-1">
+              Mindestwartezeit zwischen zwei automatischen Push-Nachrichten (Kill, Phasenwechsel).
+              Spielstart und Spielende ignorieren diesen Wert immer.
+              <strong>0 = kein Cooldown.</strong>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <input class="form-input" type="number" name="push_cooldown"
+                   value="<?= (int)($cfg['push_cooldown']['value'] ?? 5) ?>"
+                   min="0" max="1440" style="width:90px">
+            <span class="text-dim text-sm">Min.</span>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:.5rem">
-          <input class="form-input" type="number" name="push_cooldown"
-                 value="<?= (int)($cfg['push_cooldown']['value'] ?? 5) ?>"
-                 min="0" max="1440" style="width:90px">
-          <span class="text-dim text-sm">Min.</span>
-        </div>
-      </div>
+        <?php settingsSectionFooter('push'); ?>
+      </form>
 
       <!-- VAPID-Schlüssel -->
       <?php $vapidKey = $cfg['vapid_public_key']['value'] ?? ''; ?>
@@ -435,6 +544,23 @@ require TEMPLATE_PATH . '/base.php';
           <button type="button" class="btn btn--primary btn--sm" onclick="vapidGenerate(false)">✨ Schlüssel generieren</button>
           <?php endif; ?>
           <div id="vapid-result" class="mt-1"></div>
+        </div>
+      </div>
+
+      <!-- Test-Benachrichtigung -->
+      <div class="settings-row" style="padding:.6rem 0;border-top:1px solid var(--border);margin-top:.5rem">
+        <div>
+          <span class="settings-row__name">Test-Benachrichtigung</span>
+          <div class="text-dim text-xs mt-1">
+            Sendet sofort einen Test-Push (ohne Cooldown) — zum Prüfen, ob Benachrichtigungen ankommen.
+          </div>
+        </div>
+        <div style="max-width:340px;width:100%">
+          <div class="flex gap-xs" style="flex-wrap:wrap">
+            <button type="button" class="btn btn--ghost btn--sm" onclick="testPush('me')">🔔 An mich senden</button>
+            <button type="button" class="btn btn--ghost btn--sm" onclick="testPush('all')">📣 An alle Geräte</button>
+          </div>
+          <div id="push-test-result" class="mt-1"></div>
         </div>
       </div>
 
@@ -478,11 +604,14 @@ require TEMPLATE_PATH . '/base.php';
         <?php endif; ?>
         </div>
       </div>
+      </div>
     </div>
 
     <!-- ── Design ─────────────────────────────────────────── -->
-    <div class="card animate-in mb-2" style="animation-delay:.08s">
-      <div class="section-title">🎨 Design</div>
+    <form id="form-design" class="settings-section" method="POST" onsubmit="saveSection(event,'form-design')">
+    <div class="card animate-in mb-2" style="animation-delay:.08s;scroll-margin-top:1rem" id="sec-design">
+      <?php settingsAccHead('🎨', 'Design'); ?>
+      <div class="settings-acc__body" hidden>
 
       <div class="settings-row" style="padding:.6rem 0">
         <div>
@@ -506,11 +635,16 @@ require TEMPLATE_PATH . '/base.php';
           <?php endforeach; ?>
         </div>
       </div>
+
+      <?php settingsSectionFooter('design'); ?>
+      </div>
     </div>
+    </form>
 
     <!-- ── Bilder ────────────────────────────────────────── -->
-    <div class="card animate-in mb-2" style="animation-delay:.09s">
-      <div class="section-title">🖼️ Bilder</div>
+    <div class="card animate-in mb-2" style="animation-delay:.09s;scroll-margin-top:1rem" id="sec-bilder">
+      <?php settingsAccHead('🖼️', 'Bilder'); ?>
+      <div class="settings-acc__body" hidden>
 
       <!-- Login-Logo -->
       <div class="settings-row" style="padding:.6rem 0">
@@ -565,11 +699,16 @@ require TEMPLATE_PATH . '/base.php';
           <div id="favicon-upload-result" class="mt-1"></div>
         </div>
       </div>
+
+      <?php settingsBackToTop(); ?>
+      </div>
     </div>
 
     <!-- ── System ─────────────────────────────────────────── -->
-    <div class="card animate-in mb-2" style="animation-delay:.12s">
-      <div class="section-title">⚙️ System</div>
+    <form id="form-system" class="settings-section" method="POST" onsubmit="saveSection(event,'form-system')">
+    <div class="card animate-in mb-2" style="animation-delay:.12s;scroll-margin-top:1rem" id="sec-system">
+      <?php settingsAccHead('⚙️', 'System'); ?>
+      <div class="settings-acc__body" hidden>
 
       <div class="settings-row" style="padding:.6rem 0">
         <div>
@@ -597,11 +736,17 @@ require TEMPLATE_PATH . '/base.php';
                  maxlength="255">
         </div>
       </div>
+
+      <?php settingsSectionFooter('system'); ?>
+      </div>
     </div>
+    </form>
 
     <!-- ── Texte ─────────────────────────────────────────── -->
-    <div class="card animate-in mb-2" style="animation-delay:.14s">
-      <div class="section-title">📝 Texte</div>
+    <form id="form-texte" class="settings-section" method="POST" onsubmit="saveSection(event,'form-texte')">
+    <div class="card animate-in mb-2" style="animation-delay:.14s;scroll-margin-top:1rem" id="sec-texte">
+      <?php settingsAccHead('📝', 'Texte'); ?>
+      <div class="settings-acc__body" hidden>
 
       <div class="settings-row" style="padding:.6rem 0">
         <div>
@@ -638,16 +783,13 @@ require TEMPLATE_PATH . '/base.php';
                  maxlength="255">
         </div>
       </div>
-    </div>
 
-    <!-- ── Speichern ──────────────────────────────────────── -->
-    <div class="flex gap-sm" style="justify-content:flex-end;margin-bottom:2rem">
-      <button type="submit" class="btn btn--primary btn--lg" id="save-btn">
-        💾 Einstellungen speichern
-      </button>
+      <?php settingsSectionFooter('texte'); ?>
+      </div>
     </div>
+    </form>
 
-  </form>
+  </div>
 
   <!-- Hinweis: Was in config.php bleibt -->
   <div class="card" style="opacity:.7;margin-bottom:2rem">
@@ -673,12 +815,25 @@ require TEMPLATE_PATH . '/base.php';
 
 <?php
 $page['inline_js'] = sprintf(
-    'const SETTINGS_API = %s; const LOGO_UPLOAD_API = %s; const FAVICON_UPLOAD_API = %s;',
+    'const ADMIN_SETTINGS_API = %s; const LOGO_UPLOAD_API = %s; const FAVICON_UPLOAD_API = %s;',
     json_encode(APP_URL . '/admin/settings.php'),
     json_encode(APP_URL . '/api/upload_logo.php'),
     json_encode(APP_URL . '/api/upload_favicon.php')
 );
 $page['inline_js'] .= <<<'JS'
+
+// Akkordeon: Bereiche starten zugeklappt, per Klick auf den Header öffnen/schließen
+function toggleSettingsAcc(btn) {
+  const body = btn.nextElementSibling;
+  const open = btn.getAttribute('aria-expanded') === 'true';
+  btn.setAttribute('aria-expanded', String(!open));
+  body.hidden = open;
+}
+// Öffnet einen Bereich gezielt (z. B. über die Sprungmarken-Leiste oben)
+function openSettingsSection(id) {
+  const head = document.querySelector('#sec-' + id + ' > .settings-acc__head');
+  if (head && head.getAttribute('aria-expanded') !== 'true') toggleSettingsAcc(head);
+}
 
 // Session-Dauer lesbar darstellen
 function updateSessLabel() {
@@ -705,65 +860,76 @@ function updateThemePreview() {
   if (val) document.getElementById('theme-btn-' + val)?.classList.add('active');
 }
 
-// Einstellungen speichern
-async function saveSettings(e) {
-  e.preventDefault();
-  const btn = document.getElementById('save-btn');
-  const res = document.getElementById('save-result');
-  const silent = e === null; // Auto-Save: dezenter Toast statt großem Hinweis
-  if (!silent) {
-    btn.disabled = true;
-    btn.textContent = 'Speichern…';
-    res.style.display = 'none';
-  }
-
-  const form = document.getElementById('settings-form');
+// Liest alle benannten Felder EINES Formulars (einer Sektion) aus
+function collectSectionData(form) {
   const data = {};
-
   form.querySelectorAll('input[name], select[name], textarea[name]').forEach(el => {
     if (el.type === 'checkbox')  data[el.name] = el.checked;
     else if (el.type === 'radio') { if (el.checked) data[el.name] = el.value; }
     else data[el.name] = el.value;
   });
+  return data;
+}
+
+// Speichert genau eine Sektion (eigenes <form>) — unabhängig von allen anderen.
+// Ein ungültiger Wert in einer Sektion blockiert dadurch nie mehr die anderen.
+async function saveSection(e, formId) {
+  if (e) e.preventDefault(); // Auto-Save ruft ohne Event auf (e = null)
+  const form   = document.getElementById(formId);
+  const silent = !e;
+  const btn    = form.querySelector('button[type="submit"]');
+  const res    = form.querySelector('[id^="result-"]');
+  if (!silent && btn) { btn.disabled = true; btn.dataset.orig = btn.dataset.orig || btn.textContent; btn.textContent = 'Speichern…'; }
+
+  const data = collectSectionData(form);
 
   try {
-    const r = await fetch(SETTINGS_API + '?action=save', {
+    const r = await fetch(ADMIN_SETTINGS_API + '?action=save', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(data),
     });
-    const d = await r.json();
+    // Antwort als Text lesen: bei PHP-Warnungen/Redirects ist es kein JSON —
+    // dann die echte Server-Antwort anzeigen statt nur "Netzwerkfehler"
+    const raw = await r.text();
+    let d;
+    try {
+      d = JSON.parse(raw);
+    } catch {
+      throw new Error('HTTP ' + r.status + ' — ' + raw.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200));
+    }
     if (d.ok) {
       if (silent) {
-        showToast('✓ Einstellungen gespeichert', 'success', 1800);
-      } else {
-        res.innerHTML = `<div class="alert alert--success">✓ ${escHtml(d.message || 'Gespeichert.')}</div>`;
+        showToast('✓ Gespeichert', 'success', 1500);
+      } else if (res) {
+        res.innerHTML = `<span style="color:var(--success,#4ade80)">✓ ${escHtml(d.message || 'Gespeichert.')}</span>`;
         res.style.display = '';
-        res.scrollIntoView({behavior:'smooth', block:'nearest'});
       }
-    } else {
+    } else if (res) {
       const errList = d.errors
-        ? Object.values(d.errors).map(e => `<li>${escHtml(e)}</li>`).join('')
+        ? Object.values(d.errors).map(x => `<li>${escHtml(x)}</li>`).join('')
         : 'Unbekannter Fehler.';
-      res.innerHTML = `<div class="alert alert--error"><ul style="margin:0;padding-left:1.2rem">${errList}</ul></div>`;
+      res.innerHTML = `<ul style="margin:0;padding-left:1.2rem;color:var(--danger)">${errList}</ul>`;
       res.style.display = '';
-      res.scrollIntoView({behavior:'smooth', block:'nearest'});
     }
   } catch(err) {
-    res.innerHTML = `<div class="alert alert--error">Netzwerkfehler: ${escHtml(err.message)}</div>`;
-    res.style.display = '';
+    if (res) {
+      res.innerHTML = `<span style="color:var(--danger)">Netzwerkfehler: ${escHtml(err.message)}</span>`;
+      res.style.display = '';
+    }
   }
 
-  btn.disabled = false;
-  btn.textContent = '💾 Einstellungen speichern';
+  if (!silent && btn) { btn.disabled = false; btn.textContent = btn.dataset.orig; }
 }
 
-// Auto-Speichern wie bei den Spieler-Einstellungen: jede Änderung wird
-// sofort gespeichert — der Speichern-Button bleibt als Absicherung
-let _autoSaveTimer = null;
-document.getElementById('settings-form')?.addEventListener('change', () => {
-  clearTimeout(_autoSaveTimer);
-  _autoSaveTimer = setTimeout(() => saveSettings(null), 500);
+// Auto-Speichern pro Sektion: jede Änderung innerhalb EINES Bereichs speichert
+// nur diesen Bereich — der Speichern-Button je Sektion bleibt als Absicherung
+document.querySelectorAll('form.settings-section').forEach(form => {
+  let timer = null;
+  form.addEventListener('change', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => saveSection(null, form.id), 500);
+  });
 });
 
 async function uploadLogo() {
@@ -824,7 +990,7 @@ async function vapidGenerate(force) {
   const res = document.getElementById('vapid-result');
   res.innerHTML = '<span class="text-dim text-xs">Generiere…</span>';
   try {
-    const r = await fetch(SETTINGS_API + '?action=vapid_generate', {
+    const r = await fetch(ADMIN_SETTINGS_API + '?action=vapid_generate', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({force: !!force}),
     });
@@ -842,10 +1008,28 @@ async function vapidGenerate(force) {
   }
 }
 
+async function testPush(target) {
+  if (target === 'all' && !confirm('Test-Benachrichtigung an ALLE registrierten Geräte senden?')) return;
+  const res = document.getElementById('push-test-result');
+  res.innerHTML = '<span class="text-dim text-xs">Sende…</span>';
+  try {
+    const r = await fetch(ADMIN_SETTINGS_API + '?action=test_push', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({target}),
+    });
+    const d = await r.json();
+    res.innerHTML = d.ok
+      ? `<div class="alert alert--success text-xs">✓ ${escHtml(d.message)}</div>`
+      : `<div class="alert alert--error text-xs">${escHtml(d.error || 'Fehler')}</div>`;
+  } catch(e) {
+    res.innerHTML = '<div class="alert alert--error text-xs">Netzwerkfehler</div>';
+  }
+}
+
 async function deleteSub(id) {
   const row = document.getElementById('sub-row-' + id);
   try {
-    const r = await fetch(SETTINGS_API + '?action=delete_sub', {
+    const r = await fetch(ADMIN_SETTINGS_API + '?action=delete_sub', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({id}),
     });
@@ -861,7 +1045,7 @@ async function deleteSub(id) {
 async function clearAllSubs() {
   if (!confirm('Alle Geräte-Abonnements löschen?')) return;
   try {
-    const r = await fetch(SETTINGS_API + '?action=clear_subs', {
+    const r = await fetch(ADMIN_SETTINGS_API + '?action=clear_subs', {
       method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}',
     });
     const d = await r.json();
@@ -875,7 +1059,7 @@ async function clearAllSubs() {
 async function removeLogo() {
   if (!confirm('Logo entfernen?')) return;
   try {
-    const r = await fetch(SETTINGS_API + '?action=save', {
+    const r = await fetch(ADMIN_SETTINGS_API + '?action=save', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({login_logo: ''}),

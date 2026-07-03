@@ -375,7 +375,16 @@ ab dem nächsten Seitenaufruf — kein Datei-Edit nötig:
 | `push_cooldown` | Mindestpause (Min.) zwischen *unwichtigen* Pushes — Spielereignisse gehen immer sofort raus |
 | `vapid_public_key` / `vapid_private_key` | Web-Push-Schlüssel (über Admin → Einstellungen generierbar) |
 
-Alle Änderungen im Admin-Einstellungsbereich werden **automatisch gespeichert**.
+Die Seite ist in unabhängige Bereiche aufgeteilt (Allgemein/Spiel/Push/Design/
+System/Texte) — jeder Bereich hat sein eigenes Formular, speichert automatisch
+bei jeder Änderung **und** über einen eigenen „Speichern"-Button, unabhängig
+von allen anderen Bereichen. Ein ungültiger Wert in einem Bereich blockiert
+dadurch nie das Speichern der anderen. Alle Bereiche sind als Akkordeon
+aufgebaut (starten zugeklappt, sparen Platz vor allem am Handy). Sprungmarken
+oben auf der Seite öffnen den gewünschten Bereich direkt mit, ein „↑ Nach
+oben"-Link am Ende jedes Bereichs führt zurück zur Sprungmarken-Leiste. Im
+Push-Bereich lässt sich außerdem jederzeit eine Test-Benachrichtigung
+auslösen (an das eigene Gerät oder an alle).
 
 ---
 

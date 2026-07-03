@@ -72,3 +72,40 @@ Günslinger: Weiter schießen nach Killer-Treffer — Wenn Günslinger einen Kil
         für unwichtige Benachrichtigungen
 [Bug] Spiel-Reset ließ den alten Gewinner (winner) stehen
       → reset_game setzt winner jetzt auf NULL zurück
+[Bug] Admin-Einstellungen: Debug/Beta-Schalter wurden nicht gespeichert
+      → Auto-Save stürzte seit Einführung still ab (saveSettings(null) rief
+        e.preventDefault() auf null auf); gefixt — Schalter speichern wieder
+        automatisch; Fehlermeldung zeigt jetzt die echte Server-Antwort statt
+        nur "Netzwerkfehler"
+[Feature] Test-Button für Push-Benachrichtigungen in den Admin-Einstellungen
+      → Push-Sektion hat jetzt "Test-Benachrichtigung": 🔔 An mich senden
+        (nur eigene Geräte) und 📣 An alle Geräte (mit Rückfrage); sendet
+        sofort ohne Cooldown — vorher gab es den Test nur versteckt in der
+        System-Diagnose
+[Feature] Admin-Einstellungen komplett neu gebaut: pro Bereich eigenes Formular
+      → Jeder Bereich (Allgemein/Spiel/Push/Design/System/Texte) speichert jetzt
+        unabhängig mit eigenem Speichern-Button + eigener Fehleranzeige — ein
+        ungültiger Wert in einem Bereich blockiert nicht mehr die anderen;
+        Sprungmarken-Leiste oben auf der Seite springt direkt zum Bereich
+[Bug] Admin-Einstellungen: ECHTE Ursache für "Debug/Beta speichert nicht" +
+      "Gerät löschen geht nicht" + "Test-Push reagiert nicht" gefunden
+      → admin/settings.php deklarierte "const SETTINGS_API", genau wie
+        templates/nav.php (dort für die Spieler-Einstellungen, auf JEDER
+        Seite geladen). Doppelte "const"-Deklaration im selben globalen
+        Scope = SyntaxError im Browser ("Identifier 'SETTINGS_API' has
+        already been declared") — das killt das KOMPLETTE zweite Script,
+        nichts darin wird ausgeführt (kein Hoisting bei Syntax-Fehlern,
+        anders als bei Laufzeitfehlern). Dadurch liefen saveSection,
+        deleteSub, clearAllSubs, testPush etc. seit jeher ins Leere, obwohl
+        der Server bei jedem direkten Test einwandfrei funktionierte — der
+        Klick hat den Server nie erreicht. Konstante in admin/settings.php
+        zu ADMIN_SETTINGS_API umbenannt, alle Vorkommen angepasst.
+      → Lehre: Server-seitige Tests per curl/HTTP prüfen nie das Browser-
+        JavaScript — ein Blick in die DevTools-Console war hier der
+        einzige Weg, den Fehler zu finden.
+[Feature] Admin-Einstellungen: Bereiche als Akkordeon statt durchgehender Liste
+      → Alle 7 Bereiche starten zugeklappt und öffnen sich einzeln per Klick
+        auf den Titel (Chevron dreht sich beim Öffnen) — spart Platz, vor
+        allem am Handy; Sprungmarken oben öffnen den Zielbereich automatisch
+        mit; jeder Bereich hat unten einen "↑ Nach oben"-Link zurück zur
+        Sprungmarken-Leiste

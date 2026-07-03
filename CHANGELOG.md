@@ -4,6 +4,34 @@ Jedes Backup erhält eine fortlaufende Versionsnummer (v0.0.x).
 
 ---
 
+## [v0.0.9] — 2026-07-04
+
+### Behoben
+- **Kritischer Bug: Admin-Einstellungen reagierten nicht auf Klicks** — Debug-/
+  Beta-Schalter speicherten nicht, Geräte ließen sich nicht löschen, Test-Push
+  reagierte nicht. Ursache: `admin/settings.php` deklarierte `const SETTINGS_API`,
+  derselbe Name wie in `templates/nav.php` (dort global für die Spieler-
+  Einstellungen, auf jeder Seite geladen). Die doppelte `const`-Deklaration löste
+  im Browser einen SyntaxError aus, der das komplette zweite Skript stumm
+  deaktivierte — jeder Klick lief ins Leere, ohne dass der Server je etwas davon
+  mitbekam. Konstante in `admin/settings.php` zu `ADMIN_SETTINGS_API` umbenannt.
+- Auto-Save der Admin-Einstellungen stürzte bei jeder automatischen Speicherung
+  still ab (`e.preventDefault()` auf `null` aufgerufen) — behoben, außerdem zeigt
+  eine fehlgeschlagene Speicherung jetzt die echte Server-Antwort statt nur
+  „Netzwerkfehler"
+
+### Hinzugefügt
+- **Admin-Einstellungen komplett neu gebaut**: jeder Bereich (Allgemein/Spiel/
+  Push/Design/System/Texte) ist jetzt ein eigenes, unabhängiges Formular mit
+  eigenem Speichern-Button — ein ungültiger Wert in einem Bereich blockiert
+  nicht mehr das Speichern der anderen; Bereiche als Akkordeon (starten
+  zugeklappt, sparen Platz v. a. am Handy); Sprungmarken-Leiste oben öffnet
+  den Zielbereich automatisch mit; „↑ Nach oben"-Link am Ende jedes Bereichs
+- **Test-Benachrichtigung** in den Push-Einstellungen: sofortiger Test-Push an
+  das eigene Gerät oder an alle registrierten Geräte, ohne Cooldown
+
+---
+
 ## [v0.0.8] — 2026-07-03
 
 ### Hinzugefügt
