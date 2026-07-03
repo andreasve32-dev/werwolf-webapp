@@ -70,7 +70,7 @@ require TEMPLATE_PATH . '/base.php';
       </div>
       <p class="text-sm text-dim" style="line-height:1.7">
         Es werden <strong>keine Tracking- oder Werbe-Cookies</strong> eingesetzt.<br>
-        <em>Rechtsgrundlage:</em> § 25 Abs. 2 TTDSG (technisch notwendige Cookies).
+        <em>Rechtsgrundlage:</em> § 25 Abs. 2 TDDDG (technisch notwendige Cookies).
       </p>
 
       <h3 class="text-sm mb-1" style="font-weight:600;margin-top:1rem">2.4 Lokaler Browserspeicher (localStorage)</h3>
@@ -103,7 +103,7 @@ require TEMPLATE_PATH . '/base.php';
         <em>Rechtsgrundlage:</em> Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung).
       </p>
 
-      <h3 class="text-sm mb-1" style="font-weight:600;margin-top:1rem">2.5 Push-Benachrichtigungen (optional)</h3>
+      <h3 class="text-sm mb-1" style="font-weight:600;margin-top:1rem">2.6 Push-Benachrichtigungen (optional)</h3>
       <p class="text-sm text-dim" style="line-height:1.7">
         Mit ausdrücklicher Einwilligung können Browser-Benachrichtigungen (Web Push) aktiviert werden.
         Dabei wird ein <strong>Push-Abonnement</strong> (bestehend aus einer vom Browser erzeugten
@@ -116,7 +116,7 @@ require TEMPLATE_PATH . '/base.php';
         <em>Rechtsgrundlage:</em> Art. 6 Abs. 1 lit. a DSGVO (Einwilligung).
       </p>
 
-      <h3 class="text-sm mb-1" style="font-weight:600;margin-top:1rem">2.6 Server-Protokolldaten</h3>
+      <h3 class="text-sm mb-1" style="font-weight:600;margin-top:1rem">2.7 Server-Protokolldaten</h3>
       <p class="text-sm text-dim" style="line-height:1.7">
         Der Webserver protokolliert automatisch Zugriffe mit IP-Adresse, Zeitpunkt,
         aufgerufener URL und HTTP-Statuscode. Diese Daten werden für maximal 14 Tage

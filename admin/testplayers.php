@@ -21,7 +21,9 @@ if (($_GET['action'] ?? '') === 'create') {
     $created = 0;
     $skipped = 0;
     $rows    = [];
-    for ($i = 1; $i <= $count; $i++) {
+    // Kumulierend: vorhandene Nummern überspringen und die nächsten freien
+    // belegen, bis $count NEUE Spieler angelegt sind (oder TEST_MAX erreicht ist).
+    for ($i = 1; $i <= TEST_MAX && $created < $count; $i++) {
         $username     = TEST_PREFIX . str_pad($i, 2, '0', STR_PAD_LEFT);
         $display_name = TEST_DISPLAY_PX . str_pad($i, 2, '0', STR_PAD_LEFT);
         $exists = Database::queryOne(
@@ -226,8 +228,8 @@ async function createPlayers() {
     const data = await (await fetch(TP_API + '?action=create', {method: 'POST', body: fd})).json();
     if (data.ok) {
       const msg = data.created > 0
-        ? '✓ ' + data.created + ' Testspieler angelegt' + (data.skipped > 0 ? ' (' + data.skipped + ' bereits vorhanden, übersprungen).' : '.')
-        : 'Alle ' + data.skipped + ' ausgewählten Spieler existieren bereits.';
+        ? '✓ ' + data.created + ' Testspieler angelegt' + (data.skipped > 0 ? ' (' + data.skipped + ' vorhandene übersprungen).' : '.')
+        : 'Kein Platz mehr — das Maximum an Testspielern ist bereits angelegt.';
       showResult(result, true, msg);
       if (data.created > 0) {
         const list = document.getElementById('test-list');

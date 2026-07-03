@@ -25,7 +25,7 @@ $v       = fn(string $key, $default = '') => $isEdit ? ($editRole[$key] ?? $defa
 <div class="grid-2">
   <div class="form-group">
     <label class="form-label" for="<?= $prefix ?>cooldown">Cooldown (Minuten)</label>
-    <input class="form-input" type="number" min="0" id="<?= $prefix ?>cooldown"
+    <input class="form-input" type="number" min="0" max="10080" id="<?= $prefix ?>cooldown"
            placeholder="0 = kein Cooldown" value="<?= e($v('cooldown', 0)) ?>">
   </div>
   <div class="form-group">

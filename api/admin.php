@@ -283,11 +283,13 @@ switch($action){
     if(!$name) err('Name erforderlich');
     $exists = Database::queryOne("SELECT id FROM roles WHERE name=?",[$name]);
     if($exists) err('Eine Rolle mit diesem Namen existiert bereits');
+    $cooldown = (int)($input['cooldown'] ?? 0);
+    if ($cooldown < 0 || $cooldown > 10080) err('Cooldown: 0–10080 Minuten (max. 7 Tage).');
     Database::execute(
       "INSERT INTO roles (name,cooldown,description,rules,active,amount,fill,icon_path,sichtbar,befragen,auto_eintrag,is_killer,sort_order) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
       [
         $name,
-        max(0,(int)($input['cooldown'] ?? 0)),
+        $cooldown,
         trim($input['description'] ?? ''),
         trim($input['rules'] ?? ''),
         !empty($input['active']) ? 1 : 0,
@@ -314,11 +316,13 @@ switch($action){
     if(!$name) err('Name erforderlich');
     $dup = Database::queryOne("SELECT id FROM roles WHERE name=? AND id!=?",[$name,$roleId]);
     if($dup) err('Eine andere Rolle hat bereits diesen Namen');
+    $cooldown = (int)($input['cooldown'] ?? 0);
+    if ($cooldown < 0 || $cooldown > 10080) err('Cooldown: 0–10080 Minuten (max. 7 Tage).');
     Database::execute(
       "UPDATE roles SET name=?,cooldown=?,description=?,rules=?,active=?,amount=?,fill=?,icon_path=?,sichtbar=?,befragen=?,auto_eintrag=?,is_killer=?,sort_order=? WHERE id=?",
       [
         $name,
-        max(0,(int)($input['cooldown'] ?? 0)),
+        $cooldown,
         trim($input['description'] ?? ''),
         trim($input['rules'] ?? ''),
         !empty($input['active']) ? 1 : 0,

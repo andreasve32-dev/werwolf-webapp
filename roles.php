@@ -101,9 +101,9 @@ require TEMPLATE_PATH . '/base.php';
 }
 #role-card-overlay.open {
   opacity: 1; pointer-events: auto;
-  background: rgba(0,0,0,.58);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  /* Voll deckend: die Seite darf hinter der großen Rollenkarte
+     nicht durchscheinen (bis zum Bildschirmrand abgedeckt) */
+  background: var(--bg, #0d0d14);
 }
 .role-card-modal {
   background: var(--card-bg);

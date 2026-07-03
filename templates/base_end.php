@@ -16,13 +16,14 @@
 <?php endif; ?>
 
 <footer class="legal-footer">
-  <a href="<?= APP_URL ?>/impressum.php">Impressum</a>
-  <span class="legal-footer__sep">·</span>
-  <a href="<?= APP_URL ?>/datenschutz.php">Datenschutz</a>
-  <span class="legal-footer__sep">·</span>
-  <a href="<?= APP_URL ?>/nutzungsbedingungen.php">Nutzungsbedingungen</a>
-  <span class="legal-footer__sep">·</span>
-  <span class="legal-footer__copy">KI-generierte Charakterbilder, inspiriert von FINAL FANTASY XIV © SQUARE ENIX</span>
+  <div class="legal-footer__links">
+    <a href="<?= APP_URL ?>/impressum.php">Impressum</a>
+    <span class="legal-footer__sep">·</span>
+    <a href="<?= APP_URL ?>/datenschutz.php">Datenschutz</a>
+    <span class="legal-footer__sep">·</span>
+    <a href="<?= APP_URL ?>/nutzungsbedingungen.php">Nutzungsbedingungen</a>
+  </div>
+  <div class="legal-footer__copy">KI-generierte Charakterbilder, inspiriert von FINAL FANTASY XIV © SQUARE ENIX</div>
 </footer>
 
 <?php $__bepPlayer = Auth::check() ? Auth::player() : null; ?>

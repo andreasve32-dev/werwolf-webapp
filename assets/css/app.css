@@ -375,6 +375,23 @@ body.no-tabbar { padding-bottom: 0; }
 .legal-footer a { color: var(--text-dim); text-decoration: none; }
 .legal-footer a:hover { color: var(--accent); }
 .legal-footer__sep { margin: 0 .5rem; opacity: .4; }
+.legal-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+/* Square-Enix-Hinweis: eigene Zeile, dezent — bricht mobil sauber um
+   statt zwischen den Links zu hängen */
+.legal-footer__copy {
+  margin-top: .5rem;
+  font-size: .68rem;
+  opacity: .65;
+  line-height: 1.5;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
 
 /* Spielseite mobil: Mein Status oben, Dorfbewohner darunter */
 @media (max-width: 640px) {

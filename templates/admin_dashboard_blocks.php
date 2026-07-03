@@ -209,15 +209,14 @@ function admin_render_player_list(array $s): string {
         <?php foreach ($gamePlayers as $gp): ?>
         <div class="panel flex-between" style="padding:.55rem .9rem">
           <div class="flex gap-sm">
-            <?php if (!$gp['is_alive'] && $gp['role_id']): ?>
-              <?= roleIconHtml(['icon_path'=>$gp['role_icon_path'],'name'=>$gp['role_name']], 'sm') ?>
+            <?php if (!$gp['is_alive']): ?>
+              <?php // Rolle bewusst NICHT anzeigen — der Admin spielt mit und
+                    // soll nicht über das Dashboard gespoilert werden ?>
+              <span style="width:1.1rem;height:1.1rem;display:inline-block"></span>
               <span style="font-family:var(--font-display);font-size:.88rem;color:var(--text-dim)">
                 <?= e($gp['display_name']) ?>
               </span>
               <span class="tag tag--dead text-xs">Tot</span>
-              <?php if ($gp['role_name']): ?>
-                <span class="text-dim text-xs">(<?= e($gp['role_name']) ?>)</span>
-              <?php endif; ?>
             <?php else: ?>
               <span style="width:1.1rem;height:1.1rem;display:inline-block"></span>
               <span style="font-family:var(--font-display);font-size:.88rem;color:var(--text-bright)">
