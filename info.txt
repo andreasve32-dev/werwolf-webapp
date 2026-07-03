@@ -40,6 +40,9 @@ Sprachnachrichten an den Spielleiter — Im "Frage stellen"-Modal Auswahl Text/S
     direkt in das "FAQ-Text"-Feld ein (dasselbe Feld wie bei Text-Nachrichten, siehe messages.faq_question).
     Admin muss den transkribierten Text dann nur noch gegenlesen/anonymisieren statt selbst mitzuschreiben,
     bevor er die Antwort in die FAQ übernimmt.
+  Erweiterung Admin-Einstellungen: An/Aus-Schalter für Sprachnachrichten (neue Settings-Zeile,
+    z.B. voice_messages_enabled) — bei "Aus" verschwindet die Text/Sprachnachricht-Auswahl im
+    "Frage stellen"-Modal komplett, Spieler sehen nur noch das normale Textfeld wie bisher.
 ---
 ✅ Gelöst (03.07.2026)
 
