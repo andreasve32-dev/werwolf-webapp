@@ -93,14 +93,17 @@ function admin_compute_state(int $gameId): array {
         );
     }
 
-    // Aktuelle Versammlungsanfrage
+    // Aktuelle Versammlungsanfrage (scheduled_at NULL = Antrag wartet auf zweiten Einberufer)
     $pendingAssembly = null;
     if ($game['status'] === 'running') {
         try {
             $pendingAssembly = Database::queryOne(
-                "SELECT ar.scheduled_at, ar.notified, p.display_name AS caller
-                 FROM assembly_requests ar JOIN players p ON p.id=ar.player_id
-                 WHERE ar.game_id=? AND ar.ended_at IS NULL ORDER BY ar.scheduled_at DESC LIMIT 1",
+                "SELECT ar.scheduled_at, ar.notified, p.display_name AS caller,
+                        s.display_name AS supporter
+                 FROM assembly_requests ar
+                 JOIN players p ON p.id=ar.player_id
+                 LEFT JOIN players s ON s.id=ar.supporter_id
+                 WHERE ar.game_id=? AND ar.ended_at IS NULL ORDER BY ar.id DESC LIMIT 1",
                 [$gameId]
             );
         } catch (Throwable $e) {}
@@ -150,17 +153,30 @@ function admin_render_assembly_banner(array $s): string {
     ob_start();
     ?>
     <?php if ($pendingAssembly): ?>
-    <?php $aTime = (int)$pendingAssembly['scheduled_at']; $aLabel = date('H:i', $aTime); ?>
+    <?php
+      $aPending = $pendingAssembly['scheduled_at'] === null;
+      $aTime    = $aPending ? 0 : (int)$pendingAssembly['scheduled_at'];
+      $aLabel   = $aPending ? '' : date('H:i', $aTime);
+    ?>
     <div class="alert animate-in" style="display:flex;align-items:center;gap:.8rem;padding:.9rem 1rem;
          background:rgba(99,102,241,.14);border-color:rgba(99,102,241,.4);color:#c7d2fe;font-size:.9rem">
       <span style="font-size:1.5rem">🏛️</span>
       <div style="flex:1">
-        <strong><?= e($pendingAssembly['caller']) ?></strong> hat eine Versammlung einberufen
-        <?php if ($aTime > time()): ?>
-          — Termin: <strong><?= $aLabel ?> Uhr</strong>
-          <span class="text-xs" style="opacity:.7;margin-left:.4rem" id="admin-assembly-countdown" data-ts="<?= $aTime ?>"></span>
+        <?php if ($aPending): ?>
+          <strong><?= e($pendingAssembly['caller']) ?></strong> hat eine Versammlung beantragt
+          — <em>wartet auf einen zweiten Einberufer</em>
         <?php else: ?>
-          — <strong>Versammlung läuft jetzt!</strong>
+          <strong><?= e($pendingAssembly['caller']) ?></strong>
+          <?php if (!empty($pendingAssembly['supporter'])): ?>
+            und <strong><?= e($pendingAssembly['supporter']) ?></strong>
+          <?php endif; ?>
+          <?= !empty($pendingAssembly['supporter']) ? 'haben' : 'hat' ?> eine Versammlung einberufen
+          <?php if ($aTime > time()): ?>
+            — Termin: <strong><?= $aLabel ?> Uhr</strong>
+            <span class="text-xs" style="opacity:.7;margin-left:.4rem" id="admin-assembly-countdown" data-ts="<?= $aTime ?>"></span>
+          <?php else: ?>
+            — <strong>Versammlung läuft jetzt!</strong>
+          <?php endif; ?>
         <?php endif; ?>
       </div>
       <button class="btn btn--danger btn--sm" onclick="endAssemblyAdmin()" style="white-space:nowrap">

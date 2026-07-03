@@ -208,12 +208,14 @@ CREATE TABLE assembly_requests (
   id           INT AUTO_INCREMENT PRIMARY KEY,
   game_id      INT NOT NULL,
   player_id    INT NOT NULL,
-  scheduled_at INT NOT NULL,
+  supporter_id INT NULL,                     -- zweiter Einberufer (NULL = wartet noch auf Unterstützung)
+  scheduled_at INT NULL,                     -- Termin; wird erst beim zweiten Einberufer gesetzt
   notified     TINYINT(1) NOT NULL DEFAULT 0,
   called_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   ended_at     TIMESTAMP NULL DEFAULT NULL, -- NULL = aktiv, gesetzt = vom Admin beendet
-  FOREIGN KEY (game_id)   REFERENCES games(id)   ON DELETE CASCADE,
-  FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+  FOREIGN KEY (game_id)      REFERENCES games(id)   ON DELETE CASCADE,
+  FOREIGN KEY (player_id)    REFERENCES players(id) ON DELETE CASCADE,
+  FOREIGN KEY (supporter_id) REFERENCES players(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 -- ── 10. Rollen (Seed-Daten basierend auf dem echten Regelwerk) ──

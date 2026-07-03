@@ -1,6 +1,5 @@
 🐛 Gefundene Bugs
 
-Anklagen ohne Versammlung möglich — Spieler kann angeklagt werden, obwohl keine Versammlung aktiv ist
 Versammlungs-Button zeigt falschen Status — Pause-Icon suggeriert "pausiert", Zustand ist aber "aktiv" (Logik muss umgekehrt werden)
 Cooldown startet bei falschem Wert — Nach Klick beginnt Timer nicht bei 0, sondern bei 20 Sekunden
 Rollen-Liste ändert Aussehen je nach Theme — Style-Inkonsistenz zwischen verschiedenen Designs
@@ -45,3 +44,10 @@ Günslinger: Weiter schießen nach Killer-Treffer — Wenn Günslinger einen Kil
 [Feature] Live-Update ohne Seiten-Reload — AJAX/JavaScript für Echtzeit-Updates
       → Komplett umgesetzt: alle Seiten aktualisieren sich ohne Reload, Intervall in den
         Spieler-Einstellungen wählbar, Countdown in der Kopfleiste, Übertragung nur bei Änderungen
+[Bug] Anklagen ohne Versammlung möglich — Spieler konnte angeklagt werden, obwohl keine Versammlung aktiv ist
+      → Anklagen sind nur noch während einer laufenden Versammlung möglich (Server-Prüfung);
+        die Anklage-Karte erscheint erst mit Versammlungsbeginn und verschwindet beim Ende
+[Feature] Versammlung startet erst ab 2 Spielern — einer allein reicht nicht
+      → Erster Spieler stellt den Antrag (für alle sichtbar + Push), ein zweiter muss
+        unterstützen, erst dann steht der Termin (nächste volle Stunde); beenden können
+        nur die beiden Einberufer (oder die Spielleitung); Antragsteller kann zurückziehen

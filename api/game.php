@@ -92,6 +92,13 @@ switch($action){
     if(!$g){http_response_code(400);echo json_encode(['error'=>'Spiel läuft nicht']);exit;}
     $me=Database::queryOne("SELECT * FROM game_players WHERE game_id=? AND player_id=? AND is_alive=1",[$gameId,$playerId]);
     if(!$me){http_response_code(400);echo json_encode(['error'=>'Nicht berechtigt']);exit;}
+    // Anklagen sind nur während einer LAUFENDEN Bürgerversammlung erlaubt
+    // (einberufen, Termin erreicht, noch nicht beendet)
+    $assemblyRunning=Database::queryOne(
+      "SELECT id FROM assembly_requests WHERE game_id=? AND ended_at IS NULL AND scheduled_at<=?",
+      [$gameId, time()]
+    );
+    if(!$assemblyRunning){http_response_code(400);echo json_encode(['error'=>'Anklagen sind nur während einer laufenden Versammlung möglich.']);exit;}
     Database::execute("INSERT INTO votes (game_id,round,voter_id,target_id) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE target_id=VALUES(target_id)",[$gameId,$g['round'],$playerId,$tid]);
     echo json_encode(['ok'=>true]);break;
 
@@ -156,27 +163,52 @@ switch($action){
     if (!$g) { http_response_code(400); echo json_encode(['error'=>'Spiel läuft nicht']); exit; }
     $me = Database::queryOne("SELECT * FROM game_players WHERE game_id=? AND player_id=? AND is_alive=1", [$gameId, $playerId]);
     if (!$me) { http_response_code(400); echo json_encode(['error'=>'Du bist nicht im Spiel oder bereits tot']); exit; }
-    // Bereits eine aktive Anfrage (Countdown oder laufend)?
+    $caller = Database::queryOne("SELECT display_name FROM players WHERE id=?", [$playerId]);
+    $callerName = $caller['display_name'] ?? 'Ein Spieler';
+    require_once dirname(__DIR__) . '/core/WebPush.php';
+
+    // Bereits eine aktive Anfrage (Antrag, Countdown oder laufend)?
     $existing = Database::queryOne(
         "SELECT * FROM assembly_requests WHERE game_id=? AND ended_at IS NULL", [$gameId]
     );
-    if ($existing) {
+
+    if (!$existing) {
+        // Phase 1: erster Einberufer stellt den Antrag — Versammlung kommt
+        // erst zustande, wenn ein ZWEITER Spieler sie ebenfalls einberuft
+        Database::execute(
+            "INSERT INTO assembly_requests (game_id, player_id, scheduled_at) VALUES (?,?,NULL)",
+            [$gameId, $playerId]
+        );
+        WebPush::sendToGame($gameId, true, '🏛️ Versammlung beantragt',
+            $callerName . ' möchte eine Bürgerversammlung einberufen — ein zweiter Spieler muss unterstützen!');
+        echo json_encode(['ok'=>true,'pending'=>true,'caller'=>$callerName,'caller_id'=>(int)$playerId,
+                          'message'=>'Antrag gestellt — ein zweiter Spieler muss die Versammlung unterstützen.']);
+        break;
+    }
+
+    if ($existing['scheduled_at'] !== null) {
         echo json_encode(['ok'=>false,'error'=>'Es ist bereits eine Versammlung aktiv','scheduled_at'=>(int)$existing['scheduled_at']]);
         exit;
     }
-    // Nächste volle Stunde berechnen
+
+    if ((int)$existing['player_id'] === (int)$playerId) {
+        echo json_encode(['ok'=>false,'error'=>'Du hast die Versammlung bereits beantragt — ein anderer Spieler muss sie unterstützen.']);
+        exit;
+    }
+
+    // Phase 2: zweiter Einberufer unterstützt → Termin nächste volle Stunde
     $nextHour = (int)((floor(time() / 3600) + 1) * 3600);
-    $caller = Database::queryOne("SELECT display_name FROM players WHERE id=?", [$playerId]);
-    $callerName = $caller['display_name'] ?? 'Ein Spieler';
-    $timeStr = date('H:i', $nextHour);
+    $timeStr  = date('H:i', $nextHour);
     Database::execute(
-        "INSERT INTO assembly_requests (game_id, player_id, scheduled_at) VALUES (?,?,?)",
-        [$gameId, $playerId, $nextHour]
+        "UPDATE assembly_requests SET supporter_id=?, scheduled_at=? WHERE id=?",
+        [$playerId, $nextHour, $existing['id']]
     );
-    require_once dirname(__DIR__) . '/core/WebPush.php';
+    $firstCaller = Database::queryOne("SELECT display_name FROM players WHERE id=?", [(int)$existing['player_id']]);
     WebPush::sendToGame($gameId, true, '🏛️ Versammlung einberufen!',
-        $callerName . ' ruft zur Bürgerversammlung — Treffen um ' . $timeStr . ' Uhr.');
-    echo json_encode(['ok'=>true,'scheduled_at'=>$nextHour,'caller'=>$callerName,
+        ($firstCaller['display_name'] ?? 'Ein Spieler') . ' und ' . $callerName .
+        ' rufen zur Bürgerversammlung — Treffen um ' . $timeStr . ' Uhr.');
+    echo json_encode(['ok'=>true,'scheduled_at'=>$nextHour,'caller'=>$firstCaller['display_name'] ?? 'Ein Spieler',
+                      'caller_id'=>(int)$existing['player_id'],'supporter_id'=>(int)$playerId,
                       'message'=>'Versammlung um '.$timeStr.' Uhr einberufen.']);
     break;
 
@@ -198,14 +230,21 @@ switch($action){
         Database::execute("UPDATE assembly_requests SET notified=1 WHERE id=?", [$due['id']]);
     }
     $assembly = Database::queryOne(
-        "SELECT ar.scheduled_at, ar.notified, p.display_name AS caller
+        "SELECT ar.scheduled_at, ar.notified, ar.player_id AS caller_id, ar.supporter_id,
+                p.display_name AS caller
          FROM assembly_requests ar JOIN players p ON p.id=ar.player_id
          WHERE ar.game_id=? AND ar.ended_at IS NULL
-         ORDER BY ar.scheduled_at DESC LIMIT 1",
+         ORDER BY ar.id DESC LIMIT 1",
         [$gameId]
     );
-    echo json_encode(['assembly'=> $assembly ? ['scheduled_at'=>(int)$assembly['scheduled_at'],
-        'notified'=>(bool)$assembly['notified'],'caller'=>$assembly['caller']] : null]);
+    echo json_encode(['assembly'=> $assembly ? [
+        'scheduled_at' => $assembly['scheduled_at'] !== null ? (int)$assembly['scheduled_at'] : null,
+        'pending'      => $assembly['scheduled_at'] === null,
+        'notified'     => (bool)$assembly['notified'],
+        'caller'       => $assembly['caller'],
+        'caller_id'    => (int)$assembly['caller_id'],
+        'supporter_id' => $assembly['supporter_id'] !== null ? (int)$assembly['supporter_id'] : null,
+    ] : null]);
     break;
 
   case 'end_assembly':
@@ -214,9 +253,14 @@ switch($action){
         [$gameId]
     );
     if (!$assembly) { http_response_code(400); echo json_encode(['error'=>'Keine aktive Versammlung']); exit; }
-    $isAdmin  = (bool)Auth::player()['is_admin'];
-    $isCaller = (int)$assembly['player_id'] === (int)$playerId;
-    if (!$isAdmin && !$isCaller) { http_response_code(403); echo json_encode(['error'=>'Nur der Einberufer oder Admin kann beenden']); exit; }
+    $isAdmin     = (bool)Auth::player()['is_admin'];
+    $isCaller    = (int)$assembly['player_id'] === (int)$playerId;
+    $isSupporter = $assembly['supporter_id'] !== null && (int)$assembly['supporter_id'] === (int)$playerId;
+    if (!$isAdmin && !$isCaller && !$isSupporter) {
+        http_response_code(403);
+        echo json_encode(['error'=>'Nur die beiden Einberufer (oder die Spielleitung) können die Versammlung beenden.']);
+        exit;
+    }
     Database::execute("UPDATE assembly_requests SET ended_at=NOW() WHERE id=?", [$assembly['id']]);
     echo json_encode(['ok'=>true]);
     break;

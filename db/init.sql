@@ -178,16 +178,20 @@ CREATE TABLE IF NOT EXISTS assembly_requests (
   id           INT AUTO_INCREMENT PRIMARY KEY,
   game_id      INT NOT NULL,
   player_id    INT NOT NULL,
-  scheduled_at INT NOT NULL,
+  supporter_id INT NULL,
+  scheduled_at INT NULL,
   notified     TINYINT(1) NOT NULL DEFAULT 0,
   called_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   ended_at     TIMESTAMP NULL DEFAULT NULL,
-  FOREIGN KEY (game_id)   REFERENCES games(id)   ON DELETE CASCADE,
-  FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
+  FOREIGN KEY (game_id)      REFERENCES games(id)   ON DELETE CASCADE,
+  FOREIGN KEY (player_id)    REFERENCES players(id) ON DELETE CASCADE,
+  FOREIGN KEY (supporter_id) REFERENCES players(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
--- ended_at nachrüsten falls Tabelle bereits existiert
+-- Nachrüsten falls Tabelle bereits existiert
 ALTER TABLE assembly_requests ADD COLUMN IF NOT EXISTS ended_at TIMESTAMP NULL DEFAULT NULL AFTER called_at;
+ALTER TABLE assembly_requests ADD COLUMN IF NOT EXISTS supporter_id INT NULL AFTER player_id;
+ALTER TABLE assembly_requests MODIFY scheduled_at INT NULL;
 
 CREATE TABLE IF NOT EXISTS push_subscriptions (
   id         INT AUTO_INCREMENT PRIMARY KEY,

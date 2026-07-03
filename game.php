@@ -32,16 +32,19 @@ $currentAssembly = null;
 if ($gameId && ($game['status'] ?? '') === 'running') {
     try {
         $row = Database::queryOne(
-            "SELECT ar.scheduled_at, ar.notified, ar.player_id AS caller_id, p.display_name AS caller
+            "SELECT ar.scheduled_at, ar.notified, ar.player_id AS caller_id, ar.supporter_id,
+                    p.display_name AS caller
              FROM assembly_requests ar JOIN players p ON p.id=ar.player_id
-             WHERE ar.game_id=? AND ar.ended_at IS NULL ORDER BY ar.scheduled_at DESC LIMIT 1",
+             WHERE ar.game_id=? AND ar.ended_at IS NULL ORDER BY ar.id DESC LIMIT 1",
             [$gameId]
         );
         if ($row) {
-            $currentAssembly = ['scheduled_at'=>(int)$row['scheduled_at'],
+            $currentAssembly = ['scheduled_at'=>$row['scheduled_at'] !== null ? (int)$row['scheduled_at'] : null,
+                                'pending'=>$row['scheduled_at'] === null,
                                 'notified'=>(bool)(int)$row['notified'],
                                 'caller'=>$row['caller'],
-                                'caller_id'=>(int)$row['caller_id']];
+                                'caller_id'=>(int)$row['caller_id'],
+                                'supporter_id'=>$row['supporter_id'] !== null ? (int)$row['supporter_id'] : null];
         }
     } catch (\Throwable $e) { /* Tabelle noch nicht migriert */ }
 }
@@ -50,7 +53,7 @@ $page = [
     'title'    => 'Spielfeld',
     'inline_js' => sprintf(
         'const GAME_ID=%s,PLAYER_ID=%s,API_BASE=%s,DAY_SLOGANS=%s,NIGHT_SLOGANS=%s,MY_COOLDOWN_MINS=%s,MY_COOLDOWN_STARTED=%s,ASSEMBLY_DATA=%s,MY_IS_ADMIN=%s;'
-        . 'let MY_ALIVE=%s,GAME_STATUS=%s,GAME_PHASE=%s;',
+        . 'let MY_ALIVE=%s,GAME_STATUS=%s,GAME_PHASE=%s,MY_IN_GAME=%s;',
         json_encode($gameId),
         json_encode($player['id']),
         json_encode(API_URL),
@@ -62,7 +65,8 @@ $page = [
         json_encode((bool)$player['is_admin']),
         json_encode($myGP ? (bool)$myGP['is_alive'] : false),
         json_encode($game['status'] ?? null),
-        json_encode($game['phase']  ?? null)
+        json_encode($game['phase']  ?? null),
+        json_encode((bool)$myGP)
     ),
 ];
 require TEMPLATE_PATH . '/base.php';
@@ -211,9 +215,10 @@ require TEMPLATE_PATH . '/base.php';
         <!-- Einberufen-Button: nur für lebende Spieler, nur wenn keine läuft -->
         <?php if ($myGP && $myGP['is_alive']): ?>
         <div id="assembly-call-section">
-          <p class="text-dim text-sm mb-2">
-            Berufe eine Versammlung ein — sie findet zur nächsten vollen Stunde statt.
-            Alle Spieler werden per Push benachrichtigt.
+          <p class="text-dim text-sm mb-2" id="assembly-call-text">
+            Berufe eine Versammlung ein — sie kommt zustande, sobald ein zweiter
+            Spieler sie ebenfalls einberuft, und findet dann zur nächsten vollen
+            Stunde statt. Alle Spieler werden per Push benachrichtigt.
           </p>
           <button class="btn btn--primary btn--full" id="assembly-call-btn" onclick="callAssembly()">
             📣 Versammlung einberufen
@@ -247,8 +252,9 @@ require TEMPLATE_PATH . '/base.php';
         </div>
       </div>
 
-      <!-- Anklagen (nur tagsüber, lebendig) -->
-      <?php $showAccuse = $status === 'running' && $phase === 'day' && $myGP && $myGP['is_alive']; ?>
+      <!-- Anklagen (nur tagsüber, lebendig, und nur während laufender Versammlung) -->
+      <?php $showAccuse = $status === 'running' && $phase === 'day' && $myGP && $myGP['is_alive']
+                          && $currentAssembly && $currentAssembly['scheduled_at'] <= time(); ?>
       <div class="card animate-in mt-2" id="assembly-card"
            style="animation-delay:.12s<?= $showAccuse ? '' : ';display:none' ?>">
         <div class="section-title">⚖️ Anklagen</div>
@@ -530,7 +536,8 @@ function renderGameState(r) {
     _updatePhaseBanner(GAME_STATUS, GAME_PHASE);
   }
   if (r.me) {
-    MY_ALIVE = r.me.is_alive;
+    MY_ALIVE   = r.me.is_alive;
+    MY_IN_GAME = r.me.in_game;
     const actionsEl = document.getElementById('my-status-actions');
     if (actionsEl && r.my_status_html !== undefined && r.my_status_html !== _lastStatusHtml) {
       actionsEl.innerHTML = r.my_status_html;
@@ -538,9 +545,7 @@ function renderGameState(r) {
     }
     const assemblyCard = document.getElementById('assembly-schedule-card');
     if (assemblyCard) assemblyCard.style.display = GAME_STATUS === 'running' ? '' : 'none';
-    const accuseCard = document.getElementById('assembly-card');
-    if (accuseCard) accuseCard.style.display =
-      (GAME_STATUS === 'running' && GAME_PHASE === 'day' && r.me.in_game && MY_ALIVE) ? '' : 'none';
+    _updateAccuseCard();
   }
 
   if(r.players.length===0){
@@ -645,6 +650,19 @@ async function castVote() {
   }
 }
 
+// ── Anklage-Karte: nur während laufender Versammlung sichtbar ──
+function _assemblyIsRunning() {
+  return !!(_assemblyData && _assemblyData.scheduled_at
+            && _assemblyData.scheduled_at <= Math.floor(Date.now() / 1000));
+}
+
+function _updateAccuseCard() {
+  const el = document.getElementById('assembly-card');
+  if (!el) return;
+  el.style.display = (GAME_STATUS === 'running' && GAME_PHASE === 'day'
+                      && MY_IN_GAME && MY_ALIVE && _assemblyIsRunning()) ? '' : 'none';
+}
+
 // ── Bürgerversammlung einberufen ────────────────────────────────
 let _assemblyData = ASSEMBLY_DATA; // aus PHP: {scheduled_at, notified, caller} | null
 let _assemblyCountdownTimer = null;
@@ -655,12 +673,40 @@ function _assemblyRender() {
   const runningSection   = document.getElementById('assembly-running-section');
   if (!countdownSection) return;
 
-  const canEnd = _assemblyData && (PLAYER_ID === _assemblyData.caller_id || MY_IS_ADMIN);
+  // Anklage-Karte im Sekundentakt mitziehen: erscheint exakt beim
+  // Versammlungsbeginn, verschwindet beim Beenden
+  _updateAccuseCard();
+
+  const canEnd = _assemblyData && (PLAYER_ID === _assemblyData.caller_id
+                                   || PLAYER_ID === _assemblyData.supporter_id
+                                   || MY_IS_ADMIN);
+  const callText = document.getElementById('assembly-call-text');
+  const callBtn  = document.getElementById('assembly-call-btn');
+
+  // Antrag gestellt — wartet sichtbar auf den zweiten Einberufer
+  if (_assemblyData && _assemblyData.pending) {
+    if (callSection) callSection.style.display = '';
+    countdownSection.style.display = 'none';
+    runningSection.style.display   = 'none';
+    const mine = PLAYER_ID === _assemblyData.caller_id;
+    if (callText) callText.textContent = mine
+      ? '⏳ Dein Antrag läuft — ein zweiter Spieler muss die Versammlung unterstützen.'
+      : '📣 ' + (_assemblyData.caller || 'Ein Spieler') + ' möchte eine Versammlung einberufen — unterstütze den Antrag! Sie findet dann zur nächsten vollen Stunde statt.';
+    if (callBtn) {
+      callBtn.disabled = false;
+      if (mine) { callBtn.textContent = '✖ Antrag zurückziehen';       callBtn.onclick = endAssembly; }
+      else      { callBtn.textContent = '🤝 Versammlung unterstützen'; callBtn.onclick = callAssembly; }
+    }
+    return;
+  }
 
   if (!_assemblyData || !_assemblyData.scheduled_at) {
     if (callSection) callSection.style.display = '';
     countdownSection.style.display = 'none';
     runningSection.style.display   = 'none';
+    // Standard-Zustand wiederherstellen (nach abgelehntem/beendetem Antrag)
+    if (callText) callText.textContent = 'Berufe eine Versammlung ein — sie kommt zustande, sobald ein zweiter Spieler sie ebenfalls einberuft, und findet dann zur nächsten vollen Stunde statt. Alle Spieler werden per Push benachrichtigt.';
+    if (callBtn) { callBtn.textContent = '📣 Versammlung einberufen'; callBtn.onclick = callAssembly; callBtn.disabled = false; }
     return;
   }
 
@@ -709,7 +755,11 @@ async function callAssembly() {
   if (r.error === 'session_expired') return;
   const resultEl = document.getElementById('assembly-call-result');
   if (r.ok) {
-    _assemblyData = {scheduled_at: r.scheduled_at, notified: false, caller: r.caller};
+    _assemblyData = r.pending
+      ? {scheduled_at: null, pending: true, notified: false,
+         caller: r.caller, caller_id: r.caller_id, supporter_id: null}
+      : {scheduled_at: r.scheduled_at, pending: false, notified: false,
+         caller: r.caller, caller_id: r.caller_id, supporter_id: r.supporter_id ?? null};
     _assemblyRender();
     if (resultEl) resultEl.innerHTML = '';
   } else {
