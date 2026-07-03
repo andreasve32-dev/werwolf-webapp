@@ -143,11 +143,12 @@ $criticalFiles = [
     'templates/base.php'         => 'Basis-Template',
     'templates/base_end.php'     => 'Basis-Template Ende',
     'templates/nav.php'          => 'Navigation',
+    'assets/js/sw.js'            => 'Service Worker',
     'index.php'                  => 'Login-Seite',
-    'game.php'                   => 'Spielfeld',
-    'deaths.php'                 => 'Todesliste',
-    'register.php'               => 'Registrierung',
-    'logout.php'                 => 'Logout',
+    'app/game.php'               => 'Spielfeld',
+    'app/deaths.php'             => 'Todesliste',
+    'app/register.php'           => 'Registrierung',
+    'app/logout.php'             => 'Logout',
     'admin/index.php'            => 'Admin-Spielleitung',
     'admin/roles.php'            => 'Admin-Rollen',
     'admin/setup.php'            => 'Admin-Setup',
@@ -228,7 +229,7 @@ require TEMPLATE_PATH . '/base.php';
     </p>
     <form method="POST" style="display:flex;gap:.5rem;flex-wrap:wrap">
       <input class="form-input" type="url" name="test_url"
-             placeholder="https://deine-domain.de/game.php"
+             placeholder="https://deine-domain.de/app/game.php"
              value="<?= e(post('test_url')) ?>"
              style="flex:1;min-width:220px" required>
       <button class="btn btn--primary" type="submit">Testen</button>
@@ -258,7 +259,7 @@ require TEMPLATE_PATH . '/base.php';
                  . '://' . $_SERVER['HTTP_HOST'];
         $quickUrls = [
             $baseUrl . '/'                       => 'Login',
-            $baseUrl . '/game.php'               => 'Spielfeld',
+            $baseUrl . '/app/game.php'           => 'Spielfeld',
             $baseUrl . '/admin/'                 => 'Admin',
             $baseUrl . '/api/game.php'           => 'API game',
             $baseUrl . '/api/admin.php'          => 'API admin',

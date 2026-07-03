@@ -1,7 +1,7 @@
 <?php
 // Copyright (c) 2026 Andreas Vetter
-require_once __DIR__ . '/core/bootstrap.php';
-if (Auth::check()) redirect('/game.php');
+require_once dirname(__DIR__) . '/core/bootstrap.php';
+if (Auth::check()) redirect('/app/game.php');
 
 // ── AJAX: Spieler-Name (display_name) prüfen ─────────────────
 if (($_GET['action'] ?? '') === 'check_display_name') {
@@ -277,7 +277,7 @@ require TEMPLATE_PATH . '/base.php';
 </style>
 
 <?php
-$page['inline_js'] = sprintf('const REG_API=%s;', json_encode(APP_URL . '/register.php'));
+$page['inline_js'] = sprintf('const REG_API=%s;', json_encode(APP_URL . '/app/register.php'));
 $page['inline_js'] .= <<<'JS'
 function openThemeSheet(){
   document.getElementById('theme-sheet').classList.add('open');

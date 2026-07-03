@@ -11,22 +11,24 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 
 ```
 /var/www/html/          ← Document Root (Inhalt des Projekts direkt hier)
-├── index.php           ← Login
-├── register.php        ← Registrierung (3-Schritt-Wizard)
-├── game.php            ← Spielfeld
-├── deaths.php          ← Todesliste
-├── roles.php           ← Öffentliche Rollenübersicht
-├── stats.php           ← Spielstatistiken
-├── faq.php             ← FAQ
-├── datenschutz.php     ← Datenschutzerklärung
-├── impressum.php       ← Impressum
-├── nutzungsbedingungen.php ← Nutzungsbedingungen
-├── logout.php
-├── sw.js               ← Service Worker (Web-Push)
-├── dump_roles_temp.php ← Rollen-Backup-Seite (Admin): roles-Tabelle als INSERT-Dump
+├── index.php           ← Login (einziger Einstiegspunkt im Root)
 ├── info.txt            ← Bug-/Feature-Liste (+ Gelöst-Historie unten)
 ├── CLAUDE.md           ← Projekt-Regeln für KI-Assistenten (wird automatisch geladen)
 ├── CHANGELOG.md        ← Versionshistorie / Backup-Changelog
+│
+├── app/                ← Alle Unterseiten (Umzug 2026-07-04 — Root war zu voll)
+│   ├── register.php        ← Registrierung (3-Schritt-Wizard, öffentlich)
+│   ├── game.php            ← Spielfeld (Auth::requireLogin)
+│   ├── deaths.php          ← Todesliste (Auth::requireLogin)
+│   ├── roles.php           ← Öffentliche Rollenübersicht (Auth::requireLogin)
+│   ├── stats.php           ← Spielstatistiken (Auth::requireLogin)
+│   ├── faq.php             ← FAQ (Auth::requireLogin)
+│   ├── logout.php          ← Logout (Auth::requireLogin)
+│   ├── datenschutz.php     ← Datenschutzerklärung (öffentlich, kein Login nötig)
+│   ├── impressum.php       ← Impressum (öffentlich, kein Login nötig)
+│   ├── nutzungsbedingungen.php ← Nutzungsbedingungen (öffentlich, kein Login nötig)
+│   └── dump_roles_temp.php ← Rollen-Backup-Seite (Admin): roles-Tabelle als INSERT-Dump
+│       Alte Root-URLs (z. B. /game.php) leiten per 301 auf /app/… um (.htaccess).
 │
 ├── admin/              ← Admin-Bereich (nur für eingeloggte Admins zugänglich)
 │   ├── index.php       ← Spielleitung (Phasenwechsel, Rollen verteilen, Spieler töten)
@@ -79,7 +81,8 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 │   │       └── crystal.css   ← JRPG-Ästhetik, Final Fantasy VII–IX
 │   ├── js/
 │   │   ├── app.js          ← API-Helper, Toast, LocalStorage, Theme-Switch
-│   │   └── effects.js      ← Visuelle Effekte (Partikel, Nebel, Phasenübergänge)
+│   │   ├── effects.js      ← Visuelle Effekte (Partikel, Nebel, Phasenübergänge)
+│   │   └── sw.js           ← Service Worker (Web-Push, Scope explizit auf "/" gesetzt)
 │   └── icons/roles/        ← Rollen-Icons (PNG/JPG), inkl. .htaccess-Schutz
 │
 ├── docs/               ← Anleitungen (Login erforderlich; Admin-Seite nur für Admins)
@@ -92,7 +95,8 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 │   └── init.sql     ← Nicht-destruktive Variante (CREATE IF NOT EXISTS) — für CLI-Updates
 │
 │
-├── .htaccess           ← schützt config/core/templates/db vor Web-Zugriff
+├── .htaccess           ← schützt config/core/templates/db vor Web-Zugriff,
+│                          leitet alte Root-URLs (z. B. /game.php) auf app/ um
 └── README.md           ← diese Datei
 ```
 
@@ -161,9 +165,9 @@ den konfigurierten Document Root) hochladen. Keine Unterordner nötig —
 die App ist dann direkt unter der Domain erreichbar:
 
 ```
-https://deine-domain.de/          ← Login
-https://deine-domain.de/game.php  ← Spielfeld
-https://deine-domain.de/admin/    ← Spielleitung
+https://deine-domain.de/              ← Login
+https://deine-domain.de/app/game.php  ← Spielfeld
+https://deine-domain.de/admin/        ← Spielleitung
 ```
 
 Apache muss `AllowOverride All` für `.htaccess`-Unterstützung haben sowie
@@ -174,7 +178,10 @@ die Module `mod_alias` und `mod_headers` aktiv.
 - Gesperrte Ordner (HTTP 403): `config/`, `core/`, `templates/`, `db/`
 - Gesperrte Dateitypen: `*.sql`, `*.md`, `*.log`, `*.bak`, `*.env`, `.htaccess` selbst
 - Sicherheits-Header: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `X-XSS-Protection`
-- `game.php`, `admin/`, `api/` sind per PHP-Auth geschützt (`Auth::requireLogin` / `Auth::requireAdmin`)
+- `app/*`, `admin/`, `api/` sind per PHP-Auth geschützt (`Auth::requireLogin` / `Auth::requireAdmin`) —
+  Ausnahme: `app/register.php`, `app/datenschutz.php`, `app/impressum.php`,
+  `app/nutzungsbedingungen.php` sind bewusst öffentlich
+- Alte Root-URLs (`/game.php`, `/register.php`, …) leiten per 301 auf `/app/…` um
 
 ### 4. Docker-Compose (mit HTTPS / Let's Encrypt)
 
@@ -309,9 +316,9 @@ crontab -e
 
 | Datei | Inhalt | Pflicht nach |
 |---|---|---|
-| `impressum.php` | Name, Adresse, E-Mail, ggf. Telefon des Betreibers | § 5 TMG |
-| `datenschutz.php` | Welche Daten gespeichert werden (Sessions, Logs, Push-Abos), Zweck, Speicherdauer, Kontakt | Art. 13 DSGVO |
-| `nutzungsbedingungen.php` | Regeln für die Nutzung der Plattform | Empfehlung |
+| `app/impressum.php` | Name, Adresse, E-Mail, ggf. Telefon des Betreibers | § 5 TMG |
+| `app/datenschutz.php` | Welche Daten gespeichert werden (Sessions, Logs, Push-Abos), Zweck, Speicherdauer, Kontakt | Art. 13 DSGVO |
+| `app/nutzungsbedingungen.php` | Regeln für die Nutzung der Plattform | Empfehlung |
 
 ### Was eingetragen werden muss (Impressum)
 
@@ -391,7 +398,7 @@ alle).
 
 ## 🧩 Spielablauf
 
-1. **Lobby:** Spieler registrieren sich über den 3-Schritt-Wizard (`/register.php`:
+1. **Lobby:** Spieler registrieren sich über den 3-Schritt-Wizard (`/app/register.php`:
    Name prüfen → Passwort mit Stärke-Anzeige → animierte Registrierung), loggen sich ein
    und treten bei oder werden vom Admin hinzugefügt (`/admin/`).
 2. **Spielstart:** Admin verteilt Rollen und startet das Spiel.
@@ -402,7 +409,7 @@ alle).
 ### Tote befragen (Nekromant-Funktion)
 
 Ist eine Rolle mit `befragen=1` (z. B. Nekromant) **lebendig** im Spiel, sehen tote
-Spieler auf der Todesliste (`deaths.php`) einen **📋 Eintragen**-Button bei ihrem
+Spieler auf der Todesliste (`app/deaths.php`) einen **📋 Eintragen**-Button bei ihrem
 eigenen Eintrag. Darüber können sie Rolle, Ort und Todeszeit selbst nachtragen.
 Nach dem Speichern ist der Eintrag für alle sichtbar (`rolle_aufgedeckt=1`).
 

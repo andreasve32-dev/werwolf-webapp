@@ -110,3 +110,13 @@ Günslinger: Weiter schießen nach Killer-Treffer — Wenn Günslinger einen Kil
         eines Bereichs schließt automatisch alle anderen); Sprungmarken-
         Leiste oben wieder entfernt (durch Exklusiv-Akkordeon überflüssig);
         jeder Bereich hat unten einen "↑ Nach oben"-Link zurück zum Seitenkopf
+[Feature] Root-Verzeichnis aufgeräumt — Unterseiten in app/ verschoben
+      → Nur noch index.php liegt im Root; game/deaths/roles/stats/faq/logout/
+        register/datenschutz/impressum/nutzungsbedingungen/dump_roles_temp
+        liegen jetzt unter app/; sw.js liegt unter assets/js/sw.js (Scope
+        explizit auf "/" gesetzt, sonst wäre Push-Registrierung site-weit
+        kaputt gegangen — Service-Worker-Allowed-Header in .htaccess ergänzt);
+        neues Verzeichnis app/ ist wie config/core/templates/db gegen
+        Verzeichnislisting geschützt (403 bei direktem Aufruf von /app/);
+        alte Root-URLs (z. B. /game.php) leiten per 301 automatisch auf
+        /app/… um — bestehende Bookmarks/PWA-Icons/Links bleiben nutzbar

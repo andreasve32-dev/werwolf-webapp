@@ -89,7 +89,7 @@ class Auth {
             if (self::isApiRequest()) {
                 self::jsonError('Kein Zugriff.', 403);
             }
-            header('Location: ' . APP_URL . '/game.php');
+            header('Location: ' . APP_URL . '/app/game.php');
             exit;
         }
     }

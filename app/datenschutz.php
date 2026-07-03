@@ -1,6 +1,6 @@
 ﻿<?php
 // Copyright (c) 2026 Andreas Vetter
-require_once __DIR__ . '/core/bootstrap.php';
+require_once dirname(__DIR__) . '/core/bootstrap.php';
 
 $page = ['title' => 'Datenschutzerklärung', 'skip_consent' => true];
 require TEMPLATE_PATH . '/base.php';
@@ -200,7 +200,7 @@ require TEMPLATE_PATH . '/base.php';
 
   <div class="text-center mt-2 mb-3">
     <?php if (Auth::check()): ?>
-      <a href="<?= APP_URL ?>/game.php" class="btn btn--ghost">← Zurück zum Spiel</a>
+      <a href="<?= APP_URL ?>/app/game.php" class="btn btn--ghost">← Zurück zum Spiel</a>
     <?php else: ?>
       <a href="<?= APP_URL ?>/index.php" class="btn btn--ghost">← Zur Anmeldung</a>
     <?php endif; ?>

@@ -17,11 +17,11 @@
 
 <footer class="legal-footer">
   <div class="legal-footer__links">
-    <a href="<?= APP_URL ?>/impressum.php">Impressum</a>
+    <a href="<?= APP_URL ?>/app/impressum.php">Impressum</a>
     <span class="legal-footer__sep">·</span>
-    <a href="<?= APP_URL ?>/datenschutz.php">Datenschutz</a>
+    <a href="<?= APP_URL ?>/app/datenschutz.php">Datenschutz</a>
     <span class="legal-footer__sep">·</span>
-    <a href="<?= APP_URL ?>/nutzungsbedingungen.php">Nutzungsbedingungen</a>
+    <a href="<?= APP_URL ?>/app/nutzungsbedingungen.php">Nutzungsbedingungen</a>
   </div>
   <div class="legal-footer__copy">KI-generierte Charakterbilder, inspiriert von FINAL FANTASY XIV © SQUARE ENIX</div>
 </footer>
@@ -82,7 +82,7 @@ window.declineConsent = function () {
     'Ohne Zustimmung zu den Nutzungsbedingungen und der Datenschutzerklärung kann ' +
     '<?= e(APP_NAME) ?> nicht genutzt werden, da technisch notwendige Cookies ' +
     'für den Login erforderlich sind.</p>' +
-    '<a href="<?= e(APP_URL) ?>/impressum.php" ' +
+    '<a href="<?= e(APP_URL) ?>/app/impressum.php" ' +
     'style="font-size:.78rem;color:var(--text-dim);text-decoration:underline">Impressum</a>' +
     '</div>';
 };
@@ -105,7 +105,7 @@ window.declineConsent = function () {
   if (!window.isSecureContext) return; // kein HTTPS/localhost → kein Service Worker
   if (localStorage.getItem('ww_push_dismissed')) return;
 
-  navigator.serviceWorker.register('/sw.js').then(async function (reg) {
+  navigator.serviceWorker.register('<?= ASSETS_URL ?>/js/sw.js', {scope: '/'}).then(async function (reg) {
     const sub = await reg.pushManager.getSubscription();
     if (sub) return; // bereits abonniert
     if (Notification.permission === 'denied') return;

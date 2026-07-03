@@ -37,7 +37,7 @@ CREATE TABLE players (
 ) ENGINE=InnoDB;
 
 -- ── 3. Rollen — komplett datenbankgesteuert ────────────────────
--- Kein Rollen-Eintrag im Code. Verwaltung über /public/roles.php
+-- Kein Rollen-Eintrag im Code. Verwaltung über /admin/roles.php
 CREATE TABLE roles (
   id          INT AUTO_INCREMENT PRIMARY KEY,
   name        VARCHAR(50)  NOT NULL UNIQUE,       -- z.B. "Mörder"

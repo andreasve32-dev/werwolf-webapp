@@ -2,7 +2,7 @@
 // Rollen-Backup-Seite (dauerhaft, NICHT löschen):
 // gibt die komplette roles-Tabelle als fertiges INSERT-Statement aus,
 // um den aktuellen Rollen-Stand zu sichern / woanders einzuspielen.
-require_once __DIR__ . '/core/bootstrap.php';
+require_once dirname(__DIR__) . '/core/bootstrap.php';
 Auth::requireAdmin();
 
 header('Content-Type: text/plain; charset=utf-8');

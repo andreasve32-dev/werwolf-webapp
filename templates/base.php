@@ -107,12 +107,12 @@ $showNav = $page['nav'] ?? true;
     </p>
 
     <div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.1rem">
-      <a href="<?= APP_URL ?>/datenschutz.php"
+      <a href="<?= APP_URL ?>/app/datenschutz.php"
          style="font-size:.78rem;color:var(--accent);text-decoration:underline">
         Datenschutzerklärung
       </a>
       <span style="color:var(--text-dim);font-size:.78rem">·</span>
-      <a href="<?= APP_URL ?>/nutzungsbedingungen.php"
+      <a href="<?= APP_URL ?>/app/nutzungsbedingungen.php"
          style="font-size:.78rem;color:var(--accent);text-decoration:underline">
         Nutzungsbedingungen
       </a>

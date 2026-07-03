@@ -3,6 +3,15 @@
 Browserbasiertes Werwolf-Spiel: PHP (kein Framework) + MySQL/MariaDB + Apache,
 Vanilla-JS, mobile-first. Struktur siehe README.md.
 
+- **Nur `index.php` liegt im Root.** Alle anderen Seiten (Spiel, Todesliste,
+  Rollen, Statistik, FAQ, Logout, Registrierung, Datenschutz, Impressum,
+  Nutzungsbedingungen, Rollen-Backup) liegen unter `app/` (Umzug 2026-07-04,
+  Root war zu unübersichtlich geworden). Neue Root-Unterseiten immer dort
+  ablegen, nie direkt im Root. Bootstrap-Require: wie bei `admin/*.php` —
+  `require_once dirname(__DIR__) . '/core/bootstrap.php'`. Alte Root-URLs
+  leiten per 301 in `.htaccess` auf `/app/…` um — bei neuen Seiten in `app/`
+  KEINE Root-Redirect-Regel nötig (nur für die verschobenen Alt-URLs).
+
 ## Grundregeln
 
 - **Sprache:** Deutsch für alle UI-Texte, Kommentare und Commit-Messages.

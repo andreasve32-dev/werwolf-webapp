@@ -174,7 +174,7 @@ $player      = Auth::player();
 <nav class="nav nav--top">
   <div class="container">
     <div class="nav__inner">
-      <a href="<?= APP_URL ?>/game.php" class="nav__logo">
+      <a href="<?= APP_URL ?>/app/game.php" class="nav__logo">
         <?php
         $__navLogo = '';
         if (MINI_LOGO !== '' && file_exists(ROOT_PATH . '/' . MINI_LOGO)) {
@@ -213,7 +213,7 @@ $player      = Auth::player();
           <?php endforeach; ?>
         </div>
 
-        <a href="<?= APP_URL ?>/logout.php"
+        <a href="<?= APP_URL ?>/app/logout.php"
            class="nav__link nav__link--danger nav__link--icon"
            aria-label="Abmelden">↩</a>
       </div>
@@ -224,7 +224,7 @@ $player      = Auth::player();
 <!-- ── Tab-Bar (Handy + Desktop) ──────────────────────────── -->
 <nav class="tabbar" role="navigation" aria-label="Navigation">
 <?php if ($inAdmin): ?>
-  <a href="<?= APP_URL ?>/game.php" class="tabbar__item">
+  <a href="<?= APP_URL ?>/app/game.php" class="tabbar__item">
     <span class="tabbar__icon">
       <?php if ($__navLogo !== ''): ?>
         <img src="<?= e(assetUrl($__navLogo)) ?>" alt="" style="width:1.4em;height:1.4em;object-fit:contain;vertical-align:middle">
@@ -237,7 +237,7 @@ $player      = Auth::player();
     <span class="tabbar__label">Admin</span>
   </a>
 <?php else: ?>
-  <a href="<?= APP_URL ?>/game.php"
+  <a href="<?= APP_URL ?>/app/game.php"
      class="tabbar__item <?= $currentFile === 'game.php' ? 'active' : '' ?>">
     <span class="tabbar__icon">
       <?php if ($__navLogo !== ''): ?>
@@ -246,22 +246,22 @@ $player      = Auth::player();
     </span>
     <span class="tabbar__label">Spiel</span>
   </a>
-  <a href="<?= APP_URL ?>/deaths.php"
+  <a href="<?= APP_URL ?>/app/deaths.php"
      class="tabbar__item <?= $currentFile === 'deaths.php' ? 'active' : '' ?>">
     <span class="tabbar__icon">⚰️</span>
     <span class="tabbar__label">Tote</span>
   </a>
-  <a href="<?= APP_URL ?>/roles.php"
+  <a href="<?= APP_URL ?>/app/roles.php"
      class="tabbar__item <?= $currentFile === 'roles.php' ? 'active' : '' ?>">
     <span class="tabbar__icon">🎭</span>
     <span class="tabbar__label">Rollen</span>
   </a>
-  <a href="<?= APP_URL ?>/stats.php"
+  <a href="<?= APP_URL ?>/app/stats.php"
      class="tabbar__item <?= $currentFile === 'stats.php' ? 'active' : '' ?>">
     <span class="tabbar__icon">📊</span>
     <span class="tabbar__label">Statistik</span>
   </a>
-  <a href="<?= APP_URL ?>/faq.php"
+  <a href="<?= APP_URL ?>/app/faq.php"
      class="tabbar__item <?= $currentFile === 'faq.php' ? 'active' : '' ?>">
     <span class="tabbar__icon">❓</span>
     <span class="tabbar__label">FAQ</span>
@@ -316,7 +316,7 @@ async function initPushToggle() {
   el.disabled = false;
   if (hint) hint.style.display = 'none';
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js');
+    const reg = await navigator.serviceWorker.register('<?= ASSETS_URL ?>/js/sw.js', {scope: '/'});
     const sub = await reg.pushManager.getSubscription();
     el.checked = !!sub;
   } catch(e) {}

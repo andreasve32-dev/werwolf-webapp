@@ -3,7 +3,7 @@
 require_once __DIR__ . '/core/bootstrap.php';
 
 // Bereits eingeloggt → weiterleiten
-if (Auth::check()) redirect('/game.php');
+if (Auth::check()) redirect('/app/game.php');
 
 $error = '';
 
@@ -20,7 +20,7 @@ if (isPost()) {
         );
         if ($player && verifyPassword($password, $player['password_hash'])) {
             Auth::login($player);
-            redirect('/game.php');
+            redirect('/app/game.php');
         } else {
             $error = 'Ungültiger Spielername oder Passwort.';
         }
@@ -101,7 +101,7 @@ require TEMPLATE_PATH . '/base.php';
 
       <hr class="divider">
       <p class="text-center text-dim text-sm">
-        Noch kein Konto? <a href="<?= APP_URL ?>/register.php">Registrieren</a>
+        Noch kein Konto? <a href="<?= APP_URL ?>/app/register.php">Registrieren</a>
       </p>
     </div>
   </div>

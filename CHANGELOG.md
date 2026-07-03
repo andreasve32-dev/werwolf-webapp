@@ -4,6 +4,20 @@ Jedes Backup erhält eine fortlaufende Versionsnummer (v0.0.x).
 
 ---
 
+## [v0.0.10] — 2026-07-04
+
+### Geändert
+- **Root-Verzeichnis aufgeräumt**: Nur noch `index.php` liegt im Wurzelverzeichnis.
+  Alle anderen Seiten (`game.php`, `deaths.php`, `roles.php`, `stats.php`, `faq.php`,
+  `logout.php`, `register.php`, `datenschutz.php`, `impressum.php`,
+  `nutzungsbedingungen.php`, `dump_roles_temp.php`) liegen jetzt unter `app/`.
+  `sw.js` liegt jetzt unter `assets/js/sw.js` (Scope explizit auf `/` gesetzt +
+  `Service-Worker-Allowed`-Header in `.htaccess`, sonst wäre Push site-weit
+  ausgefallen). Alte Root-URLs leiten per 301 automatisch auf `/app/…` um —
+  bestehende Bookmarks/PWA-Icons/Links bleiben nutzbar.
+
+---
+
 ## [v0.0.9] — 2026-07-04
 
 ### Behoben

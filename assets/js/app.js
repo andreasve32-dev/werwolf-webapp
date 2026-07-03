@@ -50,7 +50,7 @@ async function apiFetch(url, body={}) {
       // /logout.php clears the session before redirecting to login,
       // preventing an infinite loop when the session cookie is still
       // valid but the player no longer exists in the database.
-      setTimeout(() => { window.location.href = '/logout.php'; }, 2000);
+      setTimeout(() => { window.location.href = '/app/logout.php'; }, 2000);
       return {error:'session_expired'};
     }
     return await res.json();

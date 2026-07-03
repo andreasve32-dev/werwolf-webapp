@@ -3,8 +3,12 @@
 # ══════════════════════════════════════════════════════════════
 #
 #  Zugriffsmatrix:
-#  ÖFFENTLICH    → index.php, register.php, assets/*
-#  NUR EINGELOGGT→ game.php, deaths.php, logout.php   (PHP: Auth::requireLogin)
+#  ÖFFENTLICH    → index.php, assets/*
+#  APP/          → game.php, deaths.php, roles.php, stats.php, faq.php,
+#                   logout.php, dump_roles_temp.php (alle: Auth::requireLogin
+#                   bzw. requireAdmin); register.php, datenschutz.php,
+#                   impressum.php, nutzungsbedingungen.php (öffentlich, kein
+#                   Login nötig — aus rechtlichen Gründen jederzeit erreichbar)
 #  NUR ADMIN     → admin/*                             (PHP: Auth::requireAdmin)
 #  NUR AJAX      → api/*                               (PHP: Auth::requireLogin + DB-Check)
 #  GESPERRT (403)→ config/, core/, templates/, db/
@@ -22,6 +26,23 @@ DirectoryIndex index.php
 # und Templates — niemals per HTTP erreichbar.
 <IfModule mod_alias.c>
   RedirectMatch 403 ^/(config|core|templates|db)(/|$)
+</IfModule>
+
+# ── Alte Root-URLs auf app/ umleiten (Umzug 2026-07-04) ───────
+# Seiten liegen jetzt unter app/ — alte Bookmarks/PWA-Icons/Links
+# sollen trotzdem weiterhin funktionieren.
+<IfModule mod_alias.c>
+  RedirectMatch 301 ^/game\.php$                  /app/game.php
+  RedirectMatch 301 ^/deaths\.php$                /app/deaths.php
+  RedirectMatch 301 ^/roles\.php$                  /app/roles.php
+  RedirectMatch 301 ^/stats\.php$                  /app/stats.php
+  RedirectMatch 301 ^/faq\.php$                    /app/faq.php
+  RedirectMatch 301 ^/logout\.php$                /app/logout.php
+  RedirectMatch 301 ^/register\.php$              /app/register.php
+  RedirectMatch 301 ^/datenschutz\.php$            /app/datenschutz.php
+  RedirectMatch 301 ^/impressum\.php$              /app/impressum.php
+  RedirectMatch 301 ^/nutzungsbedingungen\.php$    /app/nutzungsbedingungen.php
+  RedirectMatch 301 ^/dump_roles_temp\.php$        /app/dump_roles_temp.php
 </IfModule>
 
 # ── Sensible Dateitypen sperren ──────────────────────────────
@@ -61,6 +82,15 @@ DirectoryIndex index.php
   Header always set X-XSS-Protection        "1; mode=block"
   Header unset X-Powered-By
   Header always unset X-Powered-By
+</IfModule>
+
+# ── Service Worker: Scope trotz assets/js/-Speicherort auf "/" erlauben ──
+# Ohne diesen Header würde der Browser register(..., {scope:'/'}) ablehnen,
+# weil sw.js nicht mehr im Wurzelverzeichnis liegt.
+<IfModule mod_headers.c>
+  <Files "sw.js">
+    Header set Service-Worker-Allowed "/"
+  </Files>
 </IfModule>
 
 # ── PHP-Version nicht preisgeben ─────────────────────────────

@@ -1,7 +1,7 @@
 <?php
 // Copyright (c) 2026 Andreas Vetter
 // Spielfeld (Spieler-Ansicht): Rolle anzeigen, Tod melden, abstimmen, Nachrichten.
-require_once __DIR__ . '/core/bootstrap.php';
+require_once dirname(__DIR__) . '/core/bootstrap.php';
 require_once TEMPLATE_PATH . '/game_blocks.php';
 Auth::requireLogin();
 
