@@ -25,6 +25,15 @@ Auto-Timeout zur Rollenkarte — Nach X Minuten Inaktivität automatisch zurück
 Admin: Tote wiederbeleben — Spieler wieder ins Spiel bringen ohne neue Runde zu starten
 Zombie-Spielmodus — Alternativer Modus: Alle starten als Söldner, nach 1–5h zufälliger Zombie-Start, Infizierte bekehren weitere Spieler
 Günslinger: Weiter schießen nach Killer-Treffer — Wenn Günslinger einen Killer erwischt, darf er weiter schießen
+Sprachnachrichten an den Spielleiter — Im "Frage stellen"-Modal Auswahl Text/Sprachnachricht;
+    Aufnahme per MediaRecorder-API (Mikrofon), Wiedergabe per <audio>-Player in der Admin-Nachrichtenverwaltung.
+    Zu klären: Audioformat je nach Browser unterschiedlich (Chrome/Edge meist WebM/Opus, Safari eher MP4/AAC);
+    passt nicht zur FAQ-Anonymisierung (Stimme verrät Identität stärker als Text) — Sprachnachrichten
+    entweder von der FAQ-Übernahme ausschließen oder Admin tippt bei Übernahme eine Text-Zusammenfassung.
+    Zusatzidee: automatische Transkription per OpenAI-API (gpt-4o-mini-transcribe $0,003/Min. bzw.
+    gpt-4o-transcribe/whisper-1 $0,006/Min.) — bei typischen kurzen Fragen (15-30s) nur Bruchteile
+    eines Cents pro Nachricht, Kosten also kein Hindernis; würde einen OpenAI-API-Key in der Config
+    brauchen (bisher hat das Projekt keine externen API-Abhängigkeiten).
 ---
 ✅ Gelöst (03.07.2026)
 
