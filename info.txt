@@ -22,7 +22,6 @@ Detektiv: Leichen befragen — Bekommt von der Leiche einen Spieler genannt, der
 Cooldown-Platzhalter in Beschreibungen — Variable in Rollentext, die automatisch den aktuellen Cooldown-Wert einfügt
 Startseite = Rollenkarte — App öffnet immer direkt die eigene Rollenkarte
 Auto-Timeout zur Rollenkarte — Nach X Minuten Inaktivität automatisch zurück zur Rollenkarte
-Admin: Tote wiederbeleben — Spieler wieder ins Spiel bringen ohne neue Runde zu starten
 Zombie-Spielmodus — Alternativer Modus: Alle starten als Söldner, nach 1–5h zufälliger Zombie-Start, Infizierte bekehren weitere Spieler
 Günslinger: Weiter schießen nach Killer-Treffer — Wenn Günslinger einen Killer erwischt, darf er weiter schießen
 Sprachnachrichten an den Spielleiter — Warum: einige Spieler schreiben nur ungern lange Texte
@@ -161,3 +160,14 @@ Sprachnachrichten an den Spielleiter — Warum: einige Spieler schreiben nur ung
         Fragenformular (auffällige Warnbox) und in der Spieler-Anleitung ergänzt:
         keine Namen/persönlichen Angaben in Fragen schreiben, da sie anonym in
         die FAQ übernommen werden können
+[Feature] Admin: Tote wiederbeleben (Debug-Menü)
+      → Neue Seite admin/debug.php, nur im Debug-Modus nutzbar: 🔮 Tote wiederbeleben
+        (setzt is_alive=1 zurück und löscht den Todeslisten-Eintrag, ohne neue Runde
+        zu starten) sowie die bisherige "Eigene Rolle wählen"-Funktion, aus dem
+        Dashboard hierher verschoben, damit die Spielleitung übersichtlich bleibt.
+        Neue API-Aktion revive_player (api/admin.php), hinter APP_DEBUG-Check wie
+        set_own_role. Testspieler-Verwaltung ebenfalls hinter APP_DEBUG gesperrt
+        (Seite + alle drei AJAX-Aktionen) und nur noch im Debug-Modus in der
+        Kachel-Liste sichtbar. Kachel-Reihenfolge im Verwaltungsbereich neu sortiert
+        nach Gebrauchshäufigkeit im laufenden Spiel: Nachrichten, Rollen, Spieler,
+        Dorf-Sprüche, Einstellungen, Systemcheck, Setup, Debug-Menü, Testspieler.

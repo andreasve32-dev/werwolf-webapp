@@ -16,6 +16,7 @@ function isTestPlayer(array $p): bool {
 // ── AJAX: Testspieler anlegen ─────────────────────────────────
 if (($_GET['action'] ?? '') === 'create') {
     header('Content-Type: application/json');
+    if (!APP_DEBUG) { echo json_encode(['ok' => false, 'error' => 'Nur im Debug-Modus verfügbar.']); exit; }
     $count = max(1, min(TEST_MAX, (int)($_POST['count'] ?? 1)));
     $hash  = hashPassword(TEST_PASSWORD);
     $created = 0;
@@ -45,6 +46,7 @@ if (($_GET['action'] ?? '') === 'create') {
 // ── AJAX: Einzelnen Testspieler löschen ──────────────────────
 if (($_GET['action'] ?? '') === 'delete') {
     header('Content-Type: application/json');
+    if (!APP_DEBUG) { echo json_encode(['ok' => false, 'error' => 'Nur im Debug-Modus verfügbar.']); exit; }
     $pid = (int)($_POST['player_id'] ?? 0);
     if (!$pid) { echo json_encode(['ok' => false, 'error' => 'Ungültige ID.']); exit; }
     $p = Database::queryOne('SELECT id, username FROM players WHERE id = ?', [$pid]);
@@ -59,6 +61,7 @@ if (($_GET['action'] ?? '') === 'delete') {
 // ── AJAX: Alle Testspieler löschen ────────────────────────────
 if (($_GET['action'] ?? '') === 'delete_all') {
     header('Content-Type: application/json');
+    if (!APP_DEBUG) { echo json_encode(['ok' => false, 'error' => 'Nur im Debug-Modus verfügbar.']); exit; }
     Database::execute("DELETE FROM players WHERE username REGEXP '^test_[0-9]{2}$'");
     echo json_encode(['ok' => true]);
     exit;
@@ -84,6 +87,13 @@ require TEMPLATE_PATH . '/base.php';
       <a href="<?= APP_URL ?>/admin/">← zurück zur Spielleitung</a>
     </p>
   </div>
+
+  <?php if (!APP_DEBUG): ?>
+  <div class="alert alert--warn">
+    ⚠️ Debug-Modus ist deaktiviert — aktiviere <code>app_debug</code> unter
+    <a href="<?= APP_URL ?>/admin/settings.php">Server-Einstellungen</a>, um Testspieler zu verwalten.
+  </div>
+  <?php else: ?>
 
   <!-- Info-Box -->
   <div class="card animate-in mb-2" style="animation-delay:.02s">
@@ -180,6 +190,8 @@ require TEMPLATE_PATH . '/base.php';
       <?php endif; ?>
     </div>
   </div>
+
+  <?php endif; ?>
 
 </div>
 

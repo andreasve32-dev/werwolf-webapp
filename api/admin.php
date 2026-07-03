@@ -201,6 +201,20 @@ switch($action){
     $winMsg = ['dodo'=>' 🐦 Dodo-Sieg!','citizen'=>' 🏘️ Bürger-Sieg!','killer'=>' 🔪 Mörder-Sieg!'];
     ok('Spieler gestorben'.($winner ? $winMsg[$winner] : ''), ['game_ended' => (bool)$winner, 'winner' => $winner]);break;
 
+  case 'revive_player':
+    if (!APP_DEBUG) err('Nur im Debug-Modus verfügbar.', 403);
+    $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='running'",[$gameId]);
+    if(!$g)err('Spiel läuft nicht');
+    $pid=(int)($input['player_id']??0);
+    $gp=Database::queryOne("SELECT is_alive FROM game_players WHERE game_id=? AND player_id=?",[$gameId,$pid]);
+    if(!$gp)err('Spieler nicht im Spiel');
+    if($gp['is_alive'])err('Spieler ist bereits am Leben');
+    Database::execute("UPDATE game_players SET is_alive=1 WHERE game_id=? AND player_id=?",[$gameId,$pid]);
+    Database::execute("DELETE FROM deaths WHERE game_id=? AND player_id=?",[$gameId,$pid]);
+    $rn=Database::queryOne("SELECT display_name FROM players WHERE id=?",[$pid]);
+    WebPush::sendToGame($gameId,true,'🔮 Ein Toter lebt!',($rn['display_name']??'Jemand').' wurde vom Spielleiter wiederbelebt.');
+    ok(($rn['display_name']??'Spieler').' wiederbelebt.');break;
+
   case 'set_own_role':
     if (!APP_DEBUG) err('Nur im Debug-Modus verfügbar.', 403);
     $g = Database::queryOne("SELECT * FROM games WHERE id=? AND status='running'", [$gameId]);

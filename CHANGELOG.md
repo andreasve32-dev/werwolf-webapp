@@ -4,6 +4,25 @@ Jedes Backup erhält eine fortlaufende Versionsnummer (v0.0.x).
 
 ---
 
+## [v0.0.12] — 2026-07-04
+
+### Hinzugefügt
+- **Neues Debug-Menü** (`admin/debug.php`, nur im Debug-Modus nutzbar): 🔮 Tote
+  wiederbeleben (Spieler ohne neue Runde zurückholen, Todeslisten-Eintrag wird
+  gelöscht) + die bisherige „Eigene Rolle wählen"-Funktion, aus dem Haupt-
+  Dashboard hierher verschoben. Neue API-Aktion `revive_player` (`api/admin.php`),
+  gegen `APP_DEBUG` abgesichert wie `set_own_role`.
+- Testspieler-Verwaltung (`admin/testplayers.php`) ist jetzt ebenfalls an den
+  Debug-Modus gebunden (Seite + alle AJAX-Aktionen) und nur noch in der
+  Kachel-Liste sichtbar, wenn Debug an ist.
+
+### Geändert
+- Kachel-Reihenfolge im Verwaltungsbereich (`admin/index.php`) neu sortiert nach
+  Gebrauchshäufigkeit im laufenden Spiel: Nachrichten, Rollen, Spieler,
+  Dorf-Sprüche, Einstellungen, Systemcheck, Setup, Debug-Menü, Testspieler.
+
+---
+
 ## [v0.0.11] — 2026-07-04
 
 ### Behoben

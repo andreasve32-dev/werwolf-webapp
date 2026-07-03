@@ -52,41 +52,8 @@ require TEMPLATE_PATH . '/base.php';
     <div class="section-title">Verwaltung</div>
     <div class="admin-links">
 
-      <a href="<?= APP_URL ?>/admin/slogans.php" class="admin-link-card">
-        <span class="admin-link-card__icon">💬</span>
-        <div class="admin-link-card__text">
-          <div class="admin-link-card__title">Dorf-Sprüche</div>
-          <div class="admin-link-card__sub">Tag- &amp; Nacht-Sprüche verwalten</div>
-        </div>
-        <span class="admin-link-card__arrow">→</span>
-      </a>
-
-      <a href="<?= APP_URL ?>/admin/roles.php" class="admin-link-card">
-        <span class="admin-link-card__icon">🎭</span>
-        <div class="admin-link-card__text">
-          <div class="admin-link-card__title">Rollen</div>
-          <div class="admin-link-card__sub">Rollen konfigurieren &amp; aktivieren</div>
-        </div>
-        <span class="admin-link-card__arrow">→</span>
-      </a>
-
-      <a href="<?= APP_URL ?>/admin/players.php" class="admin-link-card">
-        <span class="admin-link-card__icon">👥</span>
-        <div class="admin-link-card__text">
-          <div class="admin-link-card__title">Spieler</div>
-          <div class="admin-link-card__sub">Konten verwalten &amp; Passwörter setzen</div>
-        </div>
-        <span class="admin-link-card__arrow">→</span>
-      </a>
-
-      <a href="<?= APP_URL ?>/admin/testplayers.php" class="admin-link-card">
-        <span class="admin-link-card__icon">🤖</span>
-        <div class="admin-link-card__text">
-          <div class="admin-link-card__title">Testspieler</div>
-          <div class="admin-link-card__sub">Bis zu 20 Test-Konten anlegen &amp; löschen</div>
-        </div>
-        <span class="admin-link-card__arrow">→</span>
-      </a>
+      <!-- Reihenfolge nach Gebrauchshäufigkeit im laufenden Spiel: erst was während
+           des Spiels oft gebraucht wird, danach seltener genutzte Verwaltung/Technik. -->
 
       <a href="<?= APP_URL ?>/admin/messages.php" class="admin-link-card">
         <span class="admin-link-card__icon">✉️</span>
@@ -111,11 +78,29 @@ require TEMPLATE_PATH . '/base.php';
         <span class="admin-link-card__arrow">→</span>
       </a>
 
-      <a href="<?= APP_URL ?>/admin/diagnostics.php" class="admin-link-card">
-        <span class="admin-link-card__icon">🔍</span>
+      <a href="<?= APP_URL ?>/admin/roles.php" class="admin-link-card">
+        <span class="admin-link-card__icon">🎭</span>
         <div class="admin-link-card__text">
-          <div class="admin-link-card__title">Systemcheck</div>
-          <div class="admin-link-card__sub">Datenbankverbindung &amp; Konfiguration prüfen</div>
+          <div class="admin-link-card__title">Rollen</div>
+          <div class="admin-link-card__sub">Rollen konfigurieren &amp; aktivieren</div>
+        </div>
+        <span class="admin-link-card__arrow">→</span>
+      </a>
+
+      <a href="<?= APP_URL ?>/admin/players.php" class="admin-link-card">
+        <span class="admin-link-card__icon">👥</span>
+        <div class="admin-link-card__text">
+          <div class="admin-link-card__title">Spieler</div>
+          <div class="admin-link-card__sub">Konten verwalten &amp; Passwörter setzen</div>
+        </div>
+        <span class="admin-link-card__arrow">→</span>
+      </a>
+
+      <a href="<?= APP_URL ?>/admin/slogans.php" class="admin-link-card">
+        <span class="admin-link-card__icon">💬</span>
+        <div class="admin-link-card__text">
+          <div class="admin-link-card__title">Dorf-Sprüche</div>
+          <div class="admin-link-card__sub">Tag- &amp; Nacht-Sprüche verwalten</div>
         </div>
         <span class="admin-link-card__arrow">→</span>
       </a>
@@ -129,6 +114,15 @@ require TEMPLATE_PATH . '/base.php';
         <span class="admin-link-card__arrow">→</span>
       </a>
 
+      <a href="<?= APP_URL ?>/admin/diagnostics.php" class="admin-link-card">
+        <span class="admin-link-card__icon">🔍</span>
+        <div class="admin-link-card__text">
+          <div class="admin-link-card__title">Systemcheck</div>
+          <div class="admin-link-card__sub">Datenbankverbindung &amp; Konfiguration prüfen</div>
+        </div>
+        <span class="admin-link-card__arrow">→</span>
+      </a>
+
       <a href="<?= APP_URL ?>/admin/setup.php" class="admin-link-card">
         <span class="admin-link-card__icon">🔧</span>
         <div class="admin-link-card__text">
@@ -137,6 +131,26 @@ require TEMPLATE_PATH . '/base.php';
         </div>
         <span class="admin-link-card__arrow">→</span>
       </a>
+
+      <?php if (APP_DEBUG): ?>
+      <a href="<?= APP_URL ?>/admin/debug.php" class="admin-link-card" style="border-color:rgba(251,191,36,.35)">
+        <span class="admin-link-card__icon">🐛</span>
+        <div class="admin-link-card__text">
+          <div class="admin-link-card__title" style="color:#fbbf24">Debug-Menü</div>
+          <div class="admin-link-card__sub">Eigene Rolle wählen &amp; Tote wiederbeleben</div>
+        </div>
+        <span class="admin-link-card__arrow">→</span>
+      </a>
+
+      <a href="<?= APP_URL ?>/admin/testplayers.php" class="admin-link-card" style="border-color:rgba(251,191,36,.35)">
+        <span class="admin-link-card__icon">🤖</span>
+        <div class="admin-link-card__text">
+          <div class="admin-link-card__title" style="color:#fbbf24">Testspieler</div>
+          <div class="admin-link-card__sub">Bis zu 20 Test-Konten anlegen &amp; löschen</div>
+        </div>
+        <span class="admin-link-card__arrow">→</span>
+      </a>
+      <?php endif; ?>
 
     </div>
   </div>
@@ -169,31 +183,6 @@ require TEMPLATE_PATH . '/base.php';
 
       <!-- Als tot markieren (Schnellzugriff) -->
       <div id="kill-quick-card"><?= admin_render_kill_quick($state) ?></div>
-
-      <!-- Debug: Eigene Rolle wählen -->
-      <?php if (APP_DEBUG && $adminGameEntry && !empty($debugRoles)): ?>
-      <div class="card animate-in mt-2" style="animation-delay:.16s;border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04)">
-        <div class="section-title" style="color:#fbbf24">🐛 Debug — Eigene Rolle wählen</div>
-        <p class="text-dim text-xs mb-2">
-          Nur im Debug-Modus sichtbar. Setzt deine eigene Rolle im laufenden Spiel sofort.
-          Aktuell: <span id="debug-current-role-label"><?php if ($adminGameEntry['role_name']): ?><strong style="color:var(--text-bright)"><?= e($adminGameEntry['role_name']) ?></strong><?php else: ?><em>keine Rolle</em><?php endif; ?></span>
-        </p>
-        <div class="flex gap-sm">
-          <select id="debug-role-select" class="form-input" style="flex:1">
-            <option value="">Rolle wählen…</option>
-            <?php foreach ($debugRoles as $r): ?>
-            <option value="<?= (int)$r['id'] ?>"
-              <?= (int)($adminGameEntry['role_id'] ?? 0) === (int)$r['id'] ? 'selected' : '' ?>>
-              <?= e($r['name']) ?>
-            </option>
-            <?php endforeach; ?>
-          </select>
-          <button class="btn btn--ghost" style="border-color:rgba(251,191,36,.4);color:#fbbf24"
-                  onclick="debugSetOwnRole()">Setzen</button>
-        </div>
-        <div id="debug-role-result" class="mt-1"></div>
-      </div>
-      <?php endif; ?>
 
     </div>
   </div>
@@ -343,23 +332,6 @@ async function manualKill(){
 JS;
 
 $page['inline_js'] .= <<<'JS'
-
-// ── Debug: Eigene Rolle setzen ───────────────────────────────
-async function debugSetOwnRole() {
-  const sel = document.getElementById('debug-role-select');
-  const res = document.getElementById('debug-role-result');
-  const label = document.getElementById('debug-current-role-label');
-  const roleId = parseInt(sel?.value);
-  if (!roleId) { showToast('Keine Rolle gewählt', 'error'); return; }
-  const r = await apiFetch(API_BASE+'/admin.php', {action:'set_own_role', game_id:GAME_ID, role_id:roleId});
-  if (r.error === 'session_expired') return;
-  if (r.ok) {
-    res.innerHTML = `<div class="alert alert--success">${escHtml(r.message||'Rolle gesetzt')}</div>`;
-    if (label && r.role_name) label.textContent = r.role_name;
-  } else {
-    res.innerHTML = `<div class="alert alert--error">${escHtml(r.error||'Fehler')}</div>`;
-  }
-}
 
 // ── Versammlung beenden (Admin) ──────────────────────────────
 async function endAssemblyAdmin() {
