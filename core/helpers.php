@@ -230,7 +230,7 @@ function gamePlayer(int $gameId, int $playerId): array|false {
 /** Tod aufzeichnen */
 function recordDeath(int $gameId, int $playerId, int $round, string $phase, ?string $ort = null, bool $isGehenkt = false): void {
     $gp = Database::queryOne(
-        "SELECT gp.role_id, gp.is_alive, r.auto_eintrag
+        "SELECT gp.role_id, gp.is_alive, r.auto_eintrag, r.linked_death
          FROM game_players gp
          LEFT JOIN roles r ON r.id = gp.role_id
          WHERE gp.game_id = ? AND gp.player_id = ?",
@@ -252,6 +252,20 @@ function recordDeath(int $gameId, int $playerId, int $round, string $phase, ?str
         "DELETE FROM votes WHERE game_id = ? AND voter_id = ?",
         [$gameId, $playerId]
     );
+
+    // Rollen mit linked_death=1 (z.B. Das Paar): stirbt ein Partner, sterben alle
+    // anderen lebenden Spieler derselben Rolle automatisch mit — Ort bewusst fest
+    // "Vor Kummer gestorben" statt leer, aber rolle_aufgedeckt bleibt wie bei jedem
+    // anderen Tod auf 0 (nur Nekromant/Selbstauskunft macht es sichtbar).
+    if (!empty($gp['linked_death']) && !empty($gp['role_id'])) {
+        $partners = Database::query(
+            "SELECT player_id FROM game_players WHERE game_id = ? AND role_id = ? AND is_alive = 1 AND player_id != ?",
+            [$gameId, $gp['role_id'], $playerId]
+        );
+        foreach ($partners as $partner) {
+            recordDeath($gameId, (int)$partner['player_id'], $round, $phase, 'Vor Kummer gestorben');
+        }
+    }
 }
 
 /**

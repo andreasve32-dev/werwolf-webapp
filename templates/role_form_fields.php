@@ -123,11 +123,18 @@ $v       = fn(string $key, $default = '') => $isEdit ? ($editRole[$key] ?? $defa
            style="width:18px;height:18px;accent-color:#f87171">
     <label class="form-label" for="<?= $prefix ?>is_killer" style="margin:0">🔪 Killer-Team</label>
   </div>
+  <div class="form-group flex gap-sm" style="align-items:center">
+    <input type="checkbox" id="<?= $prefix ?>linked_death" <?= $v('linked_death', 0) ? 'checked' : '' ?>
+           style="width:18px;height:18px;accent-color:var(--accent)">
+    <label class="form-label" for="<?= $prefix ?>linked_death" style="margin:0">💔 Gemeinsamer Tod (z.B. Das Paar)</label>
+  </div>
 </div>
 <p class="text-dim text-xs mt-1" style="margin-top:-.5rem">
   <strong>Auffüll-Rolle</strong>: Spieler ohne Sonderrolle bekommen diese Rolle (z.B. Bürger). &nbsp;|&nbsp;
   <strong>Sichtbar untereinander</strong>: Spieler mit dieser Rolle erkennen sich beim Start gegenseitig (z.B. Mörder). &nbsp;|&nbsp;
   <strong>Darf Tote befragen</strong>: Diese Rolle sieht Ort &amp; Zeit in der Todesliste. &nbsp;|&nbsp;
   <strong>Star</strong>: Ort &amp; Zeit werden beim Sterben sofort automatisch eingetragen. &nbsp;|&nbsp;
-  <strong>Killer-Team</strong>: Zählt zur Killer-Seite — Killer gewinnen wenn sie die Bürger zahlenmäßig erreichen.
+  <strong>Killer-Team</strong>: Zählt zur Killer-Seite — Killer gewinnen wenn sie die Bürger zahlenmäßig erreichen. &nbsp;|&nbsp;
+  <strong>Gemeinsamer Tod</strong>: Stirbt ein Spieler dieser Rolle, sterben automatisch alle anderen lebenden
+  Spieler derselben Rolle mit ("Vor Kummer gestorben") — Ort bleibt bis zur Befragung verborgen wie bei jedem anderen Tod.
 </p>

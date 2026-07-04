@@ -73,6 +73,7 @@ function collectFormData(prefix) {
     befragen: get('befragen')?.checked ? 1 : 0,
     auto_eintrag: get('auto_eintrag')?.checked ? 1 : 0,
     is_killer: get('is_killer')?.checked ? 1 : 0,
+    linked_death: get('linked_death')?.checked ? 1 : 0,
     amount: parseInt(get('amount')?.value || '1', 10),
     icon_path: get('icon_path')?.value.trim() || '',
     sort_order: parseInt(get('sort_order')?.value || '0', 10),

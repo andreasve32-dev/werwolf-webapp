@@ -3,7 +3,6 @@
 Versammlungs-Button zeigt falschen Status — Pause-Icon suggeriert "pausiert", Zustand ist aber "aktiv" (Logik muss umgekehrt werden)
 Cooldown startet bei falschem Wert — Nach Klick beginnt Timer nicht bei 0, sondern bei 20 Sekunden
 Rollen-Liste ändert Aussehen je nach Theme — Style-Inkonsistenz zwischen verschiedenen Designs
-Paar: zweiter Spieler stirbt nicht automatisch — Muss sich manuell als tot melden
 Push-Benachrichtigungen kommen verspätet/nicht — 5-Minuten-Cooldown zwischen Nachrichten war unbekannt und unkonfigurierbar
 Datenbank-Fehler bei Push-Einstellung — Ein/Aus-Toggle für Push-Benachrichtigungen hat noch einen DB-Bug
 Weitergeleitet
@@ -171,3 +170,19 @@ Sprachnachrichten an den Spielleiter — Warum: einige Spieler schreiben nur ung
         Kachel-Liste sichtbar. Kachel-Reihenfolge im Verwaltungsbereich neu sortiert
         nach Gebrauchshäufigkeit im laufenden Spiel: Nachrichten, Rollen, Spieler,
         Dorf-Sprüche, Einstellungen, Systemcheck, Setup, Debug-Menü, Testspieler.
+[Bug] Paar: zweiter Spieler stirbt nicht automatisch mit
+      → Neues Rollen-Flag `linked_death` (z.B. für "Das Paar"): Stirbt ein Spieler
+        dieser Rolle, sterben automatisch alle anderen lebenden Spieler derselben
+        Rolle im selben Spiel mit. Der erste Tod läuft komplett normal (eigener
+        Ort, normale Regeln). Der automatisch mitsterbende Partner bekommt als Ort
+        fest "Vor Kummer gestorben" — bleibt aber wie jeder andere Tod erst mal
+        verborgen (rolle_aufgedeckt=0), sichtbar wird es nur über die bestehende
+        Nekromant-/Selbstauskunft-Funktion, keine Sonderbehandlung.
+        Umsetzung folgt der Rollen-Flag-Checkliste aus CLAUDE.md: db/schema.sql +
+        db/init.sql (Spalte + Migration für bestehende Installs, "Das Paar" auf 1
+        gesetzt), role_form_fields.php (Checkbox), admin/roles.php JS, api/admin.php
+        (role_create/role_update), role_card.php (Tag), dump_roles_temp.php
+        (Spaltenliste), Spiellogik in recordDeath() (core/helpers.php), Doku in
+        README.md und docs/spieler.php ergänzt. Live getestet: zwei Testspieler auf
+        "Das Paar" gesetzt, einen getötet — Partner starb automatisch mit korrektem
+        Ort, beide zunächst unaufgedeckt wie jeder normale Tod.

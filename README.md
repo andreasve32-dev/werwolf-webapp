@@ -464,6 +464,7 @@ Aktivieren/Deaktivieren, Löschen, alles per Formular.
 | `befragen` | 1 = Diese Rolle darf tote Spieler befragen (Tote können eigene Rolle, Ort und Zeit in die Todesliste eintragen) |
 | `auto_eintrag` | 1 = Todesort/-zeit wird beim Sterben automatisch eingetragen (setzt `rolle_aufgedeckt=1` sofort) |
 | `is_killer` | 1 = Killer-Team (gewinnen wenn ≥ Überlebende Nicht-Killer) |
+| `linked_death` | 1 = Stirbt ein Spieler dieser Rolle, sterben alle anderen lebenden Spieler derselben Rolle automatisch mit ("Vor Kummer gestorben", z. B. Das Paar) |
 | `sort_order` | Reihenfolge in Listen |
 
 **Standard-Rollen (alle aktiv):**
@@ -475,7 +476,7 @@ Aktivieren/Deaktivieren, Löschen, alles per Formular.
 | 💀 Nekromant | `befragen=1` — tote Spieler können Rolle, Ort und Zeit selbst eintragen |
 | 🔮 Hellseher | Kann Rolle aufdecken, Cooldown 30 Min. |
 | 🕵️ Detektiv | Kann Spieler durchsuchen |
-| 💑 Das Paar | 2 Spieler, sichtbar füreinander |
+| 💑 Das Paar | 2 Spieler, sichtbar füreinander; `linked_death=1` — stirbt einer, stirbt der andere automatisch mit ("Vor Kummer gestorben") |
 | 🐔 Dodo | Gewinnt durch eigene Hinrichtung |
 | ⭐ Star | `auto_eintrag=1` — Tod + Zeit sofort öffentlich, unabhängig vom Nekromanten |
 | 🔫 Gunslinger | Kann einmalig einen Spieler erschießen |

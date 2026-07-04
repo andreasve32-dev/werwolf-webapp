@@ -4,6 +4,23 @@ Jedes Backup erhält eine fortlaufende Versionsnummer (v0.0.x).
 
 ---
 
+## [v0.0.13] — 2026-07-04
+
+### Behoben
+- **Paar: zweiter Spieler stirbt jetzt automatisch mit.** Neues Rollen-Flag
+  `linked_death` — stirbt ein Spieler dieser Rolle, sterben alle anderen lebenden
+  Spieler derselben Rolle im selben Spiel automatisch mit. Der Partner bekommt als
+  Todesort fest „Vor Kummer gestorben", bleibt aber wie jeder andere Tod zunächst
+  unaufgedeckt (nur Nekromant/Selbstauskunft macht ihn sichtbar) — keine
+  Sonderbehandlung gegenüber normalen Toden. „Das Paar" ist ab sofort entsprechend
+  konfiguriert.
+
+### DB-Änderungen
+- `roles.linked_death TINYINT(1) NOT NULL DEFAULT 0` (in `db/schema.sql` +
+  idempotent in `db/init.sql`; bereits live per `ALTER TABLE` nachgezogen)
+
+---
+
 ## [v0.0.12] — 2026-07-04
 
 ### Hinzugefügt

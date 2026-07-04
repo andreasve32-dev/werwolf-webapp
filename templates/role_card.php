@@ -22,6 +22,7 @@ function render_role_card(array $r): string {
               <?php if (!empty($r['befragen'])): ?><span class="tag tag--night">🔍 Darf Tote befragen</span><?php endif; ?>
               <?php if (!empty($r['auto_eintrag'])): ?><span class="tag tag--running">⭐ Star</span><?php endif; ?>
               <?php if (!empty($r['is_killer'])): ?><span class="tag tag--dead">🔪 Killer</span><?php endif; ?>
+              <?php if (!empty($r['linked_death'])): ?><span class="tag tag--night">💔 Gemeinsamer Tod</span><?php endif; ?>
             </div>
             <div class="text-dim text-sm mt-1"><?= e($r['description'] ?: 'Keine Beschreibung') ?></div>
             <div class="text-xs text-dim mt-1">

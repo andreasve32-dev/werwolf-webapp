@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS roles (
   auto_eintrag TINYINT(1)   NOT NULL DEFAULT 0,
   is_killer    TINYINT(1)   NOT NULL DEFAULT 0,
   sort_order   INT          NOT NULL DEFAULT 0,
+  linked_death TINYINT(1)   NOT NULL DEFAULT 0,
   created_at   TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
   updated_at   TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
@@ -230,7 +231,8 @@ ALTER TABLE roles
   ADD COLUMN IF NOT EXISTS befragen        TINYINT(1) NOT NULL DEFAULT 0 AFTER killer_sichtbar,
   ADD COLUMN IF NOT EXISTS auto_eintrag    TINYINT(1) NOT NULL DEFAULT 0 AFTER befragen,
   ADD COLUMN IF NOT EXISTS is_killer       TINYINT(1) NOT NULL DEFAULT 0 AFTER auto_eintrag,
-  ADD COLUMN IF NOT EXISTS sort_order      INT        NOT NULL DEFAULT 0  AFTER is_killer;
+  ADD COLUMN IF NOT EXISTS sort_order      INT        NOT NULL DEFAULT 0  AFTER is_killer,
+  ADD COLUMN IF NOT EXISTS linked_death    TINYINT(1) NOT NULL DEFAULT 0  AFTER sort_order;
 
 ALTER TABLE games
   ADD COLUMN IF NOT EXISTS winner ENUM('killer','citizen','dodo') NULL DEFAULT NULL AFTER status;
@@ -322,6 +324,7 @@ UPDATE roles SET befragen=1  WHERE name='Nekromant'  AND befragen=0;
 UPDATE roles SET auto_eintrag=1 WHERE name='Celebrity' AND auto_eintrag=0;
 UPDATE roles SET is_killer=1 WHERE name='Mörder'     AND is_killer=0;
 UPDATE roles SET sichtbar=1  WHERE name IN ('Mörder','Das Paar') AND sichtbar=0;
+UPDATE roles SET linked_death=1 WHERE name='Das Paar' AND linked_death=0;
 
 INSERT IGNORE INTO games (id, status) VALUES (1, 'lobby');
 
