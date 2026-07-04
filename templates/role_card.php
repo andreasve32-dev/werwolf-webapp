@@ -36,7 +36,11 @@ function render_role_card(array $r): string {
         </div>
         <div class="flex gap-xs" style="flex-shrink:0">
           <button class="btn btn--ghost btn--sm" onclick="toggleEdit(<?= (int)$r['id'] ?>)">✎</button>
-          <button class="btn btn--ghost btn--sm" data-toggle-btn onclick="toggleActive(<?= (int)$r['id'] ?>)"><?= $r['active']?'⏸':'▶' ?></button>
+          <label class="toggle-switch" title="Rolle aktivieren/deaktivieren">
+            <input type="checkbox" data-toggle-input <?= $r['active'] ? 'checked' : '' ?>
+                   onchange="toggleActive(<?= (int)$r['id'] ?>)">
+            <span class="toggle-switch__track"></span>
+          </label>
           <button class="btn btn--danger btn--sm" onclick="deleteRole(<?= (int)$r['id'] ?>,'<?= e($r['name']) ?>')">✕</button>
         </div>
       </div>

@@ -1,6 +1,5 @@
 🐛 Gefundene Bugs
 
-Versammlungs-Button zeigt falschen Status — Pause-Icon suggeriert "pausiert", Zustand ist aber "aktiv" (Logik muss umgekehrt werden)
 Cooldown startet bei falschem Wert — Nach Klick beginnt Timer nicht bei 0, sondern bei 20 Sekunden
 Rollen-Liste ändert Aussehen je nach Theme — Style-Inkonsistenz zwischen verschiedenen Designs
 Push-Benachrichtigungen kommen verspätet/nicht — 5-Minuten-Cooldown zwischen Nachrichten war unbekannt und unkonfigurierbar
@@ -186,3 +185,12 @@ Sprachnachrichten an den Spielleiter — Warum: einige Spieler schreiben nur ung
         README.md und docs/spieler.php ergänzt. Live getestet: zwei Testspieler auf
         "Das Paar" gesetzt, einen getötet — Partner starb automatisch mit korrektem
         Ort, beide zunächst unaufgedeckt wie jeder normale Tod.
+[Bug] Rollen-Liste (Admin): Play/Pause-Schalter für Aktiv/Inaktiv war vertauscht
+      → War fälschlich in der Bug-Liste als "Versammlungs-Button" notiert — tatsächlich
+        betroffen war der Aktiv/Inaktiv-Schalter jeder Rollenkarte in admin/roles.php:
+        aktive Rolle zeigte ⏸ (Pause), inaktive Rolle zeigte ▶ (Play) — invertiert.
+        Statt nur die Icon-Zuordnung zu tauschen, komplett auf den bestehenden
+        Toggle-Switch (wie in den Admin-Einstellungen) umgebaut: eindeutiger
+        An/Aus-Schalter ohne Symbol-Mehrdeutigkeit, macht diese Bug-Klasse hier
+        strukturell unmöglich. Live getestet: deaktivieren/aktivieren über die
+        echte API, Checkbox- und Karten-Zustand stimmen in beide Richtungen.

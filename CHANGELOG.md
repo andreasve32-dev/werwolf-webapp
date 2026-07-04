@@ -4,6 +4,16 @@ Jedes Backup erhält eine fortlaufende Versionsnummer (v0.0.x).
 
 ---
 
+## [v0.0.14] — 2026-07-04
+
+### Behoben
+- **Rollen-Liste (Admin): Aktiv/Inaktiv-Schalter war vertauscht** — aktive Rolle
+  zeigte ⏸ (Pause), inaktive ▶ (Play). Statt nur die Icons zu tauschen, auf den
+  bestehenden Toggle-Switch (wie in den Admin-Einstellungen) umgebaut — ein
+  eindeutiger An/Aus-Schalter ohne Symbol-Mehrdeutigkeit.
+
+---
+
 ## [v0.0.13] — 2026-07-04
 
 ### Behoben

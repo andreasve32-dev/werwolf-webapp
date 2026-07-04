@@ -179,20 +179,23 @@ async function updateRole(id){
 }
 
 async function toggleActive(id){
+  const card = document.getElementById('role-card-'+id);
+  const checkbox = card?.querySelector('[data-toggle-input]');
+
   const r = await apiFetch(API_BASE+'/admin.php', {action:'role_toggle_active', role_id:id});
   if(r.error==='session_expired')return;
-  if(!r.ok){ showToast(r.error||'Fehler','error'); return; }
+  if(!r.ok){
+    showToast(r.error||'Fehler','error');
+    if(checkbox) checkbox.checked = !checkbox.checked; // Fehlschlag: Häkchen zurücksetzen
+    return;
+  }
 
   const isNowActive = r.active === 1;
-  const card = document.getElementById('role-card-'+id);
   if(!card) return;
+  if(checkbox) checkbox.checked = isNowActive;
 
   // Karte ein-/ausblenden
   card.classList.toggle('role-card--inactive', !isNowActive);
-
-  // Toggle-Button aktualisieren
-  const btn = card.querySelector('[data-toggle-btn]');
-  if(btn) btn.textContent = isNowActive ? '⏸' : '▶';
 
   // "Inaktiv"-Tag hinzufügen oder entfernen
   const nameRow = card.querySelector('.flex.gap-sm');
