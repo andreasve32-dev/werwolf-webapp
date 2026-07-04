@@ -9,7 +9,15 @@ Weitergeleitet
 💡 Neue Ideen & Features
 
 Voting-System — Mindestens 2 Spieler müssen für eine Hinrichtung stimmen
-Rollen-Presets — Gespeicherte Rollensets für verschiedene Spielerzahlen (z.B. "7 Spieler"-Preset, "8 Spieler"-Preset)
+Rollen-Presets — Gespeicherte Rollensets für verschiedene Spielerzahlen (z.B. "7 Spieler"-Preset, "8 Spieler"-Preset).
+    Konkretisiert (04.07.2026): Admin stellt einmal ein, welche Rollen an/aus sind + wie oft jede
+    vorkommt (aktueller Zustand der roles-Tabelle: active, amount, fill), gibt dem Set einen Namen
+    und speichert es als Preset ab. Beim nächsten Spielstart kann er ein gespeichertes Preset
+    auswählen und es wird komplett auf die roles-Tabelle angewendet — damit schnell zwischen
+    verschiedenen Rollenkonfigurationen hin- und herwechseln, ohne jedes Mal alle Haken einzeln
+    neu zu setzen. Technisch vermutlich: neue Tabelle role_presets (Name) + role_preset_items
+    (preset_id, role_id, active, amount) oder ein JSON-Snapshot pro Preset; UI in admin/roles.php
+    ("Als Preset speichern" + Auswahl-Dropdown "Preset laden").
 Sheriff als bekannte Rolle — Permanent allen Spielern sichtbar; erhält nach jedem Kill zufällig einen garantierten Nicht-Killer angezeigt
 Detektiv überarbeitet — Nach X Kills (= Anzahl der Killer) bekommt Detektiv einen zufälligen Nicht-Killer angezeigt; Fähigkeit ist passiv, kein Cooldown
 Leichenfresser-Killer — Killt wie normal, aber Leichen können danach nicht vom Nekromant befragt werden und hinterlassen keine Orts-/Zeitspuren
