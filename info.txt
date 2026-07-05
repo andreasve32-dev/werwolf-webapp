@@ -1,14 +1,9 @@
 🐛 Gefundene Bugs
 
-Cooldown startet bei falschem Wert — Nach Klick beginnt Timer nicht bei 0, sondern bei 20 Sekunden
-Rollen-Liste ändert Aussehen je nach Theme — Style-Inkonsistenz zwischen verschiedenen Designs
-Push-Benachrichtigungen kommen verspätet/nicht — 5-Minuten-Cooldown zwischen Nachrichten war unbekannt und unkonfigurierbar
-Datenbank-Fehler bei Push-Einstellung — Ein/Aus-Toggle für Push-Benachrichtigungen hat noch einen DB-Bug
-Weitergeleitet
+(aktuell keine offenen Bugs bekannt)
 ---
 💡 Neue Ideen & Features
 
-Voting-System — Mindestens 2 Spieler müssen für eine Hinrichtung stimmen
 Rollen-Presets — Gespeicherte Rollensets für verschiedene Spielerzahlen (z.B. "7 Spieler"-Preset, "8 Spieler"-Preset).
     Konkretisiert (04.07.2026): Admin stellt einmal ein, welche Rollen an/aus sind + wie oft jede
     vorkommt (aktueller Zustand der roles-Tabelle: active, amount, fill), gibt dem Set einen Namen
@@ -26,7 +21,6 @@ Schläfer/Verräter-Rolle — Killer der nach X Stunden die Seite wechselt; alle
 Hellseherin: permanente Rollensicht — Kann dauerhaft die Rolle eines untersuchten Spielers einsehen statt Einmal-Cooldown
 Detektiv: Leichen befragen — Bekommt von der Leiche einen Spieler genannt, der definitiv nicht der Killer war
 Cooldown-Platzhalter in Beschreibungen — Variable in Rollentext, die automatisch den aktuellen Cooldown-Wert einfügt
-Startseite = Rollenkarte — App öffnet immer direkt die eigene Rollenkarte
 Auto-Timeout zur Rollenkarte — Nach X Minuten Inaktivität automatisch zurück zur Rollenkarte
 Zombie-Spielmodus — Alternativer Modus: Alle starten als Söldner, nach 1–5h zufälliger Zombie-Start, Infizierte bekehren weitere Spieler
 Günslinger: Weiter schießen nach Killer-Treffer — Wenn Günslinger einen Killer erwischt, darf er weiter schießen
@@ -56,6 +50,43 @@ Sprachnachrichten an den Spielleiter — Warum: einige Spieler schreiben nur ung
     Passwortfeld, analog zu SETUP_PASSWORD-Handling) und DB-Speicherung darüber wie bei den
     anderen Bereichen (eigenes Formular + eigener Speichern-Button, siehe bestehendes Muster).
 ---
+✅ Gelöst (05.07.2026)
+
+[Feature] Startseite = Rollenkarte — App öffnet auf Wunsch direkt die eigene Rollenkarte
+      → Neue Spieler-Einstellung "Rollenkarte beim Öffnen zeigen" (Standard: aus,
+        Optionen → 🔒 Privatsphäre) — Grund: beim erneuten Einloggen sollen andere
+        Mitspieler, die zusehen könnten, nicht kurz das Spielfenster mit Infos sehen,
+        die nur der Karteninhaber sehen darf. Bei aktivierter Einstellung rendert
+        app/game.php das #role-card-overlay serverseitig direkt mit der Klasse "open"
+        (statt es erst per JS nach dem Laden zu öffnen) — dadurch erscheint die Karte
+        sofort beim ersten Seitenaufbau, ohne dass das Spielfenster auch nur kurz
+        aufblitzt. Neuer Settings-Key ww_auto_rolecard (Allowlist in api/game.php,
+        localStorage-Spiegelung wie alle anderen Spieler-Einstellungen). Dokumentiert
+        in docs/spieler.php.
+---
+✅ Gelöst (04.07.2026)
+
+[Feature] Voting-System — Mindestens 2 Spieler müssen für eine Hinrichtung stimmen
+      → Feste Spielregel MIN_VOTES_TO_HANG (= 2, core/bootstrap.php, kein Admin-UI-Feld,
+        da keine Konfigurierbarkeit gewünscht). Der „Hängen"-Button im Admin-Panel ist
+        deaktiviert, solange der Angeklagte mit den meisten Stimmen nicht mindestens diese
+        Anzahl erreicht hat (Hinweistext zeigt die fehlende Stimmenzahl). Zusätzlich
+        serverseitig abgesichert: api/admin.php → execute_vote prüft die Stimmenzahl für
+        das Ziel und lehnt die Hinrichtung mit Fehlermeldung ab, falls sie nicht erreicht
+        wird — Umgehung über die API direkt (z.B. per curl) ist damit ausgeschlossen.
+        Zusätzlich: max. 1 Hinrichtung pro Bürgerversammlung — wurde in der aktuellen
+        Runde bereits jemand gehenkt, bleibt der „Hängen"-Button für alle weiteren
+        Angeklagten dieser Versammlung gesperrt (geprüft über game_id+round in der
+        deaths-Tabelle), unabhängig davon, wie viele Angeklagte/Stimmen es gibt.
+[Bug] Cooldown startet bei falschem Wert — Nach Klick beginnt Timer nicht bei 0, sondern bei 20 Sekunden
+      → Ursache: api/game.php (start_cooldown) schrieb den Startzeitpunkt per MySQL NOW() in
+        die DB, gab dem Client aber einen separat mit PHP date('c') berechneten Zeitstempel
+        zurück — zwei unterschiedliche Uhren (Web-Server-Prozess vs. DB-Server), die schon bei
+        geringer Drift (z.B. Docker/WSL2-Container-Uhr) einen sofortigen Rückstand zeigten.
+        Fix: Nach dem UPDATE wird der tatsächlich gespeicherte cooldown_started_at-Wert per
+        SELECT zurückgelesen und als ISO-Zeitstempel (GAME_TIMEZONE) an den Client geschickt —
+        Client rechnet jetzt exakt mit dem Wert, der auch in der DB steht.
+
 ✅ Gelöst (03.07.2026)
 
 [Bug] Seite refresht sich beim Befragen — Popup verschwindet durch automatisches Neuladen mitten im Vorgang

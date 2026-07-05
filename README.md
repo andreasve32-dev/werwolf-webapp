@@ -308,6 +308,59 @@ crontab -e
 
 ---
 
+## 🚚 Umzug: Test-Server → echter Live-Server
+
+Diese App läuft aktuell auf einem Test-/Entwicklungsserver im Heimnetz. Für den
+späteren Live-Betrieb (öffentliche Domain, echte Mitspieler) denselben Stand
+auf einen neuen Server bringen — Checkliste, wenn es soweit ist:
+
+1. **Zielserver vorbereiten:** Docker + Docker Compose installieren, Domain per
+   DNS (A-Record) auf die neue Server-IP zeigen lassen (Voraussetzung für
+   Let's Encrypt, siehe oben).
+2. **`docker-compose.yml` + `docker/apache/vhost.conf`** vom Test-Server auf
+   den neuen Server übertragen (siehe Docker-Compose-Abschnitt oben),
+   `DEINE-DOMAIN` in `vhost.conf` auf die echte Domain setzen.
+3. **Kompletten Webroot 1:1 übertragen** (nicht nur `db/schema.sql` frisch
+   aufsetzen — der aktuelle Stand inkl. aller bisherigen Anpassungen soll
+   identisch laufen): `scp -r` oder als Tar-Archiv, dann nach `./html/`
+   auf dem neuen Server entpacken.
+4. **Datenbank migrieren** (Stand vom Test-Server übernehmen, nicht neu
+   anlegen):
+   ```bash
+   # Auf dem Test-Server: Dump ziehen
+   docker exec meine_datenbank mariadb-dump -uroot -pPASSWORT werwolf > werwolf_dump.sql
+   # Auf den neuen Server übertragen, dann dort importieren
+   docker exec -i meine_datenbank mariadb -uroot -pNEUES_PASSWORT werwolf < werwolf_dump.sql
+   ```
+5. **`config/config.php` auf dem neuen Server anpassen:**
+   - `DB_PASS` und `SETUP_PASSWORD`: **neue, starke Passwörter setzen** — die
+     aktuellen Testserver-Werte sind bewusst einfach und dürfen nicht live gehen.
+   - `APP_URL`: nur nötig, falls die App nicht direkt im Document Root der
+     Domain liegt (Standardfall: leer lassen).
+   - `DB_HOST`: Service-Name aus der neuen `docker-compose.yml` (Standard: `db`).
+6. **Rechtliche Pflichtseiten ausfüllen** (Impressum, Datenschutz) — siehe
+   Abschnitt „⚖️ Rechtliche Pflichtangaben" unten. Ohne das darf die App nicht
+   öffentlich erreichbar sein.
+7. **Push-Benachrichtigungen:** VAPID-Schlüssel werden beim ersten Aufruf
+   automatisch neu erzeugt (`core/WebPush.php`) und unterscheiden sich vom
+   Testserver — bestehende Push-Abos vom Testserver funktionieren auf dem
+   neuen Server ohnehin nicht mehr (andere Domain), das ist normal.
+8. **Zertifikat holen + Auto-Renew-Cronjob einrichten** (siehe oben, Schritte
+   „Erstmalige Einrichtung" und „Automatische Zertifikatserneuerung").
+9. **SSH-Zugang für künftige Deploys einrichten** (Key-Login, analog zum
+   bisherigen Testserver-Zugang) — danach laufen Updates genauso wie bisher:
+   Datei ändern → per `scp` auf den Server kopieren, kein Container-Neustart
+   nötig außer bei Schema-Änderungen.
+10. **Smoke-Test vor dem ersten echten Spiel:** Login, Testspiel anlegen,
+    Rolle zuweisen, Rollenkarte öffnen, eine Bürgerversammlung durchspielen —
+    erst danach echte Mitspieler einladen.
+
+> **Zeitpunkt:** Dieser Umzug ist erst relevant, wenn das Projekt inhaltlich
+> fertig ist — aktuell befinden wir uns noch in der Testphase auf dem
+> bestehenden Server.
+
+---
+
 ## ⚖️ Rechtliche Pflichtangaben (deutsches Recht)
 
 > **Wichtig:** Wer diese App öffentlich oder auch nur einem geschlossenen Nutzerkreis bereitstellt, ist nach deutschem Recht verpflichtet, die folgenden Seiten mit **eigenen echten Angaben** zu befüllen. Die Dateien enthalten Platzhalter, die **vor dem ersten echten Betrieb** ersetzt werden müssen.
@@ -500,6 +553,12 @@ Lebende Spieler können über das Spielfenster eine **Bürgerversammlung einberu
 - **Ablauf:** Countdown bis zur vollen Stunde, dann „Versammlung läuft"-Anzeige
 - **Beenden:** Der Einberufende oder ein Admin kann die Versammlung jederzeit beenden
 - **Admin-Panel:** Aktive Versammlungen werden oben im Admin-Panel als Banner angezeigt
+- **Hinrichtung:** Der „Hängen"-Button ist erst nutzbar, sobald mindestens `MIN_VOTES_TO_HANG`
+  Spieler (fest 2, `core/bootstrap.php`) für denselben Angeklagten gestimmt haben — sowohl im
+  Admin-Panel (Button deaktiviert) als auch serverseitig (`api/admin.php` → `execute_vote`) geprüft.
+- **Max. 1 Hinrichtung pro Bürgerversammlung:** Wurde in der aktuellen Runde (`games.round`)
+  bereits jemand gehenkt, bleibt der „Hängen"-Button für alle weiteren Angeklagten dieser
+  Versammlung gesperrt — unabhängig davon, wie viele Spieler genug Stimmen erreichen.
 - **DB-Tabelle:** `assembly_requests` — `scheduled_at` (Unix-Timestamp), `ended_at` (NULL = aktiv)
 
 ---

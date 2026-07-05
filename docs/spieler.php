@@ -368,6 +368,10 @@ require TEMPLATE_PATH . '/base.php';
         <div class="text-dim text-xs">An/Aus — passt den Hintergrund automatisch der Tageszeit an. Nur optisch, kein Einfluss auf das Spiel.</div>
       </div>
       <div style="padding:.6rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md)">
+        <div class="text-sm" style="font-weight:600;margin-bottom:.2rem">🔒 Rollenkarte beim Öffnen zeigen</div>
+        <div class="text-dim text-xs">Standardmäßig aus. Wenn aktiviert, zeigt die App beim Aufrufen/Neuladen sofort deine Rollenkarte, bevor das Spielfenster sichtbar wird — nützlich, wenn du dich neu einloggst und jemand mitsehen könnte, der deine Rolle nicht kennen soll.</div>
+      </div>
+      <div style="padding:.6rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md)">
         <div class="text-sm" style="font-weight:600;margin-bottom:.2rem">✨ Visuelle Effekte</div>
         <div class="text-dim text-xs">Partikel, Nebel, Phasen-Überblendung, Karten-Flammeneffekt, Schädelregen — alle einzeln ein-/ausschaltbar.</div>
       </div>

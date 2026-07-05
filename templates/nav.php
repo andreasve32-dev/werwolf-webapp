@@ -92,6 +92,21 @@ $player      = Auth::player();
     </div>
   </div>
 
+  <!-- Privatsphäre -->
+  <div class="settings-section">
+    <div class="settings-label">🔒 Privatsphäre</div>
+    <div class="settings-row">
+      <div>
+        <span class="settings-row__name">Rollenkarte beim Öffnen zeigen</span>
+        <div class="text-dim text-xs" style="margin-top:.15rem">Zeigt beim Aufrufen der App sofort deine Rollenkarte, bevor das Spielfenster zu sehen ist — praktisch, wenn andere beim Einloggen zusehen könnten.</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="set-auto-rolecard" onchange="toggleAutoRoleCard(this.checked)">
+        <span class="toggle-switch__track"></span>
+      </label>
+    </div>
+  </div>
+
   <!-- Effekte -->
   <div class="settings-section">
     <div class="settings-label">✨ Effekte</div>
@@ -392,6 +407,10 @@ function openSettingsSheet() {
   const dnEl = document.getElementById('set-daynight');
   if (dnEl) { dnEl.checked = localStorage.getItem('ww_atmosphere') !== '0'; }
 
+  // Rollenkarte-beim-Öffnen-Toggle (Standard: aus)
+  const arcEl = document.getElementById('set-auto-rolecard');
+  if (arcEl) { arcEl.checked = localStorage.getItem('ww_auto_rolecard') === '1'; }
+
   // Ladeintervall
   const pollEl = document.getElementById('set-poll-interval');
   if (pollEl) { pollEl.value = localStorage.getItem('ww_poll_interval') || '6000'; }
@@ -438,6 +457,12 @@ function toggleDayNight(on) {
   } else {
     document.documentElement.removeAttribute('data-daynight');
   }
+}
+
+// ── Rollenkarte-beim-Öffnen-Toggle ────────────────────────────
+function toggleAutoRoleCard(on) {
+  localStorage.setItem('ww_auto_rolecard', on ? '1' : '0');
+  saveSetting('ww_auto_rolecard', on ? '1' : '0');
 }
 
 // ── Ladeintervall ändern & speichern ─────────────────────────

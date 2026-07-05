@@ -157,12 +157,19 @@ switch($action){
   case 'execute_vote':
     $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='running'",[$gameId]);
     if(!$g)err('Spiel läuft nicht');
+    $alreadyHanged=Database::queryOne("SELECT id FROM deaths WHERE game_id=? AND round=? AND is_gehenkt=1",[$gameId,$g['round']]);
+    if($alreadyHanged)err('In dieser Bürgerversammlung wurde bereits jemand gehenkt.');
     $pid=(int)($input['player_id']??0);
     if(!$pid){
       $top=Database::queryOne("SELECT target_id,COUNT(*) as cnt FROM votes WHERE game_id=? AND round=? GROUP BY target_id ORDER BY cnt DESC LIMIT 1",[$gameId,$g['round']]);
       if(!$top)err('Keine Stimmen');
       $pid=$top['target_id'];
+      $cnt=(int)$top['cnt'];
+    } else {
+      $cntRow=Database::queryOne("SELECT COUNT(*) as cnt FROM votes WHERE game_id=? AND round=? AND target_id=?",[$gameId,$g['round'],$pid]);
+      $cnt=(int)($cntRow['cnt']??0);
     }
+    if($cnt<MIN_VOTES_TO_HANG)err("Mindestens ".MIN_VOTES_TO_HANG." Spieler müssen für eine Hinrichtung stimmen (aktuell: {$cnt}).");
     recordDeath($gameId,$pid,$g['round'],'day',null,true);
     Database::execute("DELETE FROM votes WHERE game_id=? AND round=?",[$gameId,$g['round']]);
     $n=Database::queryOne("SELECT display_name FROM players WHERE id=?",[$pid]);

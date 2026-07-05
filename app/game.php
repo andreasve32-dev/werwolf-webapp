@@ -18,6 +18,11 @@ $myGP    = $gameId ? gamePlayer($gameId, $player['id']) : null;
 // Rolle des Spielers — null wenn noch keine vergeben oder Spiel in Lobby
 $myRole  = $myGP && $myGP['role_id'] ? role((int)$myGP['role_id']) : null;
 
+// Rollenkarte automatisch beim Laden zeigen (Spieler-Einstellung, Standard aus) —
+// serverseitig direkt als "offen" rendern, damit beim erneuten Einloggen/Neuladen
+// nie kurz das Spielfenster (mit ggf. sensiblen Infos für andere) aufblitzt.
+$autoShowRoleCard = (playerSettings($player['id'])['ww_auto_rolecard'] ?? '0') === '1';
+
 // Sprüche aus DB laden (Tag + Nacht, zufällige Reihenfolge, max. 20)
 try {
     $daySlogans   = array_column(Database::query("SELECT text FROM slogans WHERE phase='day'   AND active=1 ORDER BY RAND() LIMIT 20"), 'text');
@@ -466,7 +471,7 @@ require TEMPLATE_PATH . '/base.php';
 
 <?php if ($myGP): ?>
 <?php $cardRole = $myRole ?? ['name' => 'Noch keine Rolle', 'icon_path' => DEFAULT_ROLE_ICON, 'sichtbar' => 0, 'description' => 'Dir wurde noch keine Rolle zugewiesen.', 'rules' => '', 'cooldown' => 0]; ?>
-<div id="role-card-overlay" onclick="closeRoleCard()" role="dialog" aria-modal="true">
+<div id="role-card-overlay" class="<?= $autoShowRoleCard ? 'open' : '' ?>" onclick="closeRoleCard()" role="dialog" aria-modal="true">
   <div class="role-card-modal">
     <div class="role-fx role-fx--modal" id="role-fx-modal">
       <div class="role-card-modal__icon"
@@ -886,6 +891,14 @@ const gamePoll = liveBlocks({
   onData: renderGameState,
 });
 gamePoll.start();
+
+// Startseite = Rollenkarte: Overlay ist bei aktiver Einstellung bereits serverseitig
+// als "offen" gerendert (kein Aufblitzen des Spielfensters) — hier nur die
+// Funken-Animation nachträglich anstoßen.
+if (localStorage.getItem('ww_auto_rolecard') === '1') {
+  const wrap = document.getElementById('role-fx-modal');
+  if (wrap) _modalSparkTimer = setInterval(() => _spawnSpark(wrap), 180);
+}
 
 function openRoleCard() {
   const el = document.getElementById('role-card-overlay');

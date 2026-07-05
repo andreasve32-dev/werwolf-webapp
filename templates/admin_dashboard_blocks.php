@@ -19,10 +19,15 @@ function admin_compute_state(int $gameId): array {
 
     // Abstimmungsergebnisse (nur während Tag)
     $votes = [];
+    $alreadyHanged = false;
     $playerNames = array_column($gamePlayers, 'display_name', 'player_id');
     if ($game['status'] === 'running' && $game['phase'] === 'day') {
         $votes = Database::query(
             "SELECT target_id, COUNT(*) as cnt FROM votes WHERE game_id=? AND round=? GROUP BY target_id ORDER BY cnt DESC",
+            [$gameId, $game['round']]
+        );
+        $alreadyHanged = (bool)Database::queryOne(
+            "SELECT id FROM deaths WHERE game_id=? AND round=? AND is_gehenkt=1",
             [$gameId, $game['round']]
         );
     }
@@ -110,7 +115,7 @@ function admin_compute_state(int $gameId): array {
     }
 
     return compact(
-        'game', 'gamePlayers', 'playerCount', 'available', 'votes', 'playerNames',
+        'game', 'gamePlayers', 'playerCount', 'available', 'votes', 'playerNames', 'alreadyHanged',
         'fillRole', 'specialRoles', 'specialCount', 'fillCount',
         'killerWin', 'citizenWin', 'dodoWin', 'aliveKillers', 'aliveNonKillers',
         'debugRoles', 'adminGameEntry', 'pendingAssembly'
@@ -360,6 +365,7 @@ function admin_render_voting(array $s): string {
         $topVote = $votes[0];
         $accusedId   = $topVote['target_id'];
         $accusedName = $playerNames[$accusedId] ?? '?';
+        $enoughVotes = (int)$topVote['cnt'] >= MIN_VOTES_TO_HANG;
       ?>
         <!-- Angeklagter -->
         <div class="panel mb-2" style="border:1px solid var(--danger-text,#f87171);padding:1rem;text-align:center">
@@ -368,6 +374,11 @@ function admin_render_voting(array $s): string {
             <?= e($accusedName) ?>
           </div>
           <div class="text-dim text-xs mt-1"><?= $topVote['cnt'] ?> von <?= $total ?> Stimmen</div>
+          <?php if ($alreadyHanged): ?>
+          <div class="text-dim text-xs mt-1">In dieser Bürgerversammlung wurde bereits jemand gehenkt</div>
+          <?php elseif (!$enoughVotes): ?>
+          <div class="text-dim text-xs mt-1">Mindestens <?= MIN_VOTES_TO_HANG ?> Stimmen für eine Hinrichtung nötig</div>
+          <?php endif; ?>
         </div>
 
         <!-- Stimmenverteilung -->
@@ -389,7 +400,7 @@ function admin_render_voting(array $s): string {
 
         <!-- Urteil -->
         <div class="flex gap-sm" style="margin-top:.5rem">
-          <button class="btn btn--danger" style="flex:1"
+          <button class="btn btn--danger" style="flex:1" <?= $alreadyHanged ? 'disabled title="Bereits jemand gehenkt in dieser Versammlung"' : ($enoughVotes ? '' : 'disabled title="Mindestens '.MIN_VOTES_TO_HANG.' Stimmen nötig"') ?>
                   onclick="hangAccused(<?= $accusedId ?>, '<?= e(addslashes($accusedName)) ?>')">
             ⚖️ Hängen
           </button>

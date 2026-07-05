@@ -50,6 +50,9 @@ define('GAME_TIMEZONE',      $_cfg['game_timezone']      ?? 'Europe/Berlin');
 date_default_timezone_set(GAME_TIMEZONE);
 unset($_cfg);
 
+// Feste Spielregel, bewusst keine DB-Einstellung (siehe CLAUDE.md)
+define('MIN_VOTES_TO_HANG', 2);
+
 // 4. Fehlerreporting gemäß APP_DEBUG
 if (APP_DEBUG) {
     error_reporting(E_ALL);

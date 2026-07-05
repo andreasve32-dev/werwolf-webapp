@@ -145,8 +145,12 @@ switch($action){
       if($elapsed<$total){http_response_code(400);echo json_encode(['error'=>'Cooldown läuft noch','remaining_secs'=>$total-$elapsed]);exit;}
     }
     Database::execute("UPDATE game_players SET cooldown_started_at=NOW() WHERE game_id=? AND player_id=?",[$gameId,$playerId]);
-    $now=date('c');
-    echo json_encode(['ok'=>true,'started_at'=>$now]);break;
+    // Tatsächlich gespeicherten Wert zurücklesen statt separat date('c') zu bilden —
+    // sonst zeigt der Client sofort einen kleinen Rückstand, sobald PHP- und
+    // DB-Prozess-Uhr auch nur geringfügig auseinanderlaufen.
+    $saved=Database::queryOne("SELECT cooldown_started_at FROM game_players WHERE game_id=? AND player_id=?",[$gameId,$playerId]);
+    $startedAt=new DateTime($saved['cooldown_started_at'],new DateTimeZone(GAME_TIMEZONE));
+    echo json_encode(['ok'=>true,'started_at'=>$startedAt->format('c')]);break;
 
   case 'update_death_info':
     // Todesort, -zeit und Rolle nachtragen. Erlaubt für: Admin oder der Betroffene selbst.
@@ -345,7 +349,7 @@ switch($action){
     $key = (string)($input['key'] ?? '');
     $val = (string)($input['value'] ?? '');
     $allowedKeys = [
-        'ww_atmosphere', 'ww_poll_interval',
+        'ww_atmosphere', 'ww_poll_interval', 'ww_auto_rolecard',
         'ww_fx_particles', 'ww_fx_ripple', 'ww_fx_phase', 'ww_fx_skulls',
         'ww_fx_anims', 'ww_fx_fog', 'ww_fx_rolecard', 'ww_fx_rolename',
     ];

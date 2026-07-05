@@ -4,6 +4,54 @@ Jedes Backup erhält eine fortlaufende Versionsnummer (v0.0.x).
 
 ---
 
+## [v0.0.17] — 2026-07-05
+
+### Hinzugefügt
+- **Startseite = Rollenkarte (Privatsphäre-Einstellung).** Neuer Toggle „Rollenkarte
+  beim Öffnen zeigen" unter Optionen → 🔒 Privatsphäre (Standard: aus). Bei aktivierter
+  Einstellung rendert `app/game.php` das Rollenkarten-Overlay serverseitig direkt im
+  offenen Zustand, damit beim erneuten Einloggen/Neuladen nie kurz das Spielfenster
+  aufblitzt, bevor die Karte erscheint — relevant, wenn andere Spieler zusehen könnten.
+  Neuer Settings-Key `ww_auto_rolecard` (Allowlist `api/game.php`), dokumentiert in
+  `docs/spieler.php`.
+- **Rollen-Icons cachebar.** `assets/icons/roles/.htaccess` durchbricht die globale
+  No-Cache-Regel (root `.htaccess`) gezielt für diesen Ordner: `Cache-Control: public,
+  max-age=604800, immutable`, `Pragma`/`Expires` entfernt. Rollen-Icons ändern sich
+  praktisch nie, wurden bisher aber bei jedem Aufruf neu geladen — spürbar langsamer
+  gerade beim automatischen Öffnen der Rollenkarte.
+
+---
+
+## [v0.0.16] — 2026-07-04
+
+### Hinzugefügt
+- **Voting-System: Mindeststimmen für Hinrichtung.** Feste Spielregel
+  `MIN_VOTES_TO_HANG` (= 2, `core/bootstrap.php`, kein Admin-UI-Feld) — der
+  „Hängen"-Button im Admin-Panel bleibt deaktiviert, bis der Angeklagte mit
+  den meisten Stimmen mindestens diese Anzahl erreicht hat. Zusätzlich
+  serverseitig in `api/admin.php` (`execute_vote`) geprüft, damit die Regel
+  nicht über die API umgangen werden kann.
+- **Max. 1 Hinrichtung pro Bürgerversammlung.** Wurde in der aktuellen Runde
+  bereits jemand gehenkt, bleibt der „Hängen"-Button für alle weiteren
+  Angeklagten dieser Versammlung gesperrt — geprüft über `(game_id, round)`
+  in der `deaths`-Tabelle, sowohl im Admin-Panel als auch serverseitig.
+
+---
+
+## [v0.0.15] — 2026-07-04
+
+### Behoben
+- **Rollen-Cooldown startete bei falschem Wert** (Timer zeigte nach dem Start
+  sofort ~20 Sekunden Rückstand statt bei 0 zu beginnen). Ursache: `api/game.php`
+  (`start_cooldown`) schrieb den Startzeitpunkt per MySQL `NOW()` in die DB, gab
+  dem Client aber einen separat per PHP `date('c')` berechneten Zeitstempel
+  zurück — zwei unterschiedliche Uhren (Web-Server-Prozess vs. DB-Server), die
+  schon bei geringer Drift einen sofortigen Rückstand verursachten. Jetzt wird
+  der tatsächlich gespeicherte Wert nach dem `UPDATE` zurückgelesen und als
+  ISO-Zeitstempel an den Client geschickt.
+
+---
+
 ## [v0.0.14] — 2026-07-04
 
 ### Behoben

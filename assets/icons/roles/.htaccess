@@ -14,3 +14,12 @@
   Order allow,deny
   Deny from all
 </FilesMatch>
+
+# Ausnahme von der globalen No-Cache-Regel (root .htaccess): Rollen-Icons
+# ändern sich praktisch nie und dürfen vom Browser gecacht werden, damit die
+# Rollenkarte beim Öffnen sofort erscheint statt bei jedem Aufruf neu zu laden.
+<IfModule mod_headers.c>
+  Header always set Cache-Control "public, max-age=604800, immutable"
+  Header always unset Pragma
+  Header always unset Expires
+</IfModule>

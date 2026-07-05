@@ -12,6 +12,26 @@ Vanilla-JS, mobile-first. Struktur siehe README.md.
   leiten per 301 in `.htaccess` auf `/app/…` um — bei neuen Seiten in `app/`
   KEINE Root-Redirect-Regel nötig (nur für die verschobenen Alt-URLs).
 
+## Lokale Entwicklung & Deployment
+
+- **Lokale Arbeitskopie und Live-Server sind getrennt** (seit 2026-07-05).
+  Vorher lag das Projekt auf einem Netzlaufwerk, das direkt auf den
+  Server-Webordner gemountet war — jede lokale Änderung war sofort live.
+  Das ist jetzt nicht mehr so: der Server hat einen eigenen, unabhängigen
+  Dateibestand (Docker-Compose-Setup, Webroot als Volume in einen
+  `php:8.2-apache`-Container gemountet, siehe README.md → Docker-Compose-Abschnitt).
+- **Jede Codeänderung muss deshalb aktiv auf den Server übertragen werden**,
+  sonst kann sie dort nicht live getestet werden — kein automatischer Sync
+  mehr. Übertragung nur per Datei-Kopie (z. B. `scp`) auf den Server, kein
+  `rsync` lokal verfügbar. Ein Neustart der Container ist dafür normalerweise
+  NICHT nötig (PHP liest Dateien pro Request neu ein) — **außer** bei
+  Schema-Änderungen: die laufen weiterhin nur manuell per SQL auf dem
+  DB-Container (siehe „DB-Updates immer explizit nennen" unten).
+- **Zugangsdaten (SSH-Host, Nutzer, Passwort/Key-Pfad, Server-Verzeichnisstruktur)
+  stehen absichtlich NICHT in diesem Repo**, sondern nur im lokalen
+  Claude-Code-Memory des Betreiber-Rechners (nicht Teil von Git/GitHub).
+  Bei Bedarf dort nachschlagen, nicht hier eintragen.
+
 ## Grundregeln
 
 - **Sprache:** Deutsch für alle UI-Texte, Kommentare und Commit-Messages.
