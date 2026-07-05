@@ -126,8 +126,8 @@ require TEMPLATE_PATH . '/base.php';
       <a href="<?= APP_URL ?>/admin/setup.php" class="admin-link-card">
         <span class="admin-link-card__icon">🔧</span>
         <div class="admin-link-card__text">
-          <div class="admin-link-card__title">Setup</div>
-          <div class="admin-link-card__sub">Datenbankschema neu aufbauen</div>
+          <div class="admin-link-card__title">Ersteinrichtung</div>
+          <div class="admin-link-card__sub">Datenbank &amp; Admin-Konto neu aufbauen</div>
         </div>
         <span class="admin-link-card__arrow">→</span>
       </a>
