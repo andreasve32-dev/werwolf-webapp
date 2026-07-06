@@ -191,6 +191,25 @@ require TEMPLATE_PATH . '/base.php';
       <?php endforeach; ?>
     </div>
     <?php endif; ?>
+
+    <div class="tip-box" style="margin-top:1rem">
+      <strong>⏱ Fähigkeiten mit Abklingzeit:</strong>
+      Hat deine Rolle einen Cooldown (z.&nbsp;B. Mörder, Hellseherin), findest du auf deiner
+      Statuskarte im Spiel-Fenster einen Fähigkeit-Button. Drücke ihn, sobald du deine
+      Fähigkeit in der echten Welt eingesetzt hast — die App zählt dann die Abklingzeit
+      herunter, bis du sie wieder benutzen darfst.
+    </div>
+
+    <div class="tip-box" style="margin-top:.75rem">
+      <strong>🔮 Untersuchen mit dauerhafter Rollensicht (z.&nbsp;B. Hellseherin):</strong>
+      Bei Rollen mit Rollensicht läuft es so: Untersuche einen Spieler in der echten Welt
+      (zeige ihm deine Karte — er muss dir seine Rolle zeigen). Tippe danach im Spiel-Fenster
+      den untersuchten Spieler im <strong>Dorfbewohner-Block</strong> an (wie beim Anklagen)
+      und drücke <strong>„🔮 Spieler untersuchen"</strong>. Nach der Bestätigung merkt sich
+      die App die Rolle: Sie bleibt für dich <strong>dauerhaft</strong> in der Spielerliste
+      sichtbar — auch nach Neuladen oder auf einem anderen Gerät. Erst danach startet dein
+      Cooldown. Nur du siehst diese Information, kein anderer Spieler.
+    </div>
   </div>
 
 
