@@ -136,6 +136,18 @@ require TEMPLATE_PATH . '/base.php';
       <span class="dim">○</span> Nekromant × 1 (deaktiviert)<br>
       <span class="action">✓</span> Bürger (Auffüll, verbleibende 4 Plätze)
     </div>
+    <p style="margin-top:.75rem">
+      <strong>🎛️ Rollen-Presets:</strong> Hast du eine Rollen-Konfiguration fertig eingestellt,
+      kannst du sie oben auf der Rollen-Seite als benanntes Set speichern — z.&nbsp;B.
+      <em>„7 Spieler"</em> oder <em>„8 Spieler"</em>. Beim Speichern wählst du, ob du ein
+      <em>neues Preset anlegst</em> oder ein <em>vorhandenes überschreibst</em> (mit Rückfrage).
+      Über das Auswahlfeld lädst du ein gespeichertes Set jederzeit zurück — Aktiv/Inaktiv,
+      Anzahl und Auffüll-Rolle aller Rollen werden dabei komplett auf den gespeicherten Stand
+      gesetzt. So wechselst du vor dem Spielstart mit einem Klick zwischen Konfigurationen,
+      ohne alle Haken einzeln neu zu setzen. Rollen, die erst <em>nach</em> dem Speichern eines
+      Presets angelegt wurden, werden beim Laden deaktiviert — das Preset beschreibt immer die
+      komplette Konfiguration.
+    </p>
   </div>
 
   <div class="step-card animate-in" style="animation-delay:.07s">
@@ -163,6 +175,12 @@ require TEMPLATE_PATH . '/base.php';
       Wenn alle bereit sind: im Admin-Panel auf <strong>„Spiel starten"</strong> klicken.
       Die App verteilt automatisch die Rollen und benachrichtigt alle Spieler per Push.
       Jeder Spieler sieht nun seine Rollenkarte.
+    </p>
+    <p>
+      Hast du <strong>Rollen-Presets</strong> gespeichert, erscheint daneben zusätzlich eine
+      Auswahl mit <strong>„▶ Mit Preset starten"</strong>: Das gewählte Set wird unmittelbar
+      vor der Rollenverteilung angewendet — praktisch, wenn sich die Spielerzahl kurzfristig
+      geändert hat und du direkt mit der passenden Konfiguration starten willst.
     </p>
     <div class="warn-box" style="margin-top:.75rem">
       <strong>⚠️ Einmal gestartet</strong> können keine neuen Spieler mehr beitreten.
