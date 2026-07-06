@@ -4,6 +4,37 @@ Jedes Backup erhält eine fortlaufende Versionsnummer (v0.0.x).
 
 ---
 
+## [v0.0.23] — 2026-07-06
+
+### Hinzugefügt
+- **Rollensicht — Hellseherin sieht untersuchte Rollen dauerhaft:** Neues
+  Rollen-Flag `rollensicht` (per Checkbox in der Rollen-Verwaltung für jede
+  Rolle aktivierbar). Der Fähigkeit-Button fragt bei diesen Rollen zuerst
+  „Wen hast du untersucht?" (Auswahl der lebenden Mitspieler), speichert die
+  Erkenntnis dauerhaft und zeigt die Rolle des Ziels sofort als Toast — ab
+  dann bleibt sie für den Untersucher in der Spielerliste sichtbar
+  (serverseitig entschieden, Regel e der Sichtbarkeitslogik). Danach startet
+  der normale Cooldown. Hellseherin hat das Flag als Standard.
+- **Neue Tabelle `role_insights`** — „Spieler A kennt die Rolle von Spieler B"
+  (game_id, viewer, target, source): eine Zeile pro Erkenntnis, `source`
+  nennt die Mechanik (vorbereitet für Detektiv/Sheriff), FK ON DELETE CASCADE,
+  wird bei `reset_game` mit abgeräumt. Flag-Sichtbarkeiten (Mörder sehen sich)
+  bleiben bewusst live berechnet — keine doppelte Wahrheit.
+- **Statistik:** Neue Kennzahl „🔮 Untersuchungen" (gesamt) und im
+  Spieler-Profil „🔮 Untersuchungen" / „👁️ Untersucht worden"; die
+  Versions-Probe von `get_stats` berücksichtigt `role_insights`.
+- Rollen-Flag-Checkliste komplett umgesetzt: Formular-Checkbox + Legende,
+  `collectFormData`, `role_create`/`role_update`, Admin-Karten-Tag
+  „🔮 Rollensicht", `dump_roles_temp.php`-Spaltenliste, README.
+
+### DB-Änderungen (in frischem Schema enthalten, live bereits ausgeführt)
+- `ALTER TABLE roles ADD COLUMN rollensicht TINYINT(1) NOT NULL DEFAULT 0`
+- `CREATE TABLE role_insights` (siehe `db/init.sql`)
+- `UPDATE roles SET rollensicht=1 WHERE name='Hellseherin'` + Texte mit
+  Hinweis auf dauerhafte Sichtbarkeit
+
+---
+
 ## [v0.0.22] — 2026-07-06
 
 ### Hinzugefügt

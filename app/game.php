@@ -65,7 +65,7 @@ if ($gameId && ($game['status'] ?? '') === 'running') {
 $page = [
     'title'    => 'Spielfeld',
     'inline_js' => sprintf(
-        'const GAME_ID=%s,PLAYER_ID=%s,API_BASE=%s,DAY_SLOGANS=%s,NIGHT_SLOGANS=%s,MY_COOLDOWN_MINS=%s,MY_COOLDOWN_REMAINING=%s,ASSEMBLY_DATA=%s,MY_IS_ADMIN=%s;'
+        'const GAME_ID=%s,PLAYER_ID=%s,API_BASE=%s,DAY_SLOGANS=%s,NIGHT_SLOGANS=%s,MY_COOLDOWN_MINS=%s,MY_COOLDOWN_REMAINING=%s,ASSEMBLY_DATA=%s,MY_IS_ADMIN=%s,MY_ROLLENSICHT=%s;'
         . 'let MY_ALIVE=%s,GAME_STATUS=%s,GAME_PHASE=%s,MY_IN_GAME=%s;',
         json_encode($gameId),
         json_encode($player['id']),
@@ -76,6 +76,7 @@ $page = [
         json_encode($myCooldownRemaining),
         json_encode($currentAssembly),
         json_encode((bool)$player['is_admin']),
+        json_encode($myRole ? (bool)($myRole['rollensicht'] ?? 0) : false),
         json_encode($myGP ? (bool)$myGP['is_alive'] : false),
         json_encode($game['status'] ?? null),
         json_encode($game['phase']  ?? null),
@@ -203,14 +204,16 @@ require TEMPLATE_PATH . '/base.php';
             <?php if ($myRole['cooldown'] > 0): ?>
               <div class="mt-2" id="cooldown-block">
                 <button class="btn btn--primary btn--full" id="cd-btn" onclick="startCooldown()">
-                  ⏱ Fähigkeit aktivieren (Cooldown starten)
+                  <?= !empty($myRole['rollensicht']) ? '🔮 Spieler untersuchen (startet Cooldown)' : '⏱ Fähigkeit aktivieren (Cooldown starten)' ?>
                 </button>
                 <div id="cd-status" class="text-center text-dim text-sm mt-1" style="display:none">
                   ⏳ Cooldown läuft — noch <strong id="cd-remaining">--:--</strong>
                   <div class="text-xs mt-1" style="opacity:.65">Dauer: <?= (int)$myRole['cooldown'] ?> Minuten</div>
                 </div>
                 <div class="text-xs text-dim text-center mt-1" style="opacity:.55">
-                  Drücke den Button sobald du deine Fähigkeit eingesetzt hast.
+                  <?= !empty($myRole['rollensicht'])
+                      ? 'Trage nach jeder Untersuchung ein, wen du untersucht hast — die Rolle bleibt dauerhaft für dich sichtbar.'
+                      : 'Drücke den Button sobald du deine Fähigkeit eingesetzt hast.' ?>
                 </div>
               </div>
             <?php endif; ?>
@@ -588,6 +591,8 @@ function renderGameState(r) {
     }
   }
   _knownDead = deadNow;
+
+  window._lastPlayers = r.players; // u.a. für das Untersuchungs-Auswahlfenster (Rollensicht)
 
   if(r.players.length===0){
     document.getElementById('player-list').innerHTML='<p class="text-dim" style="grid-column:1/-1;padding:1rem">Noch keine Spieler im Spiel.</p>';
@@ -1120,6 +1125,10 @@ DEATHJS;
 $page['inline_js'] .= <<<'CDJS'
 
 // ── Cooldown ─────────────────────────────────────────────────
+const CD_BTN_LABEL = MY_ROLLENSICHT
+  ? '🔮 Spieler untersuchen (startet Cooldown)'
+  : '⏱ Fähigkeit aktivieren (Cooldown starten)';
+
 (function initCooldown() {
   if (!MY_COOLDOWN_MINS || MY_COOLDOWN_MINS <= 0) return;
   const btn       = document.getElementById('cd-btn');
@@ -1137,7 +1146,7 @@ $page['inline_js'] .= <<<'CDJS'
     if (left <= 0) {
       endsAt                 = null;
       btn.disabled           = false;
-      btn.textContent        = '⏱ Fähigkeit aktivieren (Cooldown starten)';
+      btn.textContent        = CD_BTN_LABEL;
       statusEl.style.display = 'none';
       return;
     }
@@ -1158,20 +1167,61 @@ $page['inline_js'] .= <<<'CDJS'
   };
 })();
 
+// Rollensicht: vor dem Cooldown-Start das Untersuchungs-Ziel wählen
+function openInsightPicker() {
+  const players = (window._lastPlayers || []).filter(p => p.is_alive && p.player_id != PLAYER_ID);
+  if (!players.length) { showToast('Keine lebenden Spieler zum Untersuchen', 'error'); return; }
+  let ov = document.getElementById('insight-picker');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'insight-picker';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:1rem';
+    ov.addEventListener('click', e => { if (e.target === ov) closeInsightPicker(); });
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML = `<div class="card" style="max-width:420px;width:100%;max-height:70vh;overflow-y:auto">
+    <div class="section-title">🔮 Wen hast du untersucht?</div>
+    <p class="text-dim text-sm" style="margin-bottom:.75rem">Die Rolle des gewählten Spielers bleibt dauerhaft für dich sichtbar. Dein Cooldown startet.</p>
+    <div style="display:flex;flex-direction:column;gap:.4rem">
+      ${players.map(p => `<button class="btn btn--ghost" style="justify-content:flex-start" onclick="pickInsightTarget(${p.player_id})">👤 ${escHtml(p.display_name)}</button>`).join('')}
+    </div>
+    <button class="btn btn--full mt-2" onclick="closeInsightPicker()">Abbrechen</button>
+  </div>`;
+}
+function closeInsightPicker() { document.getElementById('insight-picker')?.remove(); }
+function pickInsightTarget(pid) {
+  closeInsightPicker();
+  _doStartCooldown(pid);
+}
+
 function startCooldown() {
+  const btn = document.getElementById('cd-btn');
+  if (!btn || btn.disabled) return;
+  if (MY_ROLLENSICHT) { openInsightPicker(); return; }
+  _doStartCooldown(null);
+}
+
+function _doStartCooldown(targetPlayerId) {
   const btn = document.getElementById('cd-btn');
   if (!btn || btn.disabled) return;
   btn.disabled    = true;
   btn.textContent = '…';
+  const body = {action:'start_cooldown', game_id: GAME_ID};
+  if (targetPlayerId) body.target_player_id = targetPlayerId;
   fetch(API_BASE + '/game.php', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({action:'start_cooldown', game_id: GAME_ID})
+    body: JSON.stringify(body)
   })
   .then(r => r.json())
   .then(d => {
     if (d.ok) {
       if (window._setCooldownRemaining) window._setCooldownRemaining(d.remaining_secs);
+      if (d.revealed) {
+        // Kein escHtml: showToast schreibt per textContent (Entities würden sichtbar)
+        showToast(`🔮 ${d.revealed.display_name} ist: ${d.revealed.role_name || 'noch ohne Rolle'}`, 'success', 8000);
+        if (typeof gamePoll !== 'undefined') gamePoll.refreshNow(); // Rolle sofort in der Spielerliste zeigen
+      }
     } else if (d.remaining_secs > 0 && window._setCooldownRemaining) {
       // Läuft serverseitig doch noch (z.B. auf einem zweiten Gerät gestartet):
       // Anzeige auf den Server-Stand synchronisieren statt Fehler zu zeigen
@@ -1179,12 +1229,12 @@ function startCooldown() {
     } else {
       alert(d.error || 'Fehler beim Starten des Cooldowns');
       btn.disabled    = false;
-      btn.textContent = '⏱ Fähigkeit aktivieren (Cooldown starten)';
+      btn.textContent = CD_BTN_LABEL;
     }
   })
   .catch(() => {
     btn.disabled    = false;
-    btn.textContent = '⏱ Fähigkeit aktivieren (Cooldown starten)';
+    btn.textContent = CD_BTN_LABEL;
   });
 }
 CDJS;

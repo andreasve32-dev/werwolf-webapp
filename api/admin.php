@@ -332,7 +332,7 @@ switch($action){
     // läuft", keine neue einberufbar) und ihr altes scheduled_at würde nach der
     // ersten Hinrichtung des neuen Spiels alle weiteren dauerhaft sperren
     // (hangedThisAssembly-Fenster).
-    foreach(['game_players','deaths','votes','night_actions','assembly_requests'] as $t)
+    foreach(['game_players','deaths','votes','night_actions','assembly_requests','role_insights'] as $t)
       Database::execute("DELETE FROM {$t} WHERE game_id=?",[$gameId]);
     Database::execute("UPDATE games SET status='lobby',phase='day',round=0,winner=NULL WHERE id=?",[$gameId]);
     ok('🔄 Spiel zurückgesetzt');break;
@@ -351,7 +351,7 @@ switch($action){
     $cooldown = (int)($input['cooldown'] ?? 0);
     if ($cooldown < 0 || $cooldown > 10080) err('Cooldown: 0–10080 Minuten (max. 7 Tage).');
     Database::execute(
-      "INSERT INTO roles (name,cooldown,description,rules,active,amount,fill,icon_path,sichtbar,killer_sichtbar,befragen,auto_eintrag,is_killer,sort_order,linked_death) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      "INSERT INTO roles (name,cooldown,description,rules,active,amount,fill,icon_path,sichtbar,killer_sichtbar,befragen,auto_eintrag,is_killer,sort_order,linked_death,rollensicht) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
       [
         $name,
         $cooldown,
@@ -368,6 +368,7 @@ switch($action){
         !empty($input['is_killer']) ? 1 : 0,
         (int)($input['sort_order'] ?? 0),
         !empty($input['linked_death']) ? 1 : 0,
+        !empty($input['rollensicht']) ? 1 : 0,
       ]
     );
     $newRoleId = Database::lastId();
@@ -386,7 +387,7 @@ switch($action){
     $cooldown = (int)($input['cooldown'] ?? 0);
     if ($cooldown < 0 || $cooldown > 10080) err('Cooldown: 0–10080 Minuten (max. 7 Tage).');
     Database::execute(
-      "UPDATE roles SET name=?,cooldown=?,description=?,rules=?,active=?,amount=?,fill=?,icon_path=?,sichtbar=?,killer_sichtbar=?,befragen=?,auto_eintrag=?,is_killer=?,sort_order=?,linked_death=? WHERE id=?",
+      "UPDATE roles SET name=?,cooldown=?,description=?,rules=?,active=?,amount=?,fill=?,icon_path=?,sichtbar=?,killer_sichtbar=?,befragen=?,auto_eintrag=?,is_killer=?,sort_order=?,linked_death=?,rollensicht=? WHERE id=?",
       [
         $name,
         $cooldown,
@@ -403,6 +404,7 @@ switch($action){
         !empty($input['is_killer']) ? 1 : 0,
         (int)($input['sort_order'] ?? 0),
         !empty($input['linked_death']) ? 1 : 0,
+        !empty($input['rollensicht']) ? 1 : 0,
         $roleId,
       ]
     );

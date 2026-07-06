@@ -55,6 +55,12 @@ switch($action){
     $myVisible        = $me ? (bool)((int)($me['role_sichtbar'] ?? 0)) : false;
     $myIsKiller       = $me ? (bool)((int)($me['role_is_killer'] ?? 0)) : false;
     $myKillerSichtbar = $me ? (bool)((int)($me['role_killer_sichtbar'] ?? 0)) : false;
+    // Erworbene Erkenntnisse (z.B. Hellseherin-Untersuchungen): deren Rollen
+    // bleiben für mich dauerhaft sichtbar — unabhängig von Flags
+    $myInsightIds = array_map('intval', array_column(Database::query(
+        "SELECT target_player_id FROM role_insights WHERE game_id=? AND viewer_player_id=?",
+        [$gameId, $playerId]
+    ), 'target_player_id'));
 
     foreach($players as &$p){
       $pRoleId         = $p['role_id'] !== null ? (int)$p['role_id'] : null;
@@ -71,6 +77,7 @@ switch($action){
       //  d) Killer-Kreuz-Sichtbarkeit: meine Rolle hat killer_sichtbar und
       //     der andere ist Killer — oder ich bin Killer und seine Rolle
       //     hat killer_sichtbar (Dodo sieht Mörder, Mörder sehen Dodo)
+      //  e) Erworbene Erkenntnis (role_insights, z.B. Hellseherin-Untersuchung)
       $sameVisibleRole = $myRoleId !== null
         && $pRoleId !== null
         && $pRoleId === $myRoleId
@@ -78,8 +85,9 @@ switch($action){
         && $pVisible;
       $crossKillerVisible = ($myKillerSichtbar && $pIsKiller)
                          || ($myIsKiller && $pKillerSichtbar);
+      $insightVisible = in_array((int)$p['player_id'], $myInsightIds, true);
 
-      if(!$isMe && !$isDead && !$sameVisibleRole && !$crossKillerVisible){
+      if(!$isMe && !$isDead && !$sameVisibleRole && !$crossKillerVisible && !$insightVisible){
         // Rolle komplett ausblenden — kein Name, kein Icon
         $p['role_name']      = null;
         $p['role_icon_path'] = null;
@@ -135,7 +143,7 @@ switch($action){
     // eine einzige Uhr (DB) statt PHP-time() gegen den DB-Zeitstempel zu
     // rechnen — Zeitzonen-/Drift-Probleme zwischen den Prozessen entfallen.
     $me=Database::queryOne(
-      "SELECT gp.*, r.cooldown,
+      "SELECT gp.*, r.cooldown, r.rollensicht,
               TIMESTAMPDIFF(SECOND, gp.cooldown_started_at, NOW()) AS cd_elapsed
        FROM game_players gp
        LEFT JOIN roles r ON r.id=gp.role_id
@@ -148,10 +156,40 @@ switch($action){
     if($left>0){
       jsonResponse(['error'=>'Cooldown läuft noch','remaining_secs'=>$left],400);
     }
+
+    // Rollensicht (z.B. Hellseherin): Fähigkeit braucht ein Untersuchungs-Ziel;
+    // die Erkenntnis wird dauerhaft gespeichert (role_insights) und die
+    // Ziel-Rolle sofort zurückgegeben.
+    $revealed = null;
+    if (!empty($me['rollensicht'])) {
+      $targetId = (int)($input['target_player_id'] ?? 0);
+      if (!$targetId) {http_response_code(400);echo json_encode(['error'=>'Bitte wähle, wen du untersucht hast.']);exit;}
+      if ($targetId === (int)$playerId) {http_response_code(400);echo json_encode(['error'=>'Du kannst dich nicht selbst untersuchen.']);exit;}
+      $target = Database::queryOne(
+        "SELECT gp.is_alive, p.display_name, r.name AS role_name, r.icon_path AS role_icon_path
+         FROM game_players gp
+         JOIN players p ON p.id=gp.player_id
+         LEFT JOIN roles r ON r.id=gp.role_id
+         WHERE gp.game_id=? AND gp.player_id=?",
+        [$gameId,$targetId]
+      );
+      if(!$target){http_response_code(400);echo json_encode(['error'=>'Spieler ist nicht in diesem Spiel.']);exit;}
+      if(!(int)$target['is_alive']){http_response_code(400);echo json_encode(['error'=>'Tote Spieler kannst du nicht untersuchen — ihre Rolle steht in der Todesliste.']);exit;}
+      Database::execute(
+        "INSERT IGNORE INTO role_insights (game_id, viewer_player_id, target_player_id, source) VALUES (?,?,?,'rollensicht')",
+        [$gameId,$playerId,$targetId]
+      );
+      $revealed = [
+        'player_id'   => $targetId,
+        'display_name'=> $target['display_name'],
+        'role_name'   => $target['role_name'],  // NULL falls (noch) keine Rolle zugewiesen
+      ];
+    }
+
     Database::execute("UPDATE game_players SET cooldown_started_at=NOW() WHERE game_id=? AND player_id=?",[$gameId,$playerId]);
     // Kein Zeitstempel an den Client — nur verbleibende Sekunden, die der
     // Client lokal herunterzählt (keine Uhren-Vergleiche PHP/DB/Browser).
-    jsonOk('Cooldown gestartet',['remaining_secs'=>(int)$me['cooldown']*60]);
+    jsonOk('Cooldown gestartet',['remaining_secs'=>(int)$me['cooldown']*60,'revealed'=>$revealed]);
 
   case 'update_death_info':
     // Todesort, -zeit und Rolle nachtragen. Erlaubt für: Admin oder der Betroffene selbst.
@@ -315,7 +353,8 @@ switch($action){
         "SELECT CONCAT(
             (SELECT COUNT(*) FROM deaths), '-', (SELECT COALESCE(MAX(id),0) FROM deaths), '-',
             (SELECT COUNT(*) FROM votes),  '-', (SELECT COALESCE(MAX(id),0) FROM votes),  '-',
-            (SELECT COUNT(*) FROM games),  '-', (SELECT COUNT(*) FROM games WHERE status='finished')
+            (SELECT COUNT(*) FROM games),  '-', (SELECT COUNT(*) FROM games WHERE status='finished'), '-',
+            (SELECT COALESCE(MAX(id),0) FROM role_insights)
          ) AS v"
     )['v'] ?? '';
     if (($input['version'] ?? null) === $statsVer) {

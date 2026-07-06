@@ -34,7 +34,6 @@ Detektiv überarbeitet — Nach X Kills (= Anzahl der Killer) bekommt Detektiv e
 Leichenfresser-Killer — Killt wie normal, aber Leichen können danach nicht vom Nekromant befragt werden und hinterlassen keine Orts-/Zeitspuren
 Auftragskiller — Bekommt zufälliges Ziel zugewiesen; nach Kill neues Ziel (5 min Cooldown)
 Schläfer/Verräter-Rolle — Killer der nach X Stunden die Seite wechselt; alle anderen Killer werden vorab gewarnt: "Einer von euch ist ein Verräter" (verzögerter Switch)
-Hellseherin: permanente Rollensicht — Kann dauerhaft die Rolle eines untersuchten Spielers einsehen statt Einmal-Cooldown
 Detektiv: Leichen befragen — Bekommt von der Leiche einen Spieler genannt, der definitiv nicht der Killer war
 Zombie-Spielmodus — Alternativer Modus: Alle starten als Söldner, nach 1–5h zufälliger Zombie-Start, Infizierte bekehren weitere Spieler
 Günslinger: Weiter schießen nach Killer-Treffer — Wenn Günslinger einen Killer erwischt, darf er weiter schießen
@@ -65,6 +64,28 @@ Sprachnachrichten an den Spielleiter — Warum: einige Spieler schreiben nur ung
     anderen Bereichen (eigenes Formular + eigener Speichern-Button, siehe bestehendes Muster).
 ---
 ✅ Gelöst (06.07.2026)
+
+[Feature] Hellseherin: permanente Rollensicht — untersuchte Rollen dauerhaft sichtbar (→ v0.0.23)
+      → Neues Rollen-Flag rollensicht (per Checkbox in der Rollen-Verwaltung für jede
+        Rolle aktivierbar, Hellseherin = Standard). Ablauf im Spiel: Fähigkeit-Button
+        heißt "🔮 Spieler untersuchen", öffnet ein Auswahlfenster der lebenden
+        Mitspieler ("Wen hast du untersucht?" — Ehrlichkeitsprinzip wie beim
+        Mörder-Kill), speichert die Erkenntnis und zeigt die Ziel-Rolle sofort als
+        Toast; danach startet der normale Cooldown. Die Rolle bleibt ab dann
+        dauerhaft in der Spielerliste sichtbar — serverseitig entschieden
+        (get_players Regel e), nicht per DevTools austricksbar.
+        Neue generalisierte Tabelle role_insights (game_id, viewer_player_id,
+        target_player_id, source) — wie vom Betreiber vorgeschlagen als eigene
+        "wer weiß was über wen"-Tabelle, normalisiert (eine Zeile pro Erkenntnis
+        statt ID-Listen in einer Spalte), source-Spalte für künftige Mechaniken
+        (Detektiv/Sheriff nutzen dieselbe Tabelle). Flag-Sichtbarkeiten (Mörder
+        sehen sich) bleiben live berechnet — keine doppelte Wahrheit. reset_game
+        räumt role_insights mit ab. Statistik: KPI "🔮 Untersuchungen" + im
+        Spieler-Profil "Untersuchungen"/"Untersucht worden", get_stats-Versions-
+        Probe um role_insights erweitert. Komplette Flag-Checkliste umgesetzt
+        (Formular, collectFormData, role_create/update, Karten-Tag, dump_roles_temp,
+        README); Rollen-Backup vorher gezogen (Scratchpad). Hinweis: Rollensicht
+        braucht Cooldown > 0, sonst erscheint der Fähigkeit-Button nicht.
 
 [Feature] Auto-Timeout zur Rollenkarte — nach X Minuten ohne Eingabe (→ v0.0.22)
       → Neue Spieler-Einstellung "Auto-Timeout zur Rollenkarte" (Optionen →

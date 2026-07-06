@@ -15,7 +15,8 @@ function stats_compute_state(): array {
             (SELECT COUNT(*) FROM players)                        AS spieler_gesamt,
             (SELECT COUNT(*) FROM deaths)                        AS tode_gesamt,
             (SELECT ROUND(AVG(round),1) FROM games WHERE status='finished' AND round > 0) AS avg_runden,
-            (SELECT COUNT(*) FROM votes)                         AS stimmen_gesamt
+            (SELECT COUNT(*) FROM votes)                         AS stimmen_gesamt,
+            (SELECT COUNT(*) FROM role_insights)                 AS untersuchungen_gesamt
     ");
 
     $deathsByCause = Database::query(
@@ -82,6 +83,15 @@ function stats_compute_state(): array {
     foreach (Database::query("SELECT player_id AS pid, COUNT(*) AS cnt FROM deaths WHERE is_gehenkt=1 GROUP BY player_id") as $r) {
         $hangedMap[(int)$r['pid']] = (int)$r['cnt'];
     }
+    // Rollen-Erkenntnisse (z.B. Hellseherin-Untersuchungen): durchgeführt / selbst untersucht worden
+    $insightsGivenMap    = [];
+    $insightsReceivedMap = [];
+    foreach (Database::query("SELECT viewer_player_id AS pid, COUNT(*) AS cnt FROM role_insights GROUP BY viewer_player_id") as $r) {
+        $insightsGivenMap[(int)$r['pid']] = (int)$r['cnt'];
+    }
+    foreach (Database::query("SELECT target_player_id AS pid, COUNT(*) AS cnt FROM role_insights GROUP BY target_player_id") as $r) {
+        $insightsReceivedMap[(int)$r['pid']] = (int)$r['cnt'];
+    }
 
     // Rollen-Farb-Palette (10 Farben, Rotation bei mehr Rollen)
     $rolePalette = ['#818cf8','#a78bfa','#c084fc','#e879f9','#f472b6',
@@ -135,6 +145,8 @@ function stats_compute_state(): array {
             'gehenkt'          => $hangedMap[$pid] ?? 0,
             'stimmen_gegeben'  => $votesGivenMap[$pid]    ?? 0,
             'anklagen'         => $votesReceivedMap[$pid]  ?? 0,
+            'untersucht'       => $insightsGivenMap[$pid]    ?? 0,
+            'untersucht_worden'=> $insightsReceivedMap[$pid] ?? 0,
             'rollen'           => $rollen,
             'tod'              => $tod,
             'tod_tag'          => $deathsPhaseGrouped[$pid]['day']   ?? 0,
@@ -224,6 +236,10 @@ function render_stats_content(array $s): string {
         <div class="stats-kpi">
           <div class="stats-kpi__val"><?= (int)($totals['stimmen_gesamt'] ?? 0) ?></div>
           <div class="stats-kpi__label">Abstimmungen</div>
+        </div>
+        <div class="stats-kpi">
+          <div class="stats-kpi__val"><?= (int)($totals['untersuchungen_gesamt'] ?? 0) ?></div>
+          <div class="stats-kpi__label">🔮 Untersuchungen</div>
         </div>
         <?php $laufend = (int)($totals['spiele_laufend'] ?? 0) + (int)($totals['spiele_lobby'] ?? 0); ?>
         <div class="stats-kpi">

@@ -518,6 +518,7 @@ Aktivieren/Deaktivieren, Löschen, alles per Formular.
 | `auto_eintrag` | 1 = Todesort/-zeit wird beim Sterben automatisch eingetragen (setzt `rolle_aufgedeckt=1` sofort) |
 | `is_killer` | 1 = Killer-Team (gewinnen wenn ≥ Überlebende Nicht-Killer) |
 | `linked_death` | 1 = Stirbt ein Spieler dieser Rolle, sterben alle anderen lebenden Spieler derselben Rolle automatisch mit ("Vor Kummer gestorben", z. B. Das Paar) |
+| `rollensicht` | 1 = Fähigkeit-Button fragt nach dem Untersuchungs-Ziel; dessen Rolle bleibt dauerhaft sichtbar (z. B. Hellseherin). Erkenntnisse in Tabelle `role_insights`, fließen in die Statistik ein. Braucht Cooldown > 0 |
 | `sort_order` | Reihenfolge in Listen |
 
 **Standard-Rollen (alle aktiv):**
@@ -527,7 +528,7 @@ Aktivieren/Deaktivieren, Löschen, alles per Formular.
 | 🏘️ Bürger | Füllrolle, kein Sonderrecht |
 | 🔪 Mörder | Sichtbar (Mörder erkennen sich), Cooldown 30 Min. |
 | 💀 Nekromant | `befragen=1` — tote Spieler können Rolle, Ort und Zeit selbst eintragen |
-| 🔮 Hellseher | Kann Rolle aufdecken, Cooldown 30 Min. |
+| 🔮 Hellseher | `rollensicht=1` — untersucht Spieler, deren Rolle bleibt dauerhaft sichtbar; Cooldown 30 Min. |
 | 🕵️ Detektiv | Kann Spieler durchsuchen |
 | 💑 Das Paar | 2 Spieler, sichtbar füreinander; `linked_death=1` — stirbt einer, stirbt der andere automatisch mit ("Vor Kummer gestorben") |
 | 🐔 Dodo | Gewinnt durch eigene Hinrichtung |

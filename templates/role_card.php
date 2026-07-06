@@ -23,6 +23,7 @@ function render_role_card(array $r): string {
               <?php if (!empty($r['auto_eintrag'])): ?><span class="tag tag--running">⭐ Star</span><?php endif; ?>
               <?php if (!empty($r['is_killer'])): ?><span class="tag tag--dead">🔪 Killer</span><?php endif; ?>
               <?php if (!empty($r['linked_death'])): ?><span class="tag tag--night">💔 Gemeinsamer Tod</span><?php endif; ?>
+              <?php if (!empty($r['rollensicht'])): ?><span class="tag tag--night">🔮 Rollensicht</span><?php endif; ?>
             </div>
             <div class="text-dim text-sm mt-1"><?= e($r['description'] ? roleText($r['description'], $r) : 'Keine Beschreibung') ?></div>
             <div class="text-xs text-dim mt-1">

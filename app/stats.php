@@ -481,6 +481,8 @@ function renderPlayerDetail(pid) {
     chip('🌕 Tode in der Nacht', p.tod_nacht),
     chip('🗳️ Stimmen gegeben', p.stimmen_gegeben),
     chip('🎯 Anklagen erhalten', p.anklagen),
+    chip('🔮 Untersuchungen', p.untersucht),
+    chip('👁️ Untersucht worden', p.untersucht_worden),
     chip('📊 Überlebensrate', survive + '%'),
   ].join('');
 

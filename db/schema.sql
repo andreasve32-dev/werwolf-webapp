@@ -12,6 +12,7 @@
 -- ============================================================
 
 -- ── 1. Alte Tabellen entfernen (Reihenfolge wegen FKs) ────────
+DROP TABLE IF EXISTS role_insights;
 DROP TABLE IF EXISTS role_preset_items;
 DROP TABLE IF EXISTS role_presets;
 DROP TABLE IF EXISTS slogans;
@@ -56,6 +57,7 @@ CREATE TABLE roles (
   auto_eintrag TINYINT(1)  NOT NULL DEFAULT 0,    -- 1 = Ort+Zeit werden beim Sterben sofort automatisch eingetragen (Star)
   is_killer   TINYINT(1)   NOT NULL DEFAULT 0,    -- 1 = Killerteam (gewinnen wenn >= Überlebende Nicht-Killer)
   linked_death TINYINT(1)  NOT NULL DEFAULT 0,    -- 1 = stirbt ein Spieler dieser Rolle, sterben alle anderen lebenden Spieler derselben Rolle automatisch mit (Das Paar)
+  rollensicht TINYINT(1)   NOT NULL DEFAULT 0,    -- 1 = darf Spieler untersuchen und sieht deren Rolle dauerhaft (Hellseherin); Erkenntnisse in role_insights
   sort_order  INT          NOT NULL DEFAULT 0,
   created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
   updated_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -247,6 +249,25 @@ CREATE TABLE assembly_requests (
   FOREIGN KEY (supporter_id) REFERENCES players(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
+-- ── 9d. Rollen-Erkenntnisse ──────────────────────────────────────
+-- Erworbenes Wissen "Spieler A kennt die Rolle von Spieler B" — z.B. durch
+-- die Hellseherin (rollensicht-Flag). Eine Zeile pro Erkenntnis; source
+-- nennt die Mechanik (für die Statistik auswertbar). Flag-basierte
+-- Sichtbarkeiten (sichtbar/killer_sichtbar) stehen NICHT hier — die werden
+-- weiterhin live aus den Rollen-Flags berechnet (eine Quelle der Wahrheit).
+CREATE TABLE role_insights (
+  id               INT AUTO_INCREMENT PRIMARY KEY,
+  game_id          INT NOT NULL,
+  viewer_player_id INT NOT NULL,                 -- wer das Wissen hat
+  target_player_id INT NOT NULL,                 -- über wen
+  source           VARCHAR(30) NOT NULL DEFAULT 'rollensicht',
+  created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (game_id)          REFERENCES games(id)   ON DELETE CASCADE,
+  FOREIGN KEY (viewer_player_id) REFERENCES players(id) ON DELETE CASCADE,
+  FOREIGN KEY (target_player_id) REFERENCES players(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_insight (game_id, viewer_player_id, target_player_id)
+) ENGINE=InnoDB;
+
 -- ── 10. Rollen (Seed-Daten basierend auf dem echten Regelwerk) ──
 -- fill=1: Bürger ist die Auffüll-Rolle — Spieler, die keine Sonderrolle
 --         bekommen, werden automatisch Bürger. amount wird bei fill=1 ignoriert.
@@ -271,8 +292,8 @@ INSERT INTO roles (id, name, cooldown, description, rules, active, fill, amount,
   1, 0, 1, 'assets/icons/roles/nekromant.png', 0, 1, 0, 0, 30, 0),
 
 (4,  'Hellseherin', 30,
-  'Kann alle {cooldown} Minuten einen Spieler zwingen, seine Rolle aufzudecken.',
-  'Zeige einem Spieler deine Karte — er muss dir seine Rolle zeigen. Abklingzeit: {cooldown} Minuten.',
+  'Kann alle {cooldown} Minuten einen Spieler zwingen, seine Rolle aufzudecken. Untersuchte Rollen bleiben dauerhaft sichtbar.',
+  'Zeige einem Spieler deine Karte — er muss dir seine Rolle zeigen. Trage die Untersuchung danach in der App ein: die Rolle bleibt für dich dauerhaft in der Spielerliste sichtbar. Abklingzeit: {cooldown} Minuten.',
   1, 0, 1, 'assets/icons/roles/hellseherin.png', 0, 0, 0, 0, 40, 0),
 
 (5,  'Detektiv',    0,
@@ -306,6 +327,9 @@ INSERT INTO roles (id, name, cooldown, description, rules, active, fill, amount,
   'Du kannst so viele Spieler erschießen wie du willst. Tötest du jedoch nicht den Dodo oder einen Mörder, stirbst du selbst.',
   1, 0, 1, 'assets/icons/roles/sheriff.png', 0, 0, 0, 0, 100, 0);
 
+-- Flags, die nicht in der Spaltenliste des Seed-INSERTs stehen
+UPDATE roles SET rollensicht=1 WHERE name='Hellseherin';
+
 -- ── 11. App-Einstellungen (DB-konfigurierbar) ─────────────────────
 CREATE TABLE settings (
   `key`       VARCHAR(80)   NOT NULL,
@@ -319,7 +343,7 @@ CREATE TABLE settings (
 
 INSERT INTO settings (`key`, value, type, label, description, sort_order) VALUES
 ('app_name',           'Werwolf',                          'string', 'Spielname',              'Anzeigename der App — überall sichtbar.',                         10),
-('app_version',        '0.0.22',                          'string', 'Versionsnummer',          'Anzeigeversion z. B. in Fußzeile oder About-Seite.',             15),
+('app_version',        '0.0.23',                          'string', 'Versionsnummer',          'Anzeigeversion z. B. in Fußzeile oder About-Seite.',             15),
 ('beta_mode',          '1',                               'bool',   'Beta-Modus',              'Zeigt einen Beta-Hinweis im Spielfenster an.',                    16),
 ('app_debug',          '1',                               'bool',   'Debug-Modus',             'PHP-Fehler anzeigen. Im Produktivbetrieb auf 0 setzen.',          20),
 ('default_theme',      'gothic',                          'string', 'Standard-Theme',          'Theme für neue Nutzer ohne gespeichertes Theme.',                30),

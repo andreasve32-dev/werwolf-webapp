@@ -131,6 +131,11 @@ $v       = fn(string $key, $default = '') => $isEdit ? ($editRole[$key] ?? $defa
            style="width:18px;height:18px;accent-color:var(--accent)">
     <label class="form-label" for="<?= $prefix ?>linked_death" style="margin:0">💔 Gemeinsamer Tod (z.B. Das Paar)</label>
   </div>
+  <div class="form-group flex gap-sm" style="align-items:center">
+    <input type="checkbox" id="<?= $prefix ?>rollensicht" <?= $v('rollensicht', 0) ? 'checked' : '' ?>
+           style="width:18px;height:18px;accent-color:var(--accent)">
+    <label class="form-label" for="<?= $prefix ?>rollensicht" style="margin:0">🔮 Rollensicht — untersuchte Spieler dauerhaft sehen (z.B. Hellseherin)</label>
+  </div>
 </div>
 <p class="text-dim text-xs mt-1" style="margin-top:-.5rem">
   <strong>Auffüll-Rolle</strong>: Spieler ohne Sonderrolle bekommen diese Rolle (z.B. Bürger). &nbsp;|&nbsp;
@@ -139,5 +144,8 @@ $v       = fn(string $key, $default = '') => $isEdit ? ($editRole[$key] ?? $defa
   <strong>Star</strong>: Ort &amp; Zeit werden beim Sterben sofort automatisch eingetragen. &nbsp;|&nbsp;
   <strong>Killer-Team</strong>: Zählt zur Killer-Seite — Killer gewinnen wenn sie die Bürger zahlenmäßig erreichen. &nbsp;|&nbsp;
   <strong>Gemeinsamer Tod</strong>: Stirbt ein Spieler dieser Rolle, sterben automatisch alle anderen lebenden
-  Spieler derselben Rolle mit ("Vor Kummer gestorben") — Ort bleibt bis zur Befragung verborgen wie bei jedem anderen Tod.
+  Spieler derselben Rolle mit ("Vor Kummer gestorben") — Ort bleibt bis zur Befragung verborgen wie bei jedem anderen Tod. &nbsp;|&nbsp;
+  <strong>Rollensicht</strong>: Der Fähigkeit-Button fragt nach dem Untersuchungs-Ziel; dessen Rolle bleibt
+  für diesen Spieler dauerhaft in der Spielerliste sichtbar. Braucht einen Cooldown-Wert &gt; 0 (der Button
+  erscheint nur mit Cooldown).
 </p>

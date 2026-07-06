@@ -252,7 +252,22 @@ ALTER TABLE roles
   ADD COLUMN IF NOT EXISTS auto_eintrag    TINYINT(1) NOT NULL DEFAULT 0 AFTER befragen,
   ADD COLUMN IF NOT EXISTS is_killer       TINYINT(1) NOT NULL DEFAULT 0 AFTER auto_eintrag,
   ADD COLUMN IF NOT EXISTS sort_order      INT        NOT NULL DEFAULT 0  AFTER is_killer,
-  ADD COLUMN IF NOT EXISTS linked_death    TINYINT(1) NOT NULL DEFAULT 0  AFTER sort_order;
+  ADD COLUMN IF NOT EXISTS linked_death    TINYINT(1) NOT NULL DEFAULT 0  AFTER sort_order,
+  ADD COLUMN IF NOT EXISTS rollensicht     TINYINT(1) NOT NULL DEFAULT 0  AFTER linked_death;
+
+-- Rollen-Erkenntnisse: "Spieler A kennt die Rolle von Spieler B" (z.B. Hellseherin)
+CREATE TABLE IF NOT EXISTS role_insights (
+  id               INT AUTO_INCREMENT PRIMARY KEY,
+  game_id          INT NOT NULL,
+  viewer_player_id INT NOT NULL,
+  target_player_id INT NOT NULL,
+  source           VARCHAR(30) NOT NULL DEFAULT 'rollensicht',
+  created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (game_id)          REFERENCES games(id)   ON DELETE CASCADE,
+  FOREIGN KEY (viewer_player_id) REFERENCES players(id) ON DELETE CASCADE,
+  FOREIGN KEY (target_player_id) REFERENCES players(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_insight (game_id, viewer_player_id, target_player_id)
+) ENGINE=InnoDB;
 
 ALTER TABLE games
   ADD COLUMN IF NOT EXISTS winner ENUM('killer','citizen','dodo') NULL DEFAULT NULL AFTER status;
@@ -305,8 +320,8 @@ VALUES
   1, 0, 1, 'assets/icons/roles/nekromant.png', 0, 1, 0, 0, 30),
 
 (4,  'Hellseherin', 30,
-  'Kann alle {cooldown} Minuten einen Spieler zwingen, seine Rolle aufzudecken.',
-  'Zeige einem Spieler deine Karte — er muss dir seine Rolle zeigen. Abklingzeit: {cooldown} Minuten.',
+  'Kann alle {cooldown} Minuten einen Spieler zwingen, seine Rolle aufzudecken. Untersuchte Rollen bleiben dauerhaft sichtbar.',
+  'Zeige einem Spieler deine Karte — er muss dir seine Rolle zeigen. Trage die Untersuchung danach in der App ein: die Rolle bleibt für dich dauerhaft in der Spielerliste sichtbar. Abklingzeit: {cooldown} Minuten.',
   1, 0, 1, 'assets/icons/roles/hellseherin.png', 0, 0, 0, 0, 40),
 
 (5,  'Detektiv',  0,
@@ -345,12 +360,13 @@ UPDATE roles SET auto_eintrag=1 WHERE name='Celebrity' AND auto_eintrag=0;
 UPDATE roles SET is_killer=1 WHERE name='Mörder'     AND is_killer=0;
 UPDATE roles SET sichtbar=1  WHERE name IN ('Mörder','Das Paar') AND sichtbar=0;
 UPDATE roles SET linked_death=1 WHERE name='Das Paar' AND linked_death=0;
+UPDATE roles SET rollensicht=1 WHERE name='Hellseherin' AND rollensicht=0;
 
 INSERT IGNORE INTO games (id, status) VALUES (1, 'lobby');
 
 INSERT IGNORE INTO settings (`key`, value, type, label, description, sort_order) VALUES
 ('app_name',           'Werwolf',                                       'string', 'Spielname',                     'Anzeigename der App — überall sichtbar.',                              10),
-('app_version',        '0.0.22',                                        'string', 'Versionsnummer',                'Anzeigeversion z. B. in Fußzeile oder About-Seite.',                   15),
+('app_version',        '0.0.23',                                        'string', 'Versionsnummer',                'Anzeigeversion z. B. in Fußzeile oder About-Seite.',                   15),
 ('beta_mode',          '1',                                             'bool',   'Beta-Modus',                    'Zeigt einen Beta-Hinweis im Spielfenster an.',                         16),
 ('app_debug',          '1',                                             'bool',   'Debug-Modus',                   'PHP-Fehler anzeigen. Im Produktivbetrieb auf 0 setzen.',               20),
 ('default_theme',      'gothic',                                        'string', 'Standard-Theme',                'Theme für neue Nutzer ohne gespeichertes Theme.',                      30),
