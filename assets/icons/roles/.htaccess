@@ -18,11 +18,15 @@
 # Ausnahme von der globalen No-Cache-Regel (root .htaccess): Rollen-Icons
 # ändern sich praktisch nie und dürfen vom Browser gecacht werden, damit die
 # Rollenkarte beim Öffnen sofort erscheint statt bei jedem Aufruf neu zu laden.
-# Nur bei Status 200 — Fehlerantworten (403/404) behalten die No-Cache-Header
+# Nur bei 200 UND 304 — Fehlerantworten (403/404) behalten die No-Cache-Header
 # aus der Root-.htaccess, sonst würde ein Fehlbild 7 Tage im Browser kleben.
+# 304 MUSS die Cache-Header ebenfalls tragen: Browser ersetzen bei einer
+# Revalidierung die gespeicherten Header des Cache-Eintrags durch die der
+# 304-Antwort (RFC 9111 §3.2) — kämen dort die No-Cache-Header an, wäre das
+# Icon-Caching nach dem ersten max-age-Ablauf dauerhaft erloschen.
 # Kein "immutable": Icons werden ggf. per scp in-place ersetzt.
 <IfModule mod_headers.c>
-  Header always set Cache-Control "public, max-age=604800" "expr=%{REQUEST_STATUS} == 200"
-  Header always unset Pragma "expr=%{REQUEST_STATUS} == 200"
-  Header always unset Expires "expr=%{REQUEST_STATUS} == 200"
+  Header always set Cache-Control "public, max-age=604800" "expr=%{REQUEST_STATUS} == 200 || %{REQUEST_STATUS} == 304"
+  Header always unset Pragma "expr=%{REQUEST_STATUS} == 200 || %{REQUEST_STATUS} == 304"
+  Header always unset Expires "expr=%{REQUEST_STATUS} == 200 || %{REQUEST_STATUS} == 304"
 </IfModule>

@@ -52,6 +52,20 @@ Sprachnachrichten an den Spielleiter — Warum: einige Spieler schreiben nur ung
 ---
 ✅ Gelöst (06.07.2026)
 
+[Review] Re-Review der v0.0.18-Fixes — 7 Findings behoben (→ v0.0.19)
+      → Sequenzieller 8-Winkel-Durchlauf mit Einzel-Verifikation (13 Kandidaten,
+        6 widerlegt). Behoben: (1) Versammlungs-Sperre war per "Einberufen + vor
+        Beginn wieder Beenden" aushebelbar — hangedThisAssembly() zählt jetzt nur
+        tatsächlich gestartete Versammlungen (scheduled_at <= jetzt) als Fenster.
+        (2) reset_game räumt assembly_requests mit ab (sonst: Alt-Versammlung lebt
+        im neuen Spiel weiter + dauerhafter Hinrichtungs-Lockout). (3) Icon-Cache-
+        Header gelten jetzt auch für 304 — Browser ersetzen bei Revalidierung die
+        gespeicherten Header, mit no-cache wäre das Caching nach 7 Tagen dauerhaft
+        erloschen (live per curl belegt). (4) Cooldown-Formel zentral in
+        cooldownRemainingSecs() mit Clamp [0, total] gegen DB-Uhr-Rücksprünge.
+        Cleanups: gamePlayer() liefert cooldown_elapsed mit (Extra-Query weg),
+        hangedThisAssembly() in einer Query, Funken-Bootstrap ruft openRoleCard().
+
 [Review] Code-Review v0.0.17 — alle 13 bestätigten Findings behoben (→ v0.0.18)
       → Schwerste Punkte: (1) Cooldown-Zeitzonen-Regression — Server sendet jetzt nur noch
         verbleibende Sekunden (remaining_secs, TIMESTAMPDIFF auf der DB-Uhr), Client zählt

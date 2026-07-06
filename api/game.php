@@ -144,14 +144,14 @@ switch($action){
     );
     if(!$me){http_response_code(400);echo json_encode(['error'=>'Nicht berechtigt']);exit;}
     if((int)($me['cooldown']??0)<=0){http_response_code(400);echo json_encode(['error'=>'Deine Rolle hat keinen Cooldown']);exit;}
-    $total=(int)$me['cooldown']*60;
-    if($me['cd_elapsed']!==null && (int)$me['cd_elapsed']<$total){
-      jsonResponse(['error'=>'Cooldown läuft noch','remaining_secs'=>$total-(int)$me['cd_elapsed']],400);
+    $left=cooldownRemainingSecs((int)$me['cooldown'],$me['cd_elapsed']);
+    if($left>0){
+      jsonResponse(['error'=>'Cooldown läuft noch','remaining_secs'=>$left],400);
     }
     Database::execute("UPDATE game_players SET cooldown_started_at=NOW() WHERE game_id=? AND player_id=?",[$gameId,$playerId]);
     // Kein Zeitstempel an den Client — nur verbleibende Sekunden, die der
     // Client lokal herunterzählt (keine Uhren-Vergleiche PHP/DB/Browser).
-    jsonOk('Cooldown gestartet',['remaining_secs'=>$total]);
+    jsonOk('Cooldown gestartet',['remaining_secs'=>(int)$me['cooldown']*60]);
 
   case 'update_death_info':
     // Todesort, -zeit und Rolle nachtragen. Erlaubt für: Admin oder der Betroffene selbst.

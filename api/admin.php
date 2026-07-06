@@ -300,7 +300,12 @@ switch($action){
     ok('🏁 Spiel beendet');break;
 
   case 'reset_game':
-    foreach(['game_players','deaths','votes','night_actions'] as $t)
+    // assembly_requests gehört mit abgeräumt: eine beim Reset laufende
+    // Versammlung würde sonst im neuen Spiel weiterleben (Anzeige "Versammlung
+    // läuft", keine neue einberufbar) und ihr altes scheduled_at würde nach der
+    // ersten Hinrichtung des neuen Spiels alle weiteren dauerhaft sperren
+    // (hangedThisAssembly-Fenster).
+    foreach(['game_players','deaths','votes','night_actions','assembly_requests'] as $t)
       Database::execute("DELETE FROM {$t} WHERE game_id=?",[$gameId]);
     Database::execute("UPDATE games SET status='lobby',phase='day',round=0,winner=NULL WHERE id=?",[$gameId]);
     ok('🔄 Spiel zurückgesetzt');break;

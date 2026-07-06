@@ -18,20 +18,13 @@ $myGP    = $gameId ? gamePlayer($gameId, $player['id']) : null;
 // Rolle des Spielers — null wenn noch keine vergeben oder Spiel in Lobby
 $myRole  = $myGP && $myGP['role_id'] ? role((int)$myGP['role_id']) : null;
 
-// Cooldown: verbleibende Sekunden serverseitig über die DB-Uhr berechnen
-// (TIMESTAMPDIFF gegen NOW()) — nie rohe DB-Zeitstempel an den Client geben,
+// Cooldown: verbleibende Sekunden über die DB-Uhr — gamePlayer() liefert
+// cooldown_elapsed (TIMESTAMPDIFF) bereits mit, die Formel liegt zentral in
+// cooldownRemainingSecs(). Nie rohe DB-Zeitstempel an den Client geben,
 // sonst rechnen drei Uhren (PHP/DB/Browser) gegeneinander.
-$myCooldownRemaining = 0;
-if ($myGP && $myRole && (int)$myRole['cooldown'] > 0 && !empty($myGP['cooldown_started_at'])) {
-    $row = Database::queryOne(
-        "SELECT TIMESTAMPDIFF(SECOND, cooldown_started_at, NOW()) AS elapsed
-         FROM game_players WHERE game_id=? AND player_id=?",
-        [$gameId, $player['id']]
-    );
-    if ($row && $row['elapsed'] !== null) {
-        $myCooldownRemaining = max(0, (int)$myRole['cooldown'] * 60 - (int)$row['elapsed']);
-    }
-}
+$myCooldownRemaining = ($myGP && $myRole)
+    ? cooldownRemainingSecs((int)$myRole['cooldown'], $myGP['cooldown_elapsed'] ?? null)
+    : 0;
 
 // Rollenkarte automatisch beim Laden zeigen (Spieler-Einstellung, Standard aus) —
 // serverseitig direkt als "offen" rendern, damit beim erneuten Einloggen/Neuladen
@@ -909,14 +902,13 @@ gamePoll.start();
 
 // Startseite = Rollenkarte: Overlay ist bei aktiver Einstellung bereits serverseitig
 // als "offen" gerendert (kein Aufblitzen des Spielfensters) — hier nur die
-// Funken-Animation nachträglich anstoßen. Maßgeblich ist der tatsächliche
-// Overlay-Zustand aus der DB-Einstellung, nicht der localStorage-Spiegel
-// (der kann nach Gerätewechsel/Löschung veraltet sein).
+// Funken-Animation über openRoleCard() nachträglich anstoßen (classList.add
+// auf offenem Overlay ist ein No-op, der Funken-Start existiert nur dort).
+// Maßgeblich ist der tatsächliche Overlay-Zustand aus der DB-Einstellung,
+// nicht der localStorage-Spiegel (kann nach Gerätewechsel veraltet sein).
 (function() {
   const overlay = document.getElementById('role-card-overlay');
-  if (!overlay || !overlay.classList.contains('open')) return;
-  const wrap = document.getElementById('role-fx-modal');
-  if (wrap) _modalSparkTimer = setInterval(() => _spawnSpark(wrap), 180);
+  if (overlay && overlay.classList.contains('open')) openRoleCard();
 })();
 
 function openRoleCard() {

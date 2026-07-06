@@ -293,7 +293,7 @@ CREATE TABLE settings (
 
 INSERT INTO settings (`key`, value, type, label, description, sort_order) VALUES
 ('app_name',           'Werwolf',                          'string', 'Spielname',              'Anzeigename der App — überall sichtbar.',                         10),
-('app_version',        '0.0.18',                          'string', 'Versionsnummer',          'Anzeigeversion z. B. in Fußzeile oder About-Seite.',             15),
+('app_version',        '0.0.19',                          'string', 'Versionsnummer',          'Anzeigeversion z. B. in Fußzeile oder About-Seite.',             15),
 ('beta_mode',          '1',                               'bool',   'Beta-Modus',              'Zeigt einen Beta-Hinweis im Spielfenster an.',                    16),
 ('app_debug',          '1',                               'bool',   'Debug-Modus',             'PHP-Fehler anzeigen. Im Produktivbetrieb auf 0 setzen.',          20),
 ('default_theme',      'gothic',                          'string', 'Standard-Theme',          'Theme für neue Nutzer ohne gespeichertes Theme.',                30),

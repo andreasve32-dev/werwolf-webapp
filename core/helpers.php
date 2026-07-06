@@ -222,7 +222,8 @@ function gamePlayer(int $gameId, int $playerId): array|false {
     return Database::queryOne(
         "SELECT gp.*, p.username, p.display_name,
                 r.name AS role_name, r.icon_path AS role_icon_path,
-                r.cooldown AS role_cooldown, r.sichtbar AS role_sichtbar
+                r.cooldown AS role_cooldown, r.sichtbar AS role_sichtbar,
+                TIMESTAMPDIFF(SECOND, gp.cooldown_started_at, NOW()) AS cooldown_elapsed
          FROM game_players gp
          JOIN players p ON p.id = gp.player_id
          LEFT JOIN roles r ON r.id = gp.role_id
@@ -275,26 +276,43 @@ function recordDeath(int $gameId, int $playerId, int $round, string $phase, ?str
 /**
  * Wurde in der aktuellen Bürgerversammlung bereits jemand gehenkt?
  *
- * "Aktuell" = seit Beginn (scheduled_at) der zuletzt zustande gekommenen
- * Versammlung dieses Spiels. Die Kopplung an die Versammlung statt an die
- * Spielrunde (round steigt nur bei Nacht→Tag) erlaubt mehrere Versammlungen
- * mit je max. einer Hinrichtung am selben Tag. Gab es noch keine Versammlung
- * oder liegt ihr Termin in der Zukunft, ist nichts gesperrt.
- * Der Zeitvergleich läuft komplett über die DB-Uhr (died_at vs. FROM_UNIXTIME).
+ * "Aktuell" = seit Beginn (scheduled_at) der zuletzt tatsächlich GESTARTETEN
+ * Versammlung dieses Spiels (scheduled_at <= jetzt). Die Kopplung an die
+ * Versammlung statt an die Spielrunde (round steigt nur bei Nacht→Tag)
+ * erlaubt mehrere Versammlungen mit je max. einer Hinrichtung am selben Tag.
+ *
+ * Wichtig: Nur gestartete Versammlungen zählen als Fenster-Referenz — eine
+ * einberufene, aber vor ihrem Termin wieder beendete Versammlung (Termin in
+ * der Zukunft) darf das Prüffenster nicht nach vorn verschieben, sonst wäre
+ * die Sperre per "Einberufen + sofort Beenden" aushebelbar. Gab es noch keine
+ * gestartete Versammlung, ist nichts gesperrt. Der Zeitvergleich läuft über
+ * die DB-Uhr (died_at vs. FROM_UNIXTIME); leeres Subquery ⇒ NULL ⇒ kein
+ * Treffer. Eine einzige Query, da die Prüfung im Dashboard-Poll läuft.
  */
 function hangedThisAssembly(int $gameId): bool {
-    $assembly = Database::queryOne(
-        "SELECT scheduled_at FROM assembly_requests
-         WHERE game_id=? AND scheduled_at IS NOT NULL
-         ORDER BY id DESC LIMIT 1",
-        [$gameId]
-    );
-    if (!$assembly) return false;
     return (bool)Database::queryOne(
-        "SELECT id FROM deaths
-         WHERE game_id=? AND is_gehenkt=1 AND died_at >= FROM_UNIXTIME(?) LIMIT 1",
-        [$gameId, (int)$assembly['scheduled_at']]
+        "SELECT d.id FROM deaths d
+         WHERE d.game_id=? AND d.is_gehenkt=1 AND d.died_at >= FROM_UNIXTIME((
+            SELECT ar.scheduled_at FROM assembly_requests ar
+            WHERE ar.game_id=? AND ar.scheduled_at IS NOT NULL AND ar.scheduled_at <= ?
+            ORDER BY ar.id DESC LIMIT 1
+         )) LIMIT 1",
+        [$gameId, $gameId, time()]
     );
+}
+
+/**
+ * Verbleibende Cooldown-Sekunden aus Cooldown-Minuten + bereits verstrichenen
+ * Sekunden (TIMESTAMPDIFF gegen die DB-Uhr). Einzige Stelle für diese Formel —
+ * Aufrufer vergleichen nie selbst Zeitstempel (drei-Uhren-Problem PHP/DB/Browser).
+ * Clamp auf [0, total]: ein negatives elapsed (DB-Uhr-Rücksprung, z.B. nach
+ * NTP-Korrektur) darf den Timer nie LÄNGER als den Rollen-Cooldown sperren.
+ * $elapsedSecs = null bedeutet "nie gestartet" → 0 verbleibend.
+ */
+function cooldownRemainingSecs(int $cooldownMins, int|string|null $elapsedSecs): int {
+    $total = $cooldownMins * 60;
+    if ($total <= 0 || $elapsedSecs === null) return 0;
+    return max(0, min($total, $total - (int)$elapsedSecs));
 }
 
 /**

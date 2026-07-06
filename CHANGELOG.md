@@ -4,6 +4,46 @@ Jedes Backup erhält eine fortlaufende Versionsnummer (v0.0.x).
 
 ---
 
+## [v0.0.19] — 2026-07-06
+
+Nachbesserung: Re-Review der v0.0.18-Fixes (sequenzieller 8-Winkel-Durchlauf,
+13 Kandidaten, 13 Verifier) fand 7 bestätigte/plausible Punkte — alle behoben.
+
+### Behoben
+- **Versammlungs-Sperre war aushebelbar.** `hangedThisAssembly()` nahm als
+  Prüffenster die zuletzt *terminierte* Versammlung — auch wenn sie vor ihrem
+  Beginn wieder beendet wurde (Termin in der Zukunft). Per „Einberufen + sofort
+  Beenden" ließ sich das Fenster nach vorn schieben und mit Rest-Stimmen ein
+  zweites Mal henken. Jetzt zählen nur tatsächlich **gestartete** Versammlungen
+  (`scheduled_at <= jetzt`) als Fenster-Referenz.
+- **Spiel-Reset während laufender Versammlung sperrte das neue Spiel.**
+  `reset_game` ließ `assembly_requests` stehen: die Alt-Versammlung lebte im
+  neuen Spiel weiter (keine neue einberufbar) und ihr altes `scheduled_at`
+  hätte nach der ersten Hinrichtung alle weiteren dauerhaft blockiert.
+  `assembly_requests` wird beim Reset jetzt mit abgeräumt.
+- **Icon-Caching erlosch nach der ersten Revalidierung.** Die
+  `expr==200`-Bedingung ließ auf 304-Not-Modified-Antworten die No-Cache-Header
+  der Root-.htaccess durch; Browser ersetzen bei 304 die gespeicherten Header
+  des Cache-Eintrags (RFC 9111 §3.2) — nach dem ersten max-age-Ablauf wäre das
+  Icon dauerhaft revalidiert worden (live per curl nachgewiesen). Die
+  Cache-Header gelten jetzt für Status 200 **und** 304.
+- **Cooldown: negativer Elapsed-Wert konnte den Timer überdehnen.** Bei einem
+  Rücksprung der DB-Server-Uhr (NTP-Stepping) wäre `remaining_secs` größer als
+  der Rollen-Cooldown geworden. Die Formel liegt jetzt zentral in
+  `cooldownRemainingSecs()` (core/helpers.php) und clampt auf `[0, total]`.
+
+### Geändert
+- **`gamePlayer()` liefert `cooldown_elapsed` mit** (TIMESTAMPDIFF in der
+  bestehenden Query) — die separate Zusatz-Query pro Spielfeld-Seitenaufbau
+  entfällt, und Seite + API nutzen dieselbe Formel über den neuen Helper.
+- **`hangedThisAssembly()` braucht nur noch eine Query** (Subquery statt zwei
+  Round-Trips) — relevant, weil die Prüfung im Dashboard-Poll läuft.
+- **Auto-Rollenkarte:** Der Funken-Bootstrap ruft jetzt `openRoleCard()` auf,
+  statt dessen zwei Start-Zeilen zu duplizieren (`classList.add` auf offenem
+  Overlay ist ein No-op).
+
+---
+
 ## [v0.0.18] — 2026-07-06
 
 Sammel-Release: alle 13 bestätigten Findings aus dem Code-Review v0.0.17 behoben.
