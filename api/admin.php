@@ -79,10 +79,36 @@ function checkAndEndGame(int $gameId): ?string {
 function ok($msg='OK',$extra=[]){ jsonOk($msg,$extra); }
 function err($msg,$code=400){ jsonError($msg,$code); }
 
+/**
+ * Rollen-Preset auf die roles-Tabelle anwenden (preset_apply + start_game).
+ * Rollen ohne Preset-Eintrag werden deaktiviert, damit das Preset die
+ * komplette Konfiguration beschreibt. Gibt den Preset-Namen zurück,
+ * bricht bei ungültigem/leerem Preset mit err() ab.
+ */
+function applyRolePresetOrFail(int $presetId): string {
+    $preset = Database::queryOne("SELECT id, name FROM role_presets WHERE id=?", [$presetId]);
+    if (!$preset) err('Preset nicht gefunden');
+    $items = Database::query("SELECT role_id, active, amount, fill FROM role_preset_items WHERE preset_id=?", [$presetId]);
+    if (!$items) err('Preset ist leer (alle darin gespeicherten Rollen wurden gelöscht)');
+    Database::execute("UPDATE roles SET active=0 WHERE id NOT IN (SELECT role_id FROM role_preset_items WHERE preset_id=?)", [$presetId]);
+    foreach ($items as $it) {
+        Database::execute(
+            "UPDATE roles SET active=?, amount=?, fill=? WHERE id=?",
+            [$it['active'], $it['amount'], $it['fill'], $it['role_id']]
+        );
+    }
+    return $preset['name'];
+}
+
 switch($action){
   case 'start_game':
     $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='lobby'",[$gameId]);
     if(!$g) err('Nicht in Lobby');
+
+    // Optional: Rollen-Preset direkt vor der Verteilung anwenden
+    $presetName = null;
+    $presetId = (int)($input['preset_id'] ?? 0);
+    if ($presetId) $presetName = applyRolePresetOrFail($presetId);
 
     // Spieler holen
     $ids = array_column(
@@ -139,6 +165,7 @@ switch($action){
     $msg = "▶ Spiel gestartet! {$specialCount} Sonderrollen + {$remaining} ";
     $msg .= $fillRole ? $fillRole['name'] : 'ohne Rolle';
     $msg .= " vergeben.";
+    if ($presetName !== null) $msg .= " (Preset „{$presetName}\" angewendet)";
     ok($msg);break;
 
   case 'switch_phase':
@@ -396,6 +423,55 @@ switch($action){
     $newActive = $r['active'] ? 0 : 1;
     Database::execute("UPDATE roles SET active=? WHERE id=?",[$newActive,$roleId]);
     ok('Status geändert', ['active' => $newActive]);break;
+
+  // ── Rollen-Presets (gespeicherte Rollensets) ──────────────────
+  case 'preset_save':
+    // Zwei Modi: preset_id gesetzt = vorhandenes Preset überschreiben (Name bleibt),
+    // sonst Neuanlage über name (Duplikat-Namen werden abgelehnt — zum
+    // Überschreiben wählt der Client das Preset explizit aus).
+    $presetId = (int)($input['preset_id'] ?? 0);
+    if ($presetId) {
+        $existing = Database::queryOne("SELECT id, name FROM role_presets WHERE id=?", [$presetId]);
+        if (!$existing) err('Preset nicht gefunden');
+        $name = $existing['name'];
+        Database::execute("DELETE FROM role_preset_items WHERE preset_id=?", [$presetId]);
+        Database::execute("UPDATE role_presets SET updated_at=NOW() WHERE id=?", [$presetId]);
+    } else {
+        $name = trim($input['name'] ?? '');
+        if ($name === '') err('Name erforderlich');
+        if (mb_strlen($name) > 50) err('Name: max. 50 Zeichen');
+        if (Database::queryOne("SELECT id FROM role_presets WHERE name=?", [$name]))
+            err('Preset „' . $name . '" existiert bereits — zum Überschreiben oben auswählen.');
+        $count = (int)(Database::queryOne("SELECT COUNT(*) AS cnt FROM role_presets")['cnt'] ?? 0);
+        if ($count >= 20) err('Maximal 20 Presets — bitte erst eines löschen.');
+        Database::execute("INSERT INTO role_presets (name) VALUES (?)", [$name]);
+        $presetId = Database::lastId();
+    }
+    foreach (allRoles() as $r) {
+        Database::execute(
+            "INSERT INTO role_preset_items (preset_id, role_id, active, amount, fill) VALUES (?,?,?,?,?)",
+            [$presetId, $r['id'], $r['active'], $r['amount'], $r['fill']]
+        );
+    }
+    ok('💾 Preset „' . $name . '" gespeichert', [
+        'preset_id' => $presetId,
+        'presets'   => Database::query("SELECT id, name FROM role_presets ORDER BY name"),
+    ]);break;
+
+  case 'preset_apply':
+    $presetName = applyRolePresetOrFail((int)($input['preset_id'] ?? 0));
+    require_once TEMPLATE_PATH . '/role_card.php';
+    $html = '';
+    foreach (allRoles() as $r) $html .= render_role_card($r);
+    ok('📥 Preset „' . $presetName . '" geladen', ['html' => $html]);break;
+
+  case 'preset_delete':
+    $presetId = (int)($input['preset_id'] ?? 0);
+    if (!Database::queryOne("SELECT id FROM role_presets WHERE id=?", [$presetId])) err('Preset nicht gefunden');
+    Database::execute("DELETE FROM role_presets WHERE id=?", [$presetId]);
+    ok('🗑️ Preset gelöscht', [
+        'presets' => Database::query("SELECT id, name FROM role_presets ORDER BY name"),
+    ]);break;
 
   case 'get_dashboard':
     require_once TEMPLATE_PATH . '/admin_dashboard_blocks.php';

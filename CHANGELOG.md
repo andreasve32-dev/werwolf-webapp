@@ -4,6 +4,35 @@ Jedes Backup erhält eine fortlaufende Versionsnummer (v0.0.x).
 
 ---
 
+## [v0.0.20] — 2026-07-06
+
+### Hinzugefügt
+- **Rollen-Presets** (`admin/roles.php`): Der aktuelle Zustand aller Rollen
+  (aktiv/inaktiv, Anzahl, Auffüll-Rolle) lässt sich als benanntes Set speichern
+  (z. B. „7 Spieler") und später mit einem Klick wieder anwenden — schneller
+  Wechsel zwischen Rollenkonfigurationen ohne einzelnes Umhaken. Max. 20 Presets.
+  Beim Speichern wählbar: neues Preset anlegen oder ein vorhandenes explizit
+  überschreiben (Name bleibt dabei erhalten; Neuanlage mit vergebenem Namen wird
+  abgelehnt). Beim Laden werden Rollen, die nach dem Speichern des Presets neu
+  angelegt wurden, deaktiviert — das Preset beschreibt immer die komplette
+  Konfiguration. Die Rollenliste aktualisiert sich nach dem Laden ohne Seitenreload.
+- **Spielstart mit Preset** (Admin-Dashboard): Neben „▶ Spiel starten" gibt es
+  in der Lobby eine Preset-Auswahl mit eigenem „▶ Mit Preset starten"-Button
+  (nur sichtbar, wenn Presets existieren) — das gewählte Set wird unmittelbar
+  vor der Rollenverteilung angewendet, die Erfolgsmeldung nennt das Preset.
+- Neue Tabellen `role_presets` + `role_preset_items` (Snapshot von
+  `active`/`amount`/`fill` pro Rolle, FK mit ON DELETE CASCADE — gelöschte
+  Rollen verschwinden automatisch aus allen Presets).
+- Neue API-Aktionen in `api/admin.php`: `preset_save`, `preset_apply`,
+  `preset_delete`; `start_game` akzeptiert optional `preset_id`. Die
+  Anwenden-Logik liegt zentral in `applyRolePresetOrFail()`.
+
+### DB-Änderungen (in frischem Schema enthalten)
+- `CREATE TABLE role_presets` + `CREATE TABLE role_preset_items`
+  (siehe `db/init.sql` für bestehende Installationen)
+
+---
+
 ## [v0.0.19] — 2026-07-06
 
 Nachbesserung: Re-Review der v0.0.18-Fixes (sequenzieller 8-Winkel-Durchlauf,

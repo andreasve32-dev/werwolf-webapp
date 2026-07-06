@@ -4,7 +4,8 @@ require_once dirname(__DIR__) . '/core/bootstrap.php';
 require_once TEMPLATE_PATH . '/role_card.php';
 Auth::requireAdmin();
 
-$roles = allRoles();
+$roles   = allRoles();
+$presets = Database::query("SELECT id, name FROM role_presets ORDER BY name");
 
 $page = ['title' => 'Rollen verwalten'];
 require TEMPLATE_PATH . '/base.php';
@@ -18,6 +19,46 @@ require TEMPLATE_PATH . '/base.php';
     <p class="page-header__sub">
       <a href="<?= APP_URL ?>/admin/">← zurück zur Spielleitung</a>
     </p>
+  </div>
+
+  <!-- Rollen-Presets -->
+  <div class="card animate-in mb-2">
+    <div class="section-title">🎛️ Rollen-Presets</div>
+    <p class="text-dim" style="font-size:.85rem;margin-bottom:1rem">
+      Speichert den aktuellen Zustand aller Rollen (aktiv/inaktiv, Anzahl, Auffüll-Rolle)
+      als benanntes Set — z.&nbsp;B. „7 Spieler". Beim Laden wird das Set komplett auf die
+      Rollen angewendet; Rollen, die nach dem Speichern neu dazukamen, werden dabei deaktiviert.
+    </p>
+
+    <div class="form-group">
+      <label class="form-label" for="preset-select">Preset laden</label>
+      <div class="flex gap-sm">
+        <select class="form-input" id="preset-select" style="flex:1">
+          <option value="">— Preset wählen —</option>
+          <?php foreach ($presets as $p): ?>
+          <option value="<?= (int)$p['id'] ?>"><?= e($p['name']) ?></option>
+          <?php endforeach; ?>
+        </select>
+        <button type="button" class="btn btn--primary" onclick="applyPreset()">📥 Laden</button>
+        <button type="button" class="btn" onclick="deletePreset()">🗑️</button>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:0">
+      <label class="form-label" for="preset-save-target">Aktuellen Zustand speichern</label>
+      <div class="flex gap-sm flex-wrap">
+        <select class="form-input" id="preset-save-target" style="flex:1;min-width:10rem"
+                onchange="onSaveTargetChange()">
+          <option value="">➕ Neues Preset anlegen…</option>
+          <?php foreach ($presets as $p): ?>
+          <option value="<?= (int)$p['id'] ?>">Überschreiben: <?= e($p['name']) ?></option>
+          <?php endforeach; ?>
+        </select>
+        <input class="form-input" type="text" id="preset-name" maxlength="50"
+               placeholder='Name, z.B. "7 Spieler"' style="flex:1;min-width:10rem">
+        <button type="button" class="btn btn--primary" onclick="savePreset()">💾 Speichern</button>
+      </div>
+    </div>
   </div>
 
   <!-- Neue Rolle erstellen -->
@@ -226,6 +267,84 @@ async function deleteRole(id,name){
     showToast('Gelöscht','success');
   }
   else showToast(r.error||'Fehler','error');
+}
+
+// ── Rollen-Presets ─────────────────────────────────────────────
+
+function _rebuildPresetSelects(presets, selectId) {
+  const sel = document.getElementById('preset-select');
+  sel.innerHTML = '<option value="">— Preset wählen —</option>' +
+    presets.map(p => `<option value="${p.id}">${escHtml(p.name)}</option>`).join('');
+  if (selectId) sel.value = String(selectId);
+  const saveSel = document.getElementById('preset-save-target');
+  saveSel.innerHTML = '<option value="">➕ Neues Preset anlegen…</option>' +
+    presets.map(p => `<option value="${p.id}">Überschreiben: ${escHtml(p.name)}</option>`).join('');
+  onSaveTargetChange();
+}
+
+function onSaveTargetChange(){
+  // Name-Feld nur bei Neuanlage — beim Überschreiben bleibt der Name erhalten
+  const isNew = !document.getElementById('preset-save-target').value;
+  const input = document.getElementById('preset-name');
+  input.style.display = isNew ? '' : 'none';
+  if (!isNew) input.value = '';
+}
+
+async function savePreset(){
+  const targetId = parseInt(document.getElementById('preset-save-target').value||'0', 10);
+  const input = document.getElementById('preset-name');
+  const payload = {action:'preset_save'};
+  if (targetId) {
+    const sel = document.getElementById('preset-save-target');
+    const label = sel.options[sel.selectedIndex].textContent.replace(/^Überschreiben: /,'');
+    if(!confirm(`Preset "${label}" mit dem aktuellen Rollen-Zustand überschreiben?`)) return;
+    payload.preset_id = targetId;
+  } else {
+    const name = input.value.trim();
+    if(!name){ showToast('Bitte einen Namen eingeben','error'); return; }
+    payload.name = name;
+  }
+  const r = await apiFetch(API_BASE+'/admin.php', payload);
+  if(r.error==='session_expired')return;
+  if(r.ok){
+    _rebuildPresetSelects(r.presets, r.preset_id);
+    input.value = '';
+    showToast(r.message||'Preset gespeichert','success');
+  } else showToast(r.error||'Fehler','error');
+}
+
+async function applyPreset(){
+  const sel = document.getElementById('preset-select');
+  const id = parseInt(sel.value, 10);
+  if(!id){ showToast('Bitte ein Preset wählen','error'); return; }
+  const name = sel.options[sel.selectedIndex].textContent;
+  if(!confirm(`Preset "${name}" laden? Aktiv/Anzahl/Auffüll-Rolle aller Rollen werden überschrieben.`)) return;
+  const r = await apiFetch(API_BASE+'/admin.php', {action:'preset_apply', preset_id:id});
+  if(r.error==='session_expired')return;
+  if(r.ok){
+    if (r.html !== undefined) {
+      const list = document.getElementById('roles-list');
+      list.innerHTML = r.html;
+      const count = list.querySelectorAll('.role-card').length;
+      const countEl = document.getElementById('roles-count');
+      if (countEl) countEl.textContent = String(count);
+    }
+    showToast(r.message||'Preset geladen','success');
+  } else showToast(r.error||'Fehler','error');
+}
+
+async function deletePreset(){
+  const sel = document.getElementById('preset-select');
+  const id = parseInt(sel.value, 10);
+  if(!id){ showToast('Bitte ein Preset wählen','error'); return; }
+  const name = sel.options[sel.selectedIndex].textContent;
+  if(!confirm(`Preset "${name}" wirklich löschen? Die Rollen selbst bleiben unverändert.`)) return;
+  const r = await apiFetch(API_BASE+'/admin.php', {action:'preset_delete', preset_id:id});
+  if(r.error==='session_expired')return;
+  if(r.ok){
+    _rebuildPresetSelects(r.presets);
+    showToast('Preset gelöscht','success');
+  } else showToast(r.error||'Fehler','error');
 }
 JS;
 require TEMPLATE_PATH . '/base_end.php';

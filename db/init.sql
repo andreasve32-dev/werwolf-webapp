@@ -45,6 +45,26 @@ CREATE TABLE IF NOT EXISTS roles (
   updated_at   TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
+-- Rollen-Presets: gespeicherte Rollensets (Snapshot von active/amount/fill)
+CREATE TABLE IF NOT EXISTS role_presets (
+  id         INT AUTO_INCREMENT PRIMARY KEY,
+  name       VARCHAR(50) NOT NULL UNIQUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS role_preset_items (
+  id        INT AUTO_INCREMENT PRIMARY KEY,
+  preset_id INT NOT NULL,
+  role_id   INT NOT NULL,
+  active    TINYINT(1) NOT NULL DEFAULT 1,
+  amount    INT        NOT NULL DEFAULT 1,
+  fill      TINYINT(1) NOT NULL DEFAULT 0,
+  FOREIGN KEY (preset_id) REFERENCES role_presets(id) ON DELETE CASCADE,
+  FOREIGN KEY (role_id)   REFERENCES roles(id)        ON DELETE CASCADE,
+  UNIQUE KEY uq_preset_role (preset_id, role_id)
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS games (
   id         INT AUTO_INCREMENT PRIMARY KEY,
   status     ENUM('lobby','running','finished') NOT NULL DEFAULT 'lobby',
@@ -330,7 +350,7 @@ INSERT IGNORE INTO games (id, status) VALUES (1, 'lobby');
 
 INSERT IGNORE INTO settings (`key`, value, type, label, description, sort_order) VALUES
 ('app_name',           'Werwolf',                                       'string', 'Spielname',                     'Anzeigename der App — überall sichtbar.',                              10),
-('app_version',        '0.0.19',                                        'string', 'Versionsnummer',                'Anzeigeversion z. B. in Fußzeile oder About-Seite.',                   15),
+('app_version',        '0.0.20',                                        'string', 'Versionsnummer',                'Anzeigeversion z. B. in Fußzeile oder About-Seite.',                   15),
 ('beta_mode',          '1',                                             'bool',   'Beta-Modus',                    'Zeigt einen Beta-Hinweis im Spielfenster an.',                         16),
 ('app_debug',          '1',                                             'bool',   'Debug-Modus',                   'PHP-Fehler anzeigen. Im Produktivbetrieb auf 0 setzen.',               20),
 ('default_theme',      'gothic',                                        'string', 'Standard-Theme',                'Theme für neue Nutzer ohne gespeichertes Theme.',                      30),

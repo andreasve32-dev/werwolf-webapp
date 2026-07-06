@@ -100,6 +100,12 @@ function admin_compute_state(int $gameId): array {
         );
     }
 
+    // Rollen-Presets für die Start-Auswahl (nur in der Lobby gebraucht)
+    $rolePresets = [];
+    if ($game['status'] === 'lobby') {
+        $rolePresets = Database::query("SELECT id, name FROM role_presets ORDER BY name");
+    }
+
     // Aktuelle Versammlungsanfrage (scheduled_at NULL = Antrag wartet auf zweiten Einberufer)
     $pendingAssembly = null;
     if ($game['status'] === 'running') {
@@ -120,7 +126,7 @@ function admin_compute_state(int $gameId): array {
         'game', 'gamePlayers', 'playerCount', 'available', 'votes', 'playerNames', 'alreadyHanged',
         'fillRole', 'specialRoles', 'specialCount', 'fillCount',
         'killerWin', 'citizenWin', 'dodoWin', 'aliveKillers', 'aliveNonKillers',
-        'debugRoles', 'adminGameEntry', 'pendingAssembly'
+        'debugRoles', 'adminGameEntry', 'pendingAssembly', 'rolePresets'
     );
 }
 }
@@ -207,6 +213,16 @@ function admin_render_game_controls(array $s): string {
         <?php if ($game['status']==='lobby'): ?>
           <button class="btn btn--primary" onclick="adminAction('start_game')">▶ Spiel starten</button>
           <button class="btn btn--ghost"   onclick="adminAction('reset_game')">🔄 Zurücksetzen</button>
+          <?php if (!empty($rolePresets)): ?>
+          <span class="flex gap-sm" style="flex-wrap:nowrap;align-items:stretch">
+            <select class="form-input" id="start-preset" style="width:auto;min-width:9rem">
+              <?php foreach ($rolePresets as $rp): ?>
+              <option value="<?= (int)$rp['id'] ?>"><?= e($rp['name']) ?></option>
+              <?php endforeach; ?>
+            </select>
+            <button class="btn btn--primary" onclick="startGameWithPreset()" style="white-space:nowrap">▶ Mit Preset starten</button>
+          </span>
+          <?php endif; ?>
         <?php elseif ($game['status']==='running'): ?>
           <button class="btn btn--ghost" onclick="adminAction('end_game')">🏁 Spiel beenden</button>
         <?php else: ?>

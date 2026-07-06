@@ -4,15 +4,6 @@
 ---
 💡 Neue Ideen & Features
 
-Rollen-Presets — Gespeicherte Rollensets für verschiedene Spielerzahlen (z.B. "7 Spieler"-Preset, "8 Spieler"-Preset).
-    Konkretisiert (04.07.2026): Admin stellt einmal ein, welche Rollen an/aus sind + wie oft jede
-    vorkommt (aktueller Zustand der roles-Tabelle: active, amount, fill), gibt dem Set einen Namen
-    und speichert es als Preset ab. Beim nächsten Spielstart kann er ein gespeichertes Preset
-    auswählen und es wird komplett auf die roles-Tabelle angewendet — damit schnell zwischen
-    verschiedenen Rollenkonfigurationen hin- und herwechseln, ohne jedes Mal alle Haken einzeln
-    neu zu setzen. Technisch vermutlich: neue Tabelle role_presets (Name) + role_preset_items
-    (preset_id, role_id, active, amount) oder ein JSON-Snapshot pro Preset; UI in admin/roles.php
-    ("Als Preset speichern" + Auswahl-Dropdown "Preset laden").
 Sheriff als bekannte Rolle — Permanent allen Spielern sichtbar; erhält nach jedem Kill zufällig einen garantierten Nicht-Killer angezeigt
 Detektiv überarbeitet — Nach X Kills (= Anzahl der Killer) bekommt Detektiv einen zufälligen Nicht-Killer angezeigt; Fähigkeit ist passiv, kein Cooldown
 Leichenfresser-Killer — Killt wie normal, aber Leichen können danach nicht vom Nekromant befragt werden und hinterlassen keine Orts-/Zeitspuren
@@ -51,6 +42,29 @@ Sprachnachrichten an den Spielleiter — Warum: einige Spieler schreiben nur ung
     anderen Bereichen (eigenes Formular + eigener Speichern-Button, siehe bestehendes Muster).
 ---
 ✅ Gelöst (06.07.2026)
+
+[Feature] Rollen-Presets — Gespeicherte Rollensets für verschiedene Spielerzahlen (→ v0.0.20)
+      → Umgesetzt wie am 04.07. konkretisiert: Karte "🎛️ Rollen-Presets" oben in
+        admin/roles.php — aktuellen Zustand aller Rollen (active, amount, fill) unter
+        einem Namen speichern (z.B. "7 Spieler"), per Dropdown laden oder löschen.
+        Speichern mit expliziter Auswahl: "➕ Neues Preset anlegen…" (Name-Feld) oder
+        "Überschreiben: <Name>" (Name bleibt, Rückfrage im Client; Neuanlage mit schon
+        vergebenem Namen wird serverseitig abgelehnt). Neue Tabellen role_presets +
+        role_preset_items (normalisiert statt JSON-Snapshot, FK ON DELETE CASCADE:
+        gelöschte Rollen fallen automatisch aus allen Presets). Neue API-Aktionen
+        preset_save/preset_apply/preset_delete in api/admin.php. Regeln: max. 20
+        Presets; beim Laden werden Rollen ohne Preset-Eintrag (nach dem Speichern neu
+        angelegt) deaktiviert, damit das Preset immer die komplette Konfiguration
+        beschreibt; leeres Preset (alle Rollen darin gelöscht) wird mit Fehlermeldung
+        abgelehnt. Rollenliste rendert sich nach dem Laden ohne Seitenreload neu
+        (Server liefert fertige role_card-HTML, wie bei role_update).
+        Zusätzlich Spielstart mit Preset: im Admin-Dashboard (Lobby) neben "▶ Spiel
+        starten" eine Preset-Auswahl + "▶ Mit Preset starten" (nur sichtbar wenn
+        Presets existieren) — start_game akzeptiert optional preset_id und wendet das
+        Set unmittelbar vor der Rollenverteilung an (zentrale Logik in
+        applyRolePresetOrFail(), von preset_apply mitgenutzt). E2E auf dem Live-Server
+        getestet: Anlegen/Überschreiben/Duplikat-Ablehnung, Start mit 21 Testspielern
+        (11 Sonderrollen + 10 Bürger, Preset-Name in der Meldung), reset + Aufräumen.
 
 [Review] Re-Review der v0.0.18-Fixes — 7 Findings behoben (→ v0.0.19)
       → Sequenzieller 8-Winkel-Durchlauf mit Einzel-Verifikation (13 Kandidaten,

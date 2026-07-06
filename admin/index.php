@@ -262,14 +262,22 @@ const dash = liveBlocks({
 });
 dash.start();
 
-async function adminAction(action){
-  const r=await apiFetch(API_BASE+'/admin.php',{action,game_id:GAME_ID});
+async function adminAction(action, extra={}){
+  const r=await apiFetch(API_BASE+'/admin.php',Object.assign({action,game_id:GAME_ID},extra));
   if(r.error==='session_expired')return;
   const el=document.getElementById('action-result');
   if(el) el.innerHTML=r.ok
     ?`<div class="alert alert--success">${r.message||'OK'}</div>`
     :`<div class="alert alert--error">${r.error||'Fehler'}</div>`;
   if(r.ok) dash.refreshNow();
+}
+function startGameWithPreset(){
+  const sel = document.getElementById('start-preset');
+  const id = parseInt(sel?.value||'0', 10);
+  if(!id){ showToast('Kein Preset gewählt','error'); return; }
+  const name = sel.options[sel.selectedIndex].textContent;
+  if(!confirm(`Spiel mit Preset "${name}" starten? Die Rollen-Konfiguration wird damit überschrieben.`)) return;
+  adminAction('start_game', {preset_id:id});
 }
 function _handleWinResponse(r, resultElId) {
   const el = document.getElementById(resultElId);
