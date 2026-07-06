@@ -57,7 +57,7 @@ CREATE TABLE roles (
   auto_eintrag TINYINT(1)  NOT NULL DEFAULT 0,    -- 1 = Ort+Zeit werden beim Sterben sofort automatisch eingetragen (Star)
   is_killer   TINYINT(1)   NOT NULL DEFAULT 0,    -- 1 = Killerteam (gewinnen wenn >= Überlebende Nicht-Killer)
   linked_death TINYINT(1)  NOT NULL DEFAULT 0,    -- 1 = stirbt ein Spieler dieser Rolle, sterben alle anderen lebenden Spieler derselben Rolle automatisch mit (Das Paar)
-  rollensicht TINYINT(1)   NOT NULL DEFAULT 0,    -- 1 = darf Spieler untersuchen und sieht deren Rolle dauerhaft (Hellseherin); Erkenntnisse in role_insights
+  rollensicht TINYINT(1)   NOT NULL DEFAULT 0,    -- 1 = darf Spieler untersuchen und sieht deren Rolle dauerhaft (Hellseherin) — Erkenntnisse in role_insights
   sort_order  INT          NOT NULL DEFAULT 0,
   created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
   updated_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
