@@ -925,6 +925,27 @@ function closeRoleCard() {
   clearInterval(_modalSparkTimer);
   _modalSparkTimer = null;
 }
+
+// ── Auto-Timeout zur Rollenkarte ──────────────────────────────
+// Einstellung ww_rolecard_timeout (Minuten, 0 = aus): nach X Minuten ohne
+// Eingabe (Touch/Klick/Taste/Scroll) öffnet sich automatisch die Rollenkarte —
+// Sichtschutz, wenn das Handy offen herumliegt. Reiner Anzeige-Timer ohne
+// Serverkontakt; jede Eingabe startet ihn neu.
+let _rcIdleTimer = null;
+function _restartRoleCardIdle() {
+  clearTimeout(_rcIdleTimer);
+  _rcIdleTimer = null;
+  const mins = parseInt(localStorage.getItem('ww_rolecard_timeout') || '0', 10);
+  if (!mins) return;
+  _rcIdleTimer = setTimeout(() => {
+    const el = document.getElementById('role-card-overlay');
+    if (el && !el.classList.contains('open')) openRoleCard();
+  }, mins * 60000);
+}
+window.restartRoleCardIdleTimer = _restartRoleCardIdle; // nav.php ruft das bei Einstellungs-Änderung auf
+['pointerdown','keydown','touchstart','scroll'].forEach(ev =>
+  document.addEventListener(ev, _restartRoleCardIdle, {passive:true}));
+_restartRoleCardIdle();
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { closeRoleCard(); closeAskModal(); closeInboxModal(); }
 });

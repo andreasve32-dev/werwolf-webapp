@@ -350,7 +350,7 @@ switch($action){
     $key = (string)($input['key'] ?? '');
     $val = (string)($input['value'] ?? '');
     $allowedKeys = [
-        'ww_atmosphere', 'ww_poll_interval', 'ww_auto_rolecard',
+        'ww_atmosphere', 'ww_poll_interval', 'ww_auto_rolecard', 'ww_rolecard_timeout',
         'ww_fx_particles', 'ww_fx_ripple', 'ww_fx_phase', 'ww_fx_skulls',
         'ww_fx_anims', 'ww_fx_fog', 'ww_fx_rolecard', 'ww_fx_rolename',
     ];

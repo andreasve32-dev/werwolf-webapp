@@ -4,6 +4,21 @@ Jedes Backup erhält eine fortlaufende Versionsnummer (v0.0.x).
 
 ---
 
+## [v0.0.22] — 2026-07-06
+
+### Hinzugefügt
+- **Auto-Timeout zur Rollenkarte:** Neue Spieler-Einstellung (Optionen →
+  🔒 Privatsphäre, Standard: aus): Nach 1/2/5/10 Minuten ohne Eingabe (Touch,
+  Klick, Taste, Scrollen) öffnet das Spielfenster automatisch die eigene
+  Rollenkarte — Sichtschutz, wenn das Handy offen herumliegt. Jede Eingabe
+  setzt den Timer zurück; Änderung der Einstellung greift sofort ohne Reload.
+  Reiner Anzeige-Timer ohne Serverkontakt. Neuer Settings-Key
+  `ww_rolecard_timeout` (Allowlist in `api/game.php`, geräteübergreifend
+  gespeichert wie alle Spieler-Einstellungen). In der Spieler-Anleitung
+  dokumentiert.
+
+---
+
 ## [v0.0.21] — 2026-07-06
 
 ### Hinzugefügt

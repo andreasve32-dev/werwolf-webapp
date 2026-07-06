@@ -36,7 +36,6 @@ Auftragskiller — Bekommt zufälliges Ziel zugewiesen; nach Kill neues Ziel (5 
 Schläfer/Verräter-Rolle — Killer der nach X Stunden die Seite wechselt; alle anderen Killer werden vorab gewarnt: "Einer von euch ist ein Verräter" (verzögerter Switch)
 Hellseherin: permanente Rollensicht — Kann dauerhaft die Rolle eines untersuchten Spielers einsehen statt Einmal-Cooldown
 Detektiv: Leichen befragen — Bekommt von der Leiche einen Spieler genannt, der definitiv nicht der Killer war
-Auto-Timeout zur Rollenkarte — Nach X Minuten Inaktivität automatisch zurück zur Rollenkarte
 Zombie-Spielmodus — Alternativer Modus: Alle starten als Söldner, nach 1–5h zufälliger Zombie-Start, Infizierte bekehren weitere Spieler
 Günslinger: Weiter schießen nach Killer-Treffer — Wenn Günslinger einen Killer erwischt, darf er weiter schießen
 Sprachnachrichten an den Spielleiter — Warum: einige Spieler schreiben nur ungern lange Texte
@@ -66,6 +65,19 @@ Sprachnachrichten an den Spielleiter — Warum: einige Spieler schreiben nur ung
     anderen Bereichen (eigenes Formular + eigener Speichern-Button, siehe bestehendes Muster).
 ---
 ✅ Gelöst (06.07.2026)
+
+[Feature] Auto-Timeout zur Rollenkarte — nach X Minuten ohne Eingabe (→ v0.0.22)
+      → Neue Spieler-Einstellung "Auto-Timeout zur Rollenkarte" (Optionen →
+        🔒 Privatsphäre, Standard: aus; Auswahl 1/2/5/10 Minuten). Im Spielfenster
+        läuft ein reiner Client-Timer (kein Serverkontakt): nach X Minuten ohne
+        Eingabe (pointerdown/keydown/touchstart/scroll) öffnet sich automatisch die
+        Rollenkarte als Sichtschutz — wie vom Nutzer gewünscht ausdrücklich an
+        "keine Eingabe" gebunden, nicht an Seiten-Sichtbarkeit. Jede Eingabe startet
+        den Timer neu; ist die Karte bereits offen, passiert nichts. Einstellungs-
+        Änderung greift sofort (nav.php ruft window.restartRoleCardIdleTimer() auf).
+        Neuer Settings-Key ww_rolecard_timeout in der Allowlist von api/game.php,
+        localStorage-Spiegel + DB-Sync wie alle Spieler-Einstellungen. Doku in
+        docs/spieler.php ergänzt. Kein DB-Schema-Update nötig (players.settings JSON).
 
 [Feature] Cooldown-Platzhalter in Beschreibungen — {cooldown} in Rollentexten (→ v0.0.21)
       → In description/rules einer Rolle ersetzt die Anzeige {cooldown} automatisch

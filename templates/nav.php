@@ -105,6 +105,21 @@ $player      = Auth::player();
         <span class="toggle-switch__track"></span>
       </label>
     </div>
+    <div class="settings-row">
+      <div>
+        <span class="settings-row__name">Auto-Timeout zur Rollenkarte</span>
+        <div class="text-dim text-xs" style="margin-top:.15rem">Zeigt im Spielfenster automatisch deine Rollenkarte, wenn du so lange nichts eingegeben hast — schützt vor neugierigen Blicken, wenn das Handy herumliegt.</div>
+      </div>
+      <div class="settings-row__ctrl">
+        <select id="set-rolecard-timeout" class="form-input" style="width:auto" onchange="settingRolecardTimeout(this.value)">
+          <option value="0">Aus</option>
+          <option value="1">1 Minute</option>
+          <option value="2">2 Minuten</option>
+          <option value="5">5 Minuten</option>
+          <option value="10">10 Minuten</option>
+        </select>
+      </div>
+    </div>
   </div>
 
   <!-- Effekte -->
@@ -411,6 +426,10 @@ function openSettingsSheet() {
   const arcEl = document.getElementById('set-auto-rolecard');
   if (arcEl) { arcEl.checked = localStorage.getItem('ww_auto_rolecard') === '1'; }
 
+  // Auto-Timeout zur Rollenkarte (Standard: aus)
+  const rctEl = document.getElementById('set-rolecard-timeout');
+  if (rctEl) { rctEl.value = localStorage.getItem('ww_rolecard_timeout') || '0'; }
+
   // Ladeintervall
   const pollEl = document.getElementById('set-poll-interval');
   if (pollEl) { pollEl.value = localStorage.getItem('ww_poll_interval') || '6000'; }
@@ -463,6 +482,14 @@ function toggleDayNight(on) {
 function toggleAutoRoleCard(on) {
   localStorage.setItem('ww_auto_rolecard', on ? '1' : '0');
   saveSetting('ww_auto_rolecard', on ? '1' : '0');
+}
+
+// ── Auto-Timeout zur Rollenkarte ──────────────────────────────
+function settingRolecardTimeout(val) {
+  localStorage.setItem('ww_rolecard_timeout', String(val));
+  saveSetting('ww_rolecard_timeout', val);
+  // Läuft der Timer gerade auf dem Spielfenster: sofort mit neuem Wert neu starten
+  if (typeof window.restartRoleCardIdleTimer === 'function') window.restartRoleCardIdleTimer();
 }
 
 // ── Ladeintervall ändern & speichern ─────────────────────────
