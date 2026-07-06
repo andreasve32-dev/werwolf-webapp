@@ -114,11 +114,46 @@ require TEMPLATE_PATH . '/base.php';
       Unter <strong>Admin → Rollen</strong> stellst du ein, welche Rollen ins Spiel kommen
       und wie viele Exemplare davon. Die Anzahl der aktiven Rollen muss zur Spieleranzahl passen.
       Der <em>Bürger</em> ist die Auffüll-Rolle — er wird automatisch vergeben, bis alle Plätze
-      besetzt sind. Pro Rolle gibt es Eigenschafts-Häkchen, z.&nbsp;B.
-      <em>„Sichtbar untereinander"</em> (gleiche Rollen erkennen sich, etwa die Mörder) und
-      <em>„🔪👁 Gegenseitig sichtbar mit Killern"</em> (Rolle und Mörder sehen sich gegenseitig
-      in der Spielerliste — gedacht z.&nbsp;B. für den Dodo).
+      besetzt sind. Pro Rolle gibt es Eigenschafts-Häkchen (Flags), die das Spielverhalten steuern:
     </p>
+    <table style="width:100%;border-collapse:collapse;font-size:.87rem;margin-top:.5rem">
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.5rem .25rem;color:var(--text);font-weight:600;white-space:nowrap">Aktiv</td>
+        <td style="padding:.5rem .25rem;color:var(--text-dim)">Rolle steht im Spiel zur Verfügung. Deaktivierte Rollen bleiben gespeichert, werden aber nicht verteilt.</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.5rem .25rem;color:var(--text);font-weight:600;white-space:nowrap">Auffüll-Rolle</td>
+        <td style="padding:.5rem .25rem;color:var(--text-dim)">Spieler ohne Sonderrolle bekommen automatisch diese Rolle (z.&nbsp;B. Bürger). Das Feld „Anzahl" wird dabei ignoriert.</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.5rem .25rem;color:var(--text);font-weight:600;white-space:nowrap">👁️ Sichtbar untereinander</td>
+        <td style="padding:.5rem .25rem;color:var(--text-dim)">Spieler mit derselben Rolle erkennen sich gegenseitig in der Spielerliste (z.&nbsp;B. die Mörder).</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.5rem .25rem;color:var(--text);font-weight:600;white-space:nowrap">🔪👁 Sichtbar mit Killern</td>
+        <td style="padding:.5rem .25rem;color:var(--text-dim)">Rolle und Killer-Team sehen sich gegenseitig — gedacht z.&nbsp;B. für den Dodo.</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.5rem .25rem;color:var(--text);font-weight:600;white-space:nowrap">🔍 Darf Tote befragen</td>
+        <td style="padding:.5rem .25rem;color:var(--text-dim)">Lebt ein Spieler mit diesem Flag (z.&nbsp;B. Nekromant), können Tote ihre Rolle, Ort und Zeit selbst in die Todesliste eintragen — danach für alle sichtbar.</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.5rem .25rem;color:var(--text);font-weight:600;white-space:nowrap">⭐ Star</td>
+        <td style="padding:.5rem .25rem;color:var(--text-dim)">Ort &amp; Zeit werden beim Sterben sofort automatisch eingetragen und aufgedeckt — unabhängig vom Nekromanten.</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.5rem .25rem;color:var(--text);font-weight:600;white-space:nowrap">🔪 Killer-Team</td>
+        <td style="padding:.5rem .25rem;color:var(--text-dim)">Zählt zur Killer-Seite. Die Killer gewinnen, sobald sie zahlenmäßig die verbliebenen Nicht-Killer erreichen; die Bürger gewinnen, wenn alle Killer tot sind.</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.5rem .25rem;color:var(--text);font-weight:600;white-space:nowrap">💔 Gemeinsamer Tod</td>
+        <td style="padding:.5rem .25rem;color:var(--text-dim)">Stirbt ein Spieler dieser Rolle, sterben automatisch alle anderen lebenden Spieler derselben Rolle mit („Vor Kummer gestorben", z.&nbsp;B. Das Paar).</td>
+      </tr>
+      <tr>
+        <td style="padding:.5rem .25rem;color:var(--text);font-weight:600;white-space:nowrap">🔮 Rollensicht</td>
+        <td style="padding:.5rem .25rem;color:var(--text-dim)">Der Fähigkeit-Button fragt zuerst „Wen hast du untersucht?" — die Rolle des gewählten Spielers bleibt danach dauerhaft in der Spielerliste sichtbar (z.&nbsp;B. Hellseherin). Braucht einen Cooldown-Wert &gt; 0, sonst erscheint der Button nicht. Untersuchungen fließen in die Statistik ein.</td>
+      </tr>
+    </table>
     <p>
       <strong>Tipp — Platzhalter <code>{cooldown}</code>:</strong> Schreibst du in der
       Beschreibung oder den Regeln einer Rolle <code>{cooldown}</code>, wird an allen
