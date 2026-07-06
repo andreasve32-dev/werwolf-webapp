@@ -4,6 +4,31 @@
 ---
 💡 Neue Ideen & Features
 
+Zweisprachigkeit Deutsch/Englisch — Umschalter in den Spieler-Einstellungen
+    Konkretisiert (06.07.2026): Kompletter Umfang (Spieler-Seiten + Admin-Bereich + docs/-
+    Anleitungen + API-Meldungen + Push-Nachrichten). Zeitpunkt: erst angehen, wenn die
+    anderen offenen Features erledigt sind — großes Projekt, mehrere Sessions.
+    Ansatz (abgestimmt): Sprachdateien lang/de.php + lang/en.php (PHP-Arrays key => text)
+    mit zentralem Helper t('key') in core/helpers.php; Sprache kommt aus neuer Spieler-
+    Einstellung ww_lang (Allowlist in api/game.php, localStorage-Spiegel wie üblich,
+    Default: de). Etappen-Plan:
+    1. Infrastruktur: lang/-Dateien, t()-Helper, ww_lang-Setting + Umschalter im
+       Einstellungs-Sheet (templates/nav.php) — klein, ca. 1-2h
+    2. Spieler-Seiten: app/*, templates/nav.php, game-Blocks, Todesliste, Rollen-Galerie,
+       FAQ, Statistik + zugehörige JS-Toasts/Confirms — größter Brocken, hunderte Strings
+    3. DB-Inhalte: Rollen (name/description/rules), Dorf-Sprüche, Settings-Texte
+       (login_title, deaths_empty_* etc.) brauchen je eine zweite Sprach-Spalte
+       (z.B. description_en) + doppelte Eingabefelder in der Admin-UI; Anzeige wählt
+       nach ww_lang mit Fallback auf Deutsch. Betreiber muss Inhalte selbst zweisprachig
+       pflegen (auch künftig bei neuen Rollen/Sprüchen!)
+    4. API-Meldungen + Push: jsonOk/err-Texte und WebPush-Titel/Bodies über t()-Keys;
+       Achtung: Push geht an alle Spieler — Sprache pro Empfänger auflösen, nicht pro
+       Auslöser. Logik-Texte wie "Vor Kummer gestorben" (recordDeath) mit übersetzen
+    5. Admin-Bereich komplett + docs/spieler.php und docs/admin.php als Volltext-
+       Übersetzung (reine Fleißarbeit)
+    Risiken: hohes Regressionsrisiko weil praktisch jede Datei angefasst wird —
+    etappenweise committen + nach jeder Etappe Live-Smoke-Test; {cooldown}-Platzhalter
+    (roleText) muss in beiden Sprachvarianten der Rollentexte funktionieren.
 Sheriff als bekannte Rolle — Permanent allen Spielern sichtbar; erhält nach jedem Kill zufällig einen garantierten Nicht-Killer angezeigt
 Detektiv überarbeitet — Nach X Kills (= Anzahl der Killer) bekommt Detektiv einen zufälligen Nicht-Killer angezeigt; Fähigkeit ist passiv, kein Cooldown
 Leichenfresser-Killer — Killt wie normal, aber Leichen können danach nicht vom Nekromant befragt werden und hinterlassen keine Orts-/Zeitspuren
