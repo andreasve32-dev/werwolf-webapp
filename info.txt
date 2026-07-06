@@ -67,11 +67,12 @@ Sprachnachrichten an den Spielleiter — Warum: einige Spieler schreiben nur ung
 
 [Feature] Hellseherin: permanente Rollensicht — untersuchte Rollen dauerhaft sichtbar (→ v0.0.23)
       → Neues Rollen-Flag rollensicht (per Checkbox in der Rollen-Verwaltung für jede
-        Rolle aktivierbar, Hellseherin = Standard). Ablauf im Spiel: Fähigkeit-Button
-        heißt "🔮 Spieler untersuchen", öffnet ein Auswahlfenster der lebenden
-        Mitspieler ("Wen hast du untersucht?" — Ehrlichkeitsprinzip wie beim
-        Mörder-Kill), speichert die Erkenntnis und zeigt die Ziel-Rolle sofort als
-        Toast; danach startet der normale Cooldown. Die Rolle bleibt ab dann
+        Rolle aktivierbar, Hellseherin = Standard). Ablauf im Spiel: untersuchten
+        Spieler im Dorfbewohner-Block antippen (gleiche Bedienung wie beim Anklagen,
+        auf Nutzerwunsch in v0.0.24 vom anfänglichen Auswahl-Popup darauf umgestellt),
+        dann Button "🔮 Spieler untersuchen" drücken (Bestätigungs-Abfrage mit Namen;
+        Ehrlichkeitsprinzip wie beim Mörder-Kill) — speichert die Erkenntnis und zeigt
+        die Ziel-Rolle sofort als Toast; danach startet der normale Cooldown. Die Rolle bleibt ab dann
         dauerhaft in der Spielerliste sichtbar — serverseitig entschieden
         (get_players Regel e), nicht per DevTools austricksbar.
         Neue generalisierte Tabelle role_insights (game_id, viewer_player_id,

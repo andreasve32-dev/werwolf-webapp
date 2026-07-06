@@ -212,7 +212,7 @@ require TEMPLATE_PATH . '/base.php';
                 </div>
                 <div class="text-xs text-dim text-center mt-1" style="opacity:.55">
                   <?= !empty($myRole['rollensicht'])
-                      ? 'Trage nach jeder Untersuchung ein, wen du untersucht hast — die Rolle bleibt dauerhaft für dich sichtbar.'
+                      ? 'Wähle im Dorfbewohner-Block den Spieler aus, den du untersucht hast, und drücke dann den Button — seine Rolle bleibt dauerhaft für dich sichtbar.'
                       : 'Drücke den Button sobald du deine Fähigkeit eingesetzt hast.' ?>
                 </div>
               </div>
@@ -1167,37 +1167,22 @@ const CD_BTN_LABEL = MY_ROLLENSICHT
   };
 })();
 
-// Rollensicht: vor dem Cooldown-Start das Untersuchungs-Ziel wählen
-function openInsightPicker() {
-  const players = (window._lastPlayers || []).filter(p => p.is_alive && p.player_id != PLAYER_ID);
-  if (!players.length) { showToast('Keine lebenden Spieler zum Untersuchen', 'error'); return; }
-  let ov = document.getElementById('insight-picker');
-  if (!ov) {
-    ov = document.createElement('div');
-    ov.id = 'insight-picker';
-    ov.style.cssText = 'position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:1rem';
-    ov.addEventListener('click', e => { if (e.target === ov) closeInsightPicker(); });
-    document.body.appendChild(ov);
-  }
-  ov.innerHTML = `<div class="card" style="max-width:420px;width:100%;max-height:70vh;overflow-y:auto">
-    <div class="section-title">🔮 Wen hast du untersucht?</div>
-    <p class="text-dim text-sm" style="margin-bottom:.75rem">Die Rolle des gewählten Spielers bleibt dauerhaft für dich sichtbar. Dein Cooldown startet.</p>
-    <div style="display:flex;flex-direction:column;gap:.4rem">
-      ${players.map(p => `<button class="btn btn--ghost" style="justify-content:flex-start" onclick="pickInsightTarget(${p.player_id})">👤 ${escHtml(p.display_name)}</button>`).join('')}
-    </div>
-    <button class="btn btn--full mt-2" onclick="closeInsightPicker()">Abbrechen</button>
-  </div>`;
-}
-function closeInsightPicker() { document.getElementById('insight-picker')?.remove(); }
-function pickInsightTarget(pid) {
-  closeInsightPicker();
-  _doStartCooldown(pid);
-}
-
 function startCooldown() {
   const btn = document.getElementById('cd-btn');
   if (!btn || btn.disabled) return;
-  if (MY_ROLLENSICHT) { openInsightPicker(); return; }
+  if (MY_ROLLENSICHT) {
+    // Rollensicht: Ziel kommt aus der Auswahl im Dorfbewohner-Block —
+    // gleiche Bedienung wie beim Anklagen (Spieler antippen, dann Aktion)
+    if (!selectedTarget) {
+      showToast('Wähle zuerst im Dorfbewohner-Block aus, wen du untersucht hast.', 'error', 5000);
+      return;
+    }
+    const p = (window._lastPlayers || []).find(x => x.player_id == selectedTarget);
+    const name = p ? p.display_name : 'diesen Spieler';
+    if (!confirm(`"${name}" als untersucht eintragen? Seine Rolle bleibt danach dauerhaft für dich sichtbar und dein Cooldown startet.`)) return;
+    _doStartCooldown(selectedTarget);
+    return;
+  }
   _doStartCooldown(null);
 }
 

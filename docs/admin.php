@@ -151,7 +151,7 @@ require TEMPLATE_PATH . '/base.php';
       </tr>
       <tr>
         <td style="padding:.5rem .25rem;color:var(--text);font-weight:600;white-space:nowrap">🔮 Rollensicht</td>
-        <td style="padding:.5rem .25rem;color:var(--text-dim)">Der Fähigkeit-Button fragt zuerst „Wen hast du untersucht?" — die Rolle des gewählten Spielers bleibt danach dauerhaft in der Spielerliste sichtbar (z.&nbsp;B. Hellseherin). Braucht einen Cooldown-Wert &gt; 0, sonst erscheint der Button nicht. Untersuchungen fließen in die Statistik ein.</td>
+        <td style="padding:.5rem .25rem;color:var(--text-dim)">Der Spieler wählt den Untersuchten im Dorfbewohner-Block aus (wie beim Anklagen) und drückt dann den Fähigkeit-Button — die Rolle bleibt danach dauerhaft in der Spielerliste sichtbar (z.&nbsp;B. Hellseherin). Braucht einen Cooldown-Wert &gt; 0, sonst erscheint der Button nicht. Untersuchungen fließen in die Statistik ein.</td>
       </tr>
     </table>
     <p>

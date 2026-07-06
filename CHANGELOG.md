@@ -4,6 +4,18 @@ Jedes Backup erhält eine fortlaufende Versionsnummer (v0.0.x).
 
 ---
 
+## [v0.0.24] — 2026-07-06
+
+### Geändert
+- **Rollensicht: Ziel-Auswahl wie beim Anklagen.** Statt eines eigenen
+  Auswahl-Popups wählt die Hellseherin den untersuchten Spieler jetzt direkt
+  im Dorfbewohner-Block aus (Spielerkarte antippen — dieselbe Bedienung wie
+  bei der Anklage) und drückt dann „🔮 Spieler untersuchen". Ohne Auswahl
+  erscheint ein Hinweis; vor dem Eintragen kommt eine Bestätigung mit dem
+  Spielernamen. Hinweistext unter dem Button entsprechend angepasst.
+
+---
+
 ## [v0.0.23] — 2026-07-06
 
 ### Hinzugefügt
