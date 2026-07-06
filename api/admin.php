@@ -157,21 +157,33 @@ switch($action){
   case 'execute_vote':
     $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='running'",[$gameId]);
     if(!$g)err('Spiel läuft nicht');
-    $alreadyHanged=Database::queryOne("SELECT id FROM deaths WHERE game_id=? AND round=? AND is_gehenkt=1",[$gameId,$g['round']]);
-    if($alreadyHanged)err('In dieser Bürgerversammlung wurde bereits jemand gehenkt.');
+    // Kritischen Abschnitt (Guards + recordDeath) atomar halten: zwei parallele
+    // execute_vote-Requests dürfen nicht beide henken. Bei err()/exit schließt
+    // PHP die DB-Verbindung und MySQL gibt den Lock automatisch frei.
+    $hangLock="ww_hang_{$gameId}";
+    $gotLock=Database::queryOne("SELECT GET_LOCK(?,3) AS ok",[$hangLock]);
+    if(empty($gotLock['ok']))err('Eine Hinrichtung wird gerade verarbeitet — bitte kurz warten.');
+    if(hangedThisAssembly($gameId))err('In dieser Bürgerversammlung wurde bereits jemand gehenkt.');
+    // Top-Angeklagten deterministisch bestimmen (bei Stimmengleichstand die
+    // kleinere Spieler-ID — dieselbe Sortierung wie im Dashboard-Voting-Block)
+    $top=Database::queryOne("SELECT target_id,COUNT(*) as cnt FROM votes WHERE game_id=? AND round=? GROUP BY target_id ORDER BY cnt DESC, target_id ASC LIMIT 1",[$gameId,$g['round']]);
+    if(!$top)err('Keine Stimmen');
+    $topId=(int)$top['target_id'];
+    $cnt=(int)$top['cnt'];
+    // Ein mitgeschickter player_id darf die Stimmenmehrheit nicht umgehen —
+    // gehenkt wird immer nur der Angeklagte mit den meisten Stimmen.
     $pid=(int)($input['player_id']??0);
-    if(!$pid){
-      $top=Database::queryOne("SELECT target_id,COUNT(*) as cnt FROM votes WHERE game_id=? AND round=? GROUP BY target_id ORDER BY cnt DESC LIMIT 1",[$gameId,$g['round']]);
-      if(!$top)err('Keine Stimmen');
-      $pid=$top['target_id'];
-      $cnt=(int)$top['cnt'];
-    } else {
-      $cntRow=Database::queryOne("SELECT COUNT(*) as cnt FROM votes WHERE game_id=? AND round=? AND target_id=?",[$gameId,$g['round'],$pid]);
-      $cnt=(int)($cntRow['cnt']??0);
-    }
+    if($pid && $pid!==$topId)err('Nur der Angeklagte mit den meisten Stimmen kann gehenkt werden.');
+    $pid=$topId;
     if($cnt<MIN_VOTES_TO_HANG)err("Mindestens ".MIN_VOTES_TO_HANG." Spieler müssen für eine Hinrichtung stimmen (aktuell: {$cnt}).");
+    // Ziel muss lebend im Spiel sein — sonst gäbe es eine "Phantom-Hinrichtung"
+    // (recordDeath macht bei Toten nichts, aber Stimmen/Push liefen trotzdem)
+    $target=Database::queryOne("SELECT is_alive FROM game_players WHERE game_id=? AND player_id=?",[$gameId,$pid]);
+    if(!$target)err('Der Angeklagte ist nicht (mehr) im Spiel.');
+    if(!$target['is_alive'])err('Der Angeklagte ist bereits tot.');
     recordDeath($gameId,$pid,$g['round'],'day',null,true);
     Database::execute("DELETE FROM votes WHERE game_id=? AND round=?",[$gameId,$g['round']]);
+    Database::queryOne("SELECT RELEASE_LOCK(?) AS ok",[$hangLock]);
     $n=Database::queryOne("SELECT display_name FROM players WHERE id=?",[$pid]);
     $winner = checkAndEndGame($gameId);
     if (!$winner) WebPush::sendToGame($gameId,true,'⚖️ Hinrichtung!',($n['display_name']??'Jemand').' wurde vom Dorf gehenkt.');

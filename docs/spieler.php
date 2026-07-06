@@ -176,9 +176,7 @@ require TEMPLATE_PATH . '/base.php';
     <div class="role-grid">
       <?php foreach ($allRoles as $r):
         $active  = (bool)$r['active'];
-        $iconUrl = !empty($r['icon_path'])
-            ? APP_URL . '/' . ltrim($r['icon_path'], '/')
-            : APP_URL . '/' . DEFAULT_ROLE_ICON;
+        $iconUrl = roleIconUrl($r); // inkl. ?v=-Cache-Busting (filemtime)
       ?>
       <div class="role-card<?= $active ? '' : ' role-card--inactive' ?>">
         <?php if (!$active): ?>

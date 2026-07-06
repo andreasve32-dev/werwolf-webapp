@@ -4,6 +4,62 @@ Jedes Backup erhält eine fortlaufende Versionsnummer (v0.0.x).
 
 ---
 
+## [v0.0.18] — 2026-07-06
+
+Sammel-Release: alle 13 bestätigten Findings aus dem Code-Review v0.0.17 behoben.
+
+### Behoben
+- **Cooldown: Zeitzonen-Regression aus v0.0.15.** `start_cooldown` etikettierte den
+  DB-`NOW()`-String mit `GAME_TIMEZONE`, obwohl der MariaDB-Container auf UTC läuft —
+  der Timer startete dadurch 2 h in der Vergangenheit und war sofort abgelaufen.
+  Grundsätzlicher Umbau: Server überträgt nur noch **verbleibende Sekunden**
+  (`remaining_secs`, berechnet per `TIMESTAMPDIFF` komplett auf der DB-Uhr), der
+  Client zählt lokal herunter — keine Zeitstempel-Vergleiche zwischen PHP-, DB- und
+  Browser-Uhr mehr (`api/game.php`, `app/game.php`). Auch der Reload-Pfad injiziert
+  keinen rohen MySQL-Zeitstempel mehr ins JS, und der Server-Guard rechnet nicht
+  mehr PHP-`time()` gegen den DB-String. Läuft der Cooldown serverseitig noch
+  (z. B. auf zweitem Gerät gestartet), synchronisiert der Client die Anzeige statt
+  einen Fehler zu zeigen. Nebenbei: Null-Deref beim Readback entfernt und die
+  Antwort läuft jetzt über `jsonOk()`/`jsonResponse()` statt hand-`echo`tem JSON.
+- **„Max. 1 Hinrichtung pro Bürgerversammlung" sperrte den ganzen Tag.** Die Regel
+  war an `(game_id, round)` gekoppelt, `round` steigt aber nur bei Nacht→Tag —
+  eine zweite Versammlung am selben Tag konnte nie henken. Neuer Helper
+  `hangedThisAssembly()` (`core/helpers.php`): geprüft wird jetzt, ob seit Beginn
+  der zuletzt zustande gekommenen Versammlung bereits jemand gehenkt wurde
+  (Zeitvergleich komplett auf der DB-Uhr). Genutzt von `execute_vote` UND dem
+  Dashboard-Voting-Block — das vorher wortgleich duplizierte SQL ist damit weg;
+  die Prüfung läuft im Dashboard zudem nur noch, wenn überhaupt Stimmen vorliegen.
+- **Phantom-Hinrichtung bei bereits totem Ziel.** `execute_vote` löschte Stimmen,
+  sendete Push und meldete Erfolg, obwohl `recordDeath()` bei Toten nichts tut.
+  Jetzt wird vorab geprüft, dass der Angeklagte lebend im Spiel ist.
+- **`execute_vote`: expliziter `player_id` umging die Stimmenmehrheit.** Ein
+  mitgeschickter `player_id` wird jetzt gegen den Top-Angeklagten geprüft; bei
+  Stimmengleichstand entscheidet deterministisch die kleinere Spieler-ID —
+  Dashboard-Anzeige und API nutzen dieselbe Sortierung und können nicht mehr
+  divergieren.
+- **Race Condition bei parallelen Hinrichtungen.** Guards + `recordDeath` laufen
+  jetzt unter MySQL `GET_LOCK` — zwei gleichzeitige `execute_vote`-Requests können
+  nicht mehr beide henken.
+- **Auto-Rollenkarte: Funken-Bootstrap + Interval-Leak.** Der Funken-Start prüfte
+  den localStorage-Spiegel statt des tatsächlichen (DB-gerenderten) Overlay-Zustands;
+  jetzt zählt die Overlay-Klasse `open`. `openRoleCard()` räumt außerdem einen
+  laufenden Funken-Timer auf, statt Intervalle zu stapeln.
+- **Rollen-Icon-Cache: Fehlantworten wurden 7 Tage gecacht.** `Header always set`
+  stempelte den Cache-Header auch auf 403/404 — jetzt nur noch bei Status 200
+  (Fehler behalten die globalen No-Cache-Header); `immutable` entfernt, da Icons
+  per scp in-place ersetzt werden können. Fehlende `?v=`-Cache-Buster ergänzt:
+  Icon-Vorschau im Rollen-Formular und Rollen-Galerie der Spieler-Anleitung nutzen
+  jetzt `assetUrl()`/`roleIconUrl()` (filemtime-basiert).
+
+### Geändert
+- **`playerSettings()` hat jetzt einen Request-Cache** (wie `role()`) — `base.php`
+  und die Seite selbst lösten pro Seitenaufbau doppelte SELECTs aus.
+- **Voting-Block im Admin-Dashboard:** Der Sperr-Grund („bereits gehenkt" /
+  „zu wenig Stimmen") ist nur noch einmal formuliert und dient als Hinweistext
+  und Button-Tooltip zugleich (vorher vierfach dupliziert).
+
+---
+
 ## [v0.0.17] — 2026-07-05
 
 ### Hinzugefügt

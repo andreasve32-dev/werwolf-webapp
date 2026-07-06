@@ -55,7 +55,7 @@ $v       = fn(string $key, $default = '') => $isEdit ? ($editRole[$key] ?? $defa
     <div class="icon-uploader" id="<?= $prefix ?>uploader">
       <div class="icon-uploader__preview" id="<?= $prefix ?>icon-preview">
         <?php if ($v('icon_path')): ?>
-          <img src="<?= APP_URL ?>/<?= e($v('icon_path')) ?>" alt="" onerror="this.style.display='none'">
+          <img src="<?= e(assetUrl($v('icon_path'))) ?>" alt="" onerror="this.style.display='none'">
         <?php else: ?>
           <span class="icon-uploader__placeholder">🎭</span>
         <?php endif; ?>

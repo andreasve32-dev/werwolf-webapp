@@ -50,6 +50,26 @@ Sprachnachrichten an den Spielleiter — Warum: einige Spieler schreiben nur ung
     Passwortfeld, analog zu SETUP_PASSWORD-Handling) und DB-Speicherung darüber wie bei den
     anderen Bereichen (eigenes Formular + eigener Speichern-Button, siehe bestehendes Muster).
 ---
+✅ Gelöst (06.07.2026)
+
+[Review] Code-Review v0.0.17 — alle 13 bestätigten Findings behoben (→ v0.0.18)
+      → Schwerste Punkte: (1) Cooldown-Zeitzonen-Regression — Server sendet jetzt nur noch
+        verbleibende Sekunden (remaining_secs, TIMESTAMPDIFF auf der DB-Uhr), Client zählt
+        lokal herunter; keine Zeitstempel-Vergleiche PHP/DB/Browser mehr. (2) „Max. 1
+        Hinrichtung pro Versammlung" war an round gekoppelt und sperrte den ganzen Tag —
+        neuer Helper hangedThisAssembly() prüft seit Beginn der letzten Versammlung
+        (auch vom Admin-Dashboard genutzt, Duplikat-SQL weg). (3) Phantom-Hinrichtung bei
+        totem Ziel abgefangen. (4) execute_vote: player_id muss dem Top-Angeklagten
+        entsprechen, deterministischer Tiebreak (kleinere ID) identisch in API+Dashboard.
+        (5) GET_LOCK gegen parallele Doppel-Hinrichtungen. (6) Auto-Rollenkarten-Funken
+        prüfen Overlay-Klasse statt localStorage + Interval-Leak in openRoleCard() behoben.
+        (7) Icon-Cache-Header nur noch bei Status 200 (404/403 bleiben no-cache), immutable
+        entfernt, fehlende ?v=-Cache-Buster in Rollen-Formular + Spieler-Anleitung ergänzt.
+        Dazu Cleanup: playerSettings()-Request-Cache, jsonOk() statt hand-echotem JSON im
+        Cooldown-Endpunkt, Sperr-Grund im Voting-Block nur noch einmal formuliert.
+        Details siehe CHANGELOG v0.0.18. Live deployt + verifiziert (php -l, Header-Test
+        200/404, Helper-Test gegen Live-DB, Statuscode-Smoke aller betroffenen Seiten).
+---
 ✅ Gelöst (05.07.2026)
 
 [Feature] Startseite = Rollenkarte — App öffnet auf Wunsch direkt die eigene Rollenkarte

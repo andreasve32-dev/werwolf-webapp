@@ -22,14 +22,16 @@ function admin_compute_state(int $gameId): array {
     $alreadyHanged = false;
     $playerNames = array_column($gamePlayers, 'display_name', 'player_id');
     if ($game['status'] === 'running' && $game['phase'] === 'day') {
+        // Sortierung identisch zu api/admin.php (execute_vote): bei Stimmen-
+        // gleichstand entscheidet die kleinere Spieler-ID — Dashboard-Anzeige
+        // und tatsächlich gehenkter Spieler können so nie divergieren.
         $votes = Database::query(
-            "SELECT target_id, COUNT(*) as cnt FROM votes WHERE game_id=? AND round=? GROUP BY target_id ORDER BY cnt DESC",
+            "SELECT target_id, COUNT(*) as cnt FROM votes WHERE game_id=? AND round=? GROUP BY target_id ORDER BY cnt DESC, target_id ASC",
             [$gameId, $game['round']]
         );
-        $alreadyHanged = (bool)Database::queryOne(
-            "SELECT id FROM deaths WHERE game_id=? AND round=? AND is_gehenkt=1",
-            [$gameId, $game['round']]
-        );
+        // Nur prüfen, wenn es überhaupt Stimmen gibt — der Wert wird
+        // ausschließlich im Voting-Block (der Stimmen voraussetzt) gerendert
+        if ($votes) $alreadyHanged = hangedThisAssembly($gameId);
     }
 
     // Rollen-Vorschau für die Lobby (zeigt NUR Anzahlen, nie wer was bekommt)
@@ -366,6 +368,11 @@ function admin_render_voting(array $s): string {
         $accusedId   = $topVote['target_id'];
         $accusedName = $playerNames[$accusedId] ?? '?';
         $enoughVotes = (int)$topVote['cnt'] >= MIN_VOTES_TO_HANG;
+        // Grund, warum aktuell nicht gehenkt werden darf — einmal formuliert,
+        // dient als Hinweistext UND als Tooltip des deaktivierten Buttons
+        $hangBlocked = $alreadyHanged
+            ? 'In dieser Bürgerversammlung wurde bereits jemand gehenkt'
+            : ($enoughVotes ? '' : 'Mindestens ' . MIN_VOTES_TO_HANG . ' Stimmen für eine Hinrichtung nötig');
       ?>
         <!-- Angeklagter -->
         <div class="panel mb-2" style="border:1px solid var(--danger-text,#f87171);padding:1rem;text-align:center">
@@ -374,10 +381,8 @@ function admin_render_voting(array $s): string {
             <?= e($accusedName) ?>
           </div>
           <div class="text-dim text-xs mt-1"><?= $topVote['cnt'] ?> von <?= $total ?> Stimmen</div>
-          <?php if ($alreadyHanged): ?>
-          <div class="text-dim text-xs mt-1">In dieser Bürgerversammlung wurde bereits jemand gehenkt</div>
-          <?php elseif (!$enoughVotes): ?>
-          <div class="text-dim text-xs mt-1">Mindestens <?= MIN_VOTES_TO_HANG ?> Stimmen für eine Hinrichtung nötig</div>
+          <?php if ($hangBlocked): ?>
+          <div class="text-dim text-xs mt-1"><?= e($hangBlocked) ?></div>
           <?php endif; ?>
         </div>
 
@@ -400,7 +405,7 @@ function admin_render_voting(array $s): string {
 
         <!-- Urteil -->
         <div class="flex gap-sm" style="margin-top:.5rem">
-          <button class="btn btn--danger" style="flex:1" <?= $alreadyHanged ? 'disabled title="Bereits jemand gehenkt in dieser Versammlung"' : ($enoughVotes ? '' : 'disabled title="Mindestens '.MIN_VOTES_TO_HANG.' Stimmen nötig"') ?>
+          <button class="btn btn--danger" style="flex:1" <?= $hangBlocked ? 'disabled title="' . e($hangBlocked) . '"' : '' ?>
                   onclick="hangAccused(<?= $accusedId ?>, '<?= e(addslashes($accusedName)) ?>')">
             ⚖️ Hängen
           </button>

@@ -165,15 +165,19 @@ function roleIconHtml(?array $roleRow, string $size = 'md'): string {
  * angelegt statt die Seite mit einem SQL-Fehler abzubrechen.
  */
 function playerSettings(int $playerId): array {
+    // Request-weiter Cache (wie bei role()): base.php UND die Seite selbst
+    // rufen die Funktion pro Seitenaufbau auf — ein SELECT genügt.
+    static $cache = [];
+    if (isset($cache[$playerId])) return $cache[$playerId];
     try {
         $row = Database::queryOne("SELECT settings FROM players WHERE id=?", [$playerId]);
     } catch (\Throwable $e) {
         ensurePlayerSettingsColumn();
-        return [];
+        return $cache[$playerId] = [];
     }
-    if (!$row || !$row['settings']) return [];
+    if (!$row || !$row['settings']) return $cache[$playerId] = [];
     $decoded = json_decode($row['settings'], true);
-    return is_array($decoded) ? $decoded : [];
+    return $cache[$playerId] = (is_array($decoded) ? $decoded : []);
 }
 
 /** Legt players.settings nach, falls die Spalte (noch) fehlt. */
@@ -266,6 +270,31 @@ function recordDeath(int $gameId, int $playerId, int $round, string $phase, ?str
             recordDeath($gameId, (int)$partner['player_id'], $round, $phase, 'Vor Kummer gestorben');
         }
     }
+}
+
+/**
+ * Wurde in der aktuellen Bürgerversammlung bereits jemand gehenkt?
+ *
+ * "Aktuell" = seit Beginn (scheduled_at) der zuletzt zustande gekommenen
+ * Versammlung dieses Spiels. Die Kopplung an die Versammlung statt an die
+ * Spielrunde (round steigt nur bei Nacht→Tag) erlaubt mehrere Versammlungen
+ * mit je max. einer Hinrichtung am selben Tag. Gab es noch keine Versammlung
+ * oder liegt ihr Termin in der Zukunft, ist nichts gesperrt.
+ * Der Zeitvergleich läuft komplett über die DB-Uhr (died_at vs. FROM_UNIXTIME).
+ */
+function hangedThisAssembly(int $gameId): bool {
+    $assembly = Database::queryOne(
+        "SELECT scheduled_at FROM assembly_requests
+         WHERE game_id=? AND scheduled_at IS NOT NULL
+         ORDER BY id DESC LIMIT 1",
+        [$gameId]
+    );
+    if (!$assembly) return false;
+    return (bool)Database::queryOne(
+        "SELECT id FROM deaths
+         WHERE game_id=? AND is_gehenkt=1 AND died_at >= FROM_UNIXTIME(?) LIMIT 1",
+        [$gameId, (int)$assembly['scheduled_at']]
+    );
 }
 
 /**

@@ -18,6 +18,21 @@ $myGP    = $gameId ? gamePlayer($gameId, $player['id']) : null;
 // Rolle des Spielers — null wenn noch keine vergeben oder Spiel in Lobby
 $myRole  = $myGP && $myGP['role_id'] ? role((int)$myGP['role_id']) : null;
 
+// Cooldown: verbleibende Sekunden serverseitig über die DB-Uhr berechnen
+// (TIMESTAMPDIFF gegen NOW()) — nie rohe DB-Zeitstempel an den Client geben,
+// sonst rechnen drei Uhren (PHP/DB/Browser) gegeneinander.
+$myCooldownRemaining = 0;
+if ($myGP && $myRole && (int)$myRole['cooldown'] > 0 && !empty($myGP['cooldown_started_at'])) {
+    $row = Database::queryOne(
+        "SELECT TIMESTAMPDIFF(SECOND, cooldown_started_at, NOW()) AS elapsed
+         FROM game_players WHERE game_id=? AND player_id=?",
+        [$gameId, $player['id']]
+    );
+    if ($row && $row['elapsed'] !== null) {
+        $myCooldownRemaining = max(0, (int)$myRole['cooldown'] * 60 - (int)$row['elapsed']);
+    }
+}
+
 // Rollenkarte automatisch beim Laden zeigen (Spieler-Einstellung, Standard aus) —
 // serverseitig direkt als "offen" rendern, damit beim erneuten Einloggen/Neuladen
 // nie kurz das Spielfenster (mit ggf. sensiblen Infos für andere) aufblitzt.
@@ -57,7 +72,7 @@ if ($gameId && ($game['status'] ?? '') === 'running') {
 $page = [
     'title'    => 'Spielfeld',
     'inline_js' => sprintf(
-        'const GAME_ID=%s,PLAYER_ID=%s,API_BASE=%s,DAY_SLOGANS=%s,NIGHT_SLOGANS=%s,MY_COOLDOWN_MINS=%s,MY_COOLDOWN_STARTED=%s,ASSEMBLY_DATA=%s,MY_IS_ADMIN=%s;'
+        'const GAME_ID=%s,PLAYER_ID=%s,API_BASE=%s,DAY_SLOGANS=%s,NIGHT_SLOGANS=%s,MY_COOLDOWN_MINS=%s,MY_COOLDOWN_REMAINING=%s,ASSEMBLY_DATA=%s,MY_IS_ADMIN=%s;'
         . 'let MY_ALIVE=%s,GAME_STATUS=%s,GAME_PHASE=%s,MY_IN_GAME=%s;',
         json_encode($gameId),
         json_encode($player['id']),
@@ -65,7 +80,7 @@ $page = [
         json_encode($daySlogans),
         json_encode($nightSlogans),
         json_encode($myRole ? (int)$myRole['cooldown'] : 0),
-        json_encode($myGP['cooldown_started_at'] ?? null),
+        json_encode($myCooldownRemaining),
         json_encode($currentAssembly),
         json_encode((bool)$player['is_admin']),
         json_encode($myGP ? (bool)$myGP['is_alive'] : false),
@@ -894,16 +909,22 @@ gamePoll.start();
 
 // Startseite = Rollenkarte: Overlay ist bei aktiver Einstellung bereits serverseitig
 // als "offen" gerendert (kein Aufblitzen des Spielfensters) — hier nur die
-// Funken-Animation nachträglich anstoßen.
-if (localStorage.getItem('ww_auto_rolecard') === '1') {
+// Funken-Animation nachträglich anstoßen. Maßgeblich ist der tatsächliche
+// Overlay-Zustand aus der DB-Einstellung, nicht der localStorage-Spiegel
+// (der kann nach Gerätewechsel/Löschung veraltet sein).
+(function() {
+  const overlay = document.getElementById('role-card-overlay');
+  if (!overlay || !overlay.classList.contains('open')) return;
   const wrap = document.getElementById('role-fx-modal');
   if (wrap) _modalSparkTimer = setInterval(() => _spawnSpark(wrap), 180);
-}
+})();
 
 function openRoleCard() {
   const el = document.getElementById('role-card-overlay');
   if (el) el.classList.add('open');
   const wrap = document.getElementById('role-fx-modal');
+  clearInterval(_modalSparkTimer); // ggf. laufenden Funken-Timer ersetzen, nie stapeln
+  _modalSparkTimer = null;
   if (wrap) _modalSparkTimer = setInterval(() => _spawnSpark(wrap), 180);
 }
 function closeRoleCard() {
@@ -1093,20 +1114,15 @@ $page['inline_js'] .= <<<'CDJS'
   const remaining = document.getElementById('cd-remaining');
   if (!btn) return;
 
-  const totalSecs = MY_COOLDOWN_MINS * 60;
-  let startedAt   = MY_COOLDOWN_STARTED ? new Date(MY_COOLDOWN_STARTED).getTime() : null;
+  // Nur EINE Uhr: der Server liefert verbleibende Sekunden (DB-Uhr),
+  // der Client zählt lokal herunter — keine Zeitstempel-Vergleiche
+  // zwischen PHP-, DB- und Browser-Uhr mehr.
+  let endsAt = MY_COOLDOWN_REMAINING > 0 ? Date.now() + MY_COOLDOWN_REMAINING * 1000 : null;
 
   function tick() {
-    if (!startedAt) {
-      btn.disabled           = false;
-      btn.textContent        = '⏱ Fähigkeit aktivieren (Cooldown starten)';
-      statusEl.style.display = 'none';
-      return;
-    }
-    const elapsed = (Date.now() - startedAt) / 1000;
-    const left    = totalSecs - elapsed;
+    const left = endsAt ? (endsAt - Date.now()) / 1000 : 0;
     if (left <= 0) {
-      startedAt              = null;
+      endsAt                 = null;
       btn.disabled           = false;
       btn.textContent        = '⏱ Fähigkeit aktivieren (Cooldown starten)';
       statusEl.style.display = 'none';
@@ -1123,8 +1139,8 @@ $page['inline_js'] .= <<<'CDJS'
   tick();
   setInterval(tick, 1000);
 
-  window._setCooldownStarted = function(iso) {
-    startedAt = new Date(iso).getTime();
+  window._setCooldownRemaining = function(secs) {
+    endsAt = secs > 0 ? Date.now() + secs * 1000 : null;
     tick();
   };
 })();
@@ -1142,7 +1158,11 @@ function startCooldown() {
   .then(r => r.json())
   .then(d => {
     if (d.ok) {
-      if (window._setCooldownStarted) window._setCooldownStarted(d.started_at);
+      if (window._setCooldownRemaining) window._setCooldownRemaining(d.remaining_secs);
+    } else if (d.remaining_secs > 0 && window._setCooldownRemaining) {
+      // Läuft serverseitig doch noch (z.B. auf einem zweiten Gerät gestartet):
+      // Anzeige auf den Server-Stand synchronisieren statt Fehler zu zeigen
+      window._setCooldownRemaining(d.remaining_secs);
     } else {
       alert(d.error || 'Fehler beim Starten des Cooldowns');
       btn.disabled    = false;

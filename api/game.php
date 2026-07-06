@@ -131,26 +131,27 @@ switch($action){
   case 'start_cooldown':
     $g=Database::queryOne("SELECT * FROM games WHERE id=? AND status='running'",[$gameId]);
     if(!$g){http_response_code(400);echo json_encode(['error'=>'Kein laufendes Spiel']);exit;}
+    // Verstrichene Zeit direkt in SQL berechnen (TIMESTAMPDIFF gegen NOW()):
+    // eine einzige Uhr (DB) statt PHP-time() gegen den DB-Zeitstempel zu
+    // rechnen — Zeitzonen-/Drift-Probleme zwischen den Prozessen entfallen.
     $me=Database::queryOne(
-      "SELECT gp.*, r.cooldown FROM game_players gp
+      "SELECT gp.*, r.cooldown,
+              TIMESTAMPDIFF(SECOND, gp.cooldown_started_at, NOW()) AS cd_elapsed
+       FROM game_players gp
        LEFT JOIN roles r ON r.id=gp.role_id
        WHERE gp.game_id=? AND gp.player_id=? AND gp.is_alive=1",
       [$gameId,$playerId]
     );
     if(!$me){http_response_code(400);echo json_encode(['error'=>'Nicht berechtigt']);exit;}
     if((int)($me['cooldown']??0)<=0){http_response_code(400);echo json_encode(['error'=>'Deine Rolle hat keinen Cooldown']);exit;}
-    if(!empty($me['cooldown_started_at'])){
-      $elapsed=time()-strtotime($me['cooldown_started_at']);
-      $total=(int)$me['cooldown']*60;
-      if($elapsed<$total){http_response_code(400);echo json_encode(['error'=>'Cooldown läuft noch','remaining_secs'=>$total-$elapsed]);exit;}
+    $total=(int)$me['cooldown']*60;
+    if($me['cd_elapsed']!==null && (int)$me['cd_elapsed']<$total){
+      jsonResponse(['error'=>'Cooldown läuft noch','remaining_secs'=>$total-(int)$me['cd_elapsed']],400);
     }
     Database::execute("UPDATE game_players SET cooldown_started_at=NOW() WHERE game_id=? AND player_id=?",[$gameId,$playerId]);
-    // Tatsächlich gespeicherten Wert zurücklesen statt separat date('c') zu bilden —
-    // sonst zeigt der Client sofort einen kleinen Rückstand, sobald PHP- und
-    // DB-Prozess-Uhr auch nur geringfügig auseinanderlaufen.
-    $saved=Database::queryOne("SELECT cooldown_started_at FROM game_players WHERE game_id=? AND player_id=?",[$gameId,$playerId]);
-    $startedAt=new DateTime($saved['cooldown_started_at'],new DateTimeZone(GAME_TIMEZONE));
-    echo json_encode(['ok'=>true,'started_at'=>$startedAt->format('c')]);break;
+    // Kein Zeitstempel an den Client — nur verbleibende Sekunden, die der
+    // Client lokal herunterzählt (keine Uhren-Vergleiche PHP/DB/Browser).
+    jsonOk('Cooldown gestartet',['remaining_secs'=>$total]);
 
   case 'update_death_info':
     // Todesort, -zeit und Rolle nachtragen. Erlaubt für: Admin oder der Betroffene selbst.
