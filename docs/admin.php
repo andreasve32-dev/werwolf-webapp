@@ -119,6 +119,15 @@ require TEMPLATE_PATH . '/base.php';
       <em>„🔪👁 Gegenseitig sichtbar mit Killern"</em> (Rolle und Mörder sehen sich gegenseitig
       in der Spielerliste — gedacht z.&nbsp;B. für den Dodo).
     </p>
+    <p>
+      <strong>Tipp — Platzhalter <code>{cooldown}</code>:</strong> Schreibst du in der
+      Beschreibung oder den Regeln einer Rolle <code>{cooldown}</code>, wird an allen
+      Anzeige-Stellen (Rollenkarte, Rollen-Galerie, FAQ, Anleitung) automatisch der aktuell
+      eingestellte Cooldown-Wert in Minuten eingesetzt — z.&nbsp;B. wird aus
+      <em>„darf alle {cooldown} Minuten töten"</em> bei Cooldown&nbsp;30 automatisch
+      <em>„darf alle 30 Minuten töten"</em>. Änderst du den Cooldown später, passt sich
+      der Text von selbst an — kein Nachpflegen der Texte mehr nötig.
+    </p>
     <div class="ui-mock" style="margin-top:.75rem">
       <span class="label">Rollen-Verwaltung (Beispiel für 8 Spieler)</span>
       <span class="action">✓</span> Mörder × 2 &nbsp;&nbsp;
