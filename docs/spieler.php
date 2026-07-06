@@ -4,7 +4,7 @@ require_once dirname(__DIR__) . '/core/bootstrap.php';
 Auth::requireLogin();
 
 $allRoles = Database::query(
-    "SELECT name, description, icon_path, active FROM roles ORDER BY sort_order, name"
+    "SELECT name, description, icon_path, active, cooldown FROM roles ORDER BY sort_order, name"
 );
 
 $page = ['title' => 'Spieler-Anleitung'];
@@ -185,7 +185,7 @@ require TEMPLATE_PATH . '/base.php';
         <img src="<?= e($iconUrl) ?>" alt="<?= e($r['name']) ?>">
         <div class="role-name"><?= e($r['name']) ?></div>
         <?php if ($r['description']): ?>
-          <div class="role-desc"><?= e($r['description']) ?></div>
+          <div class="role-desc"><?= e(roleText($r['description'], $r)) ?></div>
         <?php endif; ?>
       </div>
       <?php endforeach; ?>

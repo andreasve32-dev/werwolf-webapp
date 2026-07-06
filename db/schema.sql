@@ -261,8 +261,8 @@ INSERT INTO roles (id, name, cooldown, description, rules, active, fill, amount,
   1, 1, 0, 'assets/icons/roles/buerger.png', 0, 0, 0, 0, 10, 0),
 
 (2,  'Mörder',      30,
-  'Kann andere Spieler mit der Mordwaffe töten. Abklingzeit: 30 Minuten.',
-  'Zeige einem anderen Spieler die Mordwaffe — dieser ist sofort tot und trägt sich in die Todesliste ein. Die Mordwaffe hat 30 Minuten Abklingzeit. Arbeite mit dem anderen Mörder zusammen.',
+  'Kann andere Spieler mit der Mordwaffe töten. Abklingzeit: {cooldown} Minuten.',
+  'Zeige einem anderen Spieler die Mordwaffe — dieser ist sofort tot und trägt sich in die Todesliste ein. Die Mordwaffe hat {cooldown} Minuten Abklingzeit. Arbeite mit dem anderen Mörder zusammen.',
   1, 0, 2, 'assets/icons/roles/moerder.png', 1, 0, 0, 1, 20, 0),
 
 (3,  'Nekromant',   0,
@@ -271,8 +271,8 @@ INSERT INTO roles (id, name, cooldown, description, rules, active, fill, amount,
   1, 0, 1, 'assets/icons/roles/nekromant.png', 0, 1, 0, 0, 30, 0),
 
 (4,  'Hellseherin', 30,
-  'Kann alle 30 Minuten einen Spieler zwingen, seine Rolle aufzudecken.',
-  'Zeige einem Spieler deine Karte — er muss dir seine Rolle zeigen. Abklingzeit: 30 Minuten.',
+  'Kann alle {cooldown} Minuten einen Spieler zwingen, seine Rolle aufzudecken.',
+  'Zeige einem Spieler deine Karte — er muss dir seine Rolle zeigen. Abklingzeit: {cooldown} Minuten.',
   1, 0, 1, 'assets/icons/roles/hellseherin.png', 0, 0, 0, 0, 40, 0),
 
 (5,  'Detektiv',    0,
@@ -319,7 +319,7 @@ CREATE TABLE settings (
 
 INSERT INTO settings (`key`, value, type, label, description, sort_order) VALUES
 ('app_name',           'Werwolf',                          'string', 'Spielname',              'Anzeigename der App — überall sichtbar.',                         10),
-('app_version',        '0.0.20',                          'string', 'Versionsnummer',          'Anzeigeversion z. B. in Fußzeile oder About-Seite.',             15),
+('app_version',        '0.0.21',                          'string', 'Versionsnummer',          'Anzeigeversion z. B. in Fußzeile oder About-Seite.',             15),
 ('beta_mode',          '1',                               'bool',   'Beta-Modus',              'Zeigt einen Beta-Hinweis im Spielfenster an.',                    16),
 ('app_debug',          '1',                               'bool',   'Debug-Modus',             'PHP-Fehler anzeigen. Im Produktivbetrieb auf 0 setzen.',          20),
 ('default_theme',      'gothic',                          'string', 'Standard-Theme',          'Theme für neue Nutzer ohne gespeichertes Theme.',                30),

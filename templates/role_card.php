@@ -24,13 +24,13 @@ function render_role_card(array $r): string {
               <?php if (!empty($r['is_killer'])): ?><span class="tag tag--dead">🔪 Killer</span><?php endif; ?>
               <?php if (!empty($r['linked_death'])): ?><span class="tag tag--night">💔 Gemeinsamer Tod</span><?php endif; ?>
             </div>
-            <div class="text-dim text-sm mt-1"><?= e($r['description'] ?: 'Keine Beschreibung') ?></div>
+            <div class="text-dim text-sm mt-1"><?= e($r['description'] ? roleText($r['description'], $r) : 'Keine Beschreibung') ?></div>
             <div class="text-xs text-dim mt-1">
               Anzahl: <strong class="text-accent"><?= (int)$r['amount'] ?></strong> &middot;
               Cooldown: <strong class="text-accent"><?= (int)$r['cooldown'] ?></strong> Min.
             </div>
             <?php if ($r['rules']): ?>
-            <div class="text-xs text-dim mt-1 italic">📜 <?= e($r['rules']) ?></div>
+            <div class="text-xs text-dim mt-1 italic">📜 <?= e(roleText($r['rules'], $r)) ?></div>
             <?php endif; ?>
           </div>
         </div>

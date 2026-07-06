@@ -11,7 +11,6 @@ Auftragskiller — Bekommt zufälliges Ziel zugewiesen; nach Kill neues Ziel (5 
 Schläfer/Verräter-Rolle — Killer der nach X Stunden die Seite wechselt; alle anderen Killer werden vorab gewarnt: "Einer von euch ist ein Verräter" (verzögerter Switch)
 Hellseherin: permanente Rollensicht — Kann dauerhaft die Rolle eines untersuchten Spielers einsehen statt Einmal-Cooldown
 Detektiv: Leichen befragen — Bekommt von der Leiche einen Spieler genannt, der definitiv nicht der Killer war
-Cooldown-Platzhalter in Beschreibungen — Variable in Rollentext, die automatisch den aktuellen Cooldown-Wert einfügt
 Auto-Timeout zur Rollenkarte — Nach X Minuten Inaktivität automatisch zurück zur Rollenkarte
 Zombie-Spielmodus — Alternativer Modus: Alle starten als Söldner, nach 1–5h zufälliger Zombie-Start, Infizierte bekehren weitere Spieler
 Günslinger: Weiter schießen nach Killer-Treffer — Wenn Günslinger einen Killer erwischt, darf er weiter schießen
@@ -42,6 +41,22 @@ Sprachnachrichten an den Spielleiter — Warum: einige Spieler schreiben nur ung
     anderen Bereichen (eigenes Formular + eigener Speichern-Button, siehe bestehendes Muster).
 ---
 ✅ Gelöst (06.07.2026)
+
+[Feature] Cooldown-Platzhalter in Beschreibungen — {cooldown} in Rollentexten (→ v0.0.21)
+      → In description/rules einer Rolle ersetzt die Anzeige {cooldown} automatisch
+        durch den aktuellen Wert der cooldown-Spalte — Texte wie "alle {cooldown}
+        Minuten" bleiben bei Cooldown-Änderungen ohne Handarbeit synchron. Zentrale
+        Funktion roleText() in core/helpers.php, eingesetzt an allen Ausgabe-Stellen:
+        game.php (Status-Block + Rollenkarten-Modal), roles_blocks.php (Galerie +
+        Modal-JSON), app/roles.php (Modal-JSON), faq_blocks.php (Rollenregeln +
+        Suchindex), role_card.php (Admin-Karte), docs/spieler.php (Anleitung;
+        Query um cooldown ergänzt). Hinweis-Text im Rollen-Formular. Seed-Texte
+        von Mörder + Hellseherin (fest "30 Minuten") in schema.sql/init.sql und
+        auf der Live-DB auf den Platzhalter umgestellt — vorher per DB-Abgleich
+        geprüft: nur diese beiden Rollen hatten feste Zeitangaben im Text, beide
+        stimmten (noch) mit dem eingestellten Cooldown überein. Das Backup über
+        dump_roles_temp.php zeigt weiterhin die Roh-Texte mit Platzhalter (korrekt,
+        da es die Tabelle 1:1 sichert).
 
 [Feature] Rollen-Presets — Gespeicherte Rollensets für verschiedene Spielerzahlen (→ v0.0.20)
       → Umgesetzt wie am 04.07. konkretisiert: Karte "🎛️ Rollen-Presets" oben in

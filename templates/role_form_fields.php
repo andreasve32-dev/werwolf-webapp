@@ -46,6 +46,9 @@ $v       = fn(string $key, $default = '') => $isEdit ? ($editRole[$key] ?? $defa
   <label class="form-label" for="<?= $prefix ?>rules">Regeln</label>
   <textarea class="form-input" id="<?= $prefix ?>rules" rows="2"
             placeholder="Spielregeln für diese Rolle"><?= e($v('rules')) ?></textarea>
+  <small class="text-dim text-xs">Tipp: <code>{cooldown}</code> in Beschreibung/Regeln wird
+    bei der Anzeige automatisch durch den aktuellen Cooldown-Wert ersetzt —
+    z.&nbsp;B. „alle {cooldown} Minuten“.</small>
 </div>
 
 <div class="icon-sort-row">

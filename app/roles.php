@@ -180,8 +180,8 @@ $rolesJson = json_encode(array_map(fn($r) => [
     'name'        => $r['name'],
     'icon_url'    => roleIconUrl($r),
     'sichtbar'    => (bool)$r['sichtbar'],
-    'description' => $r['description'] ?? '',
-    'rules'       => $r['rules'] ?? '',
+    'description' => roleText($r['description'] ?? '', $r),
+    'rules'       => roleText($r['rules'] ?? '', $r),
     'cooldown'    => (int)$r['cooldown'],
 ], $roles), JSON_UNESCAPED_UNICODE);
 

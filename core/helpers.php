@@ -94,6 +94,17 @@ function verifyPassword(string $pw, string $hash): bool {
 //  /roles.php
 // ============================================================
 
+/**
+ * Platzhalter in Rollentexten (description/rules) ersetzen.
+ * {cooldown} → aktueller Cooldown-Wert der Rolle in Minuten — Texte wie
+ * "alle {cooldown} Minuten" bleiben so automatisch synchron zur Einstellung.
+ * VOR e() aufrufen (der eingesetzte Wert ist ein reiner Integer).
+ */
+function roleText(?string $text, array $role): string {
+    if ($text === null || $text === '') return '';
+    return str_replace('{cooldown}', (string)(int)($role['cooldown'] ?? 0), $text);
+}
+
 /** Alle Rollen laden (auch deaktivierte), sortiert nach sort_order. */
 function allRoles(): array {
     return Database::query("SELECT * FROM roles ORDER BY sort_order, name");

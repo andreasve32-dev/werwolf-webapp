@@ -20,7 +20,7 @@ function render_roles_gallery(array $roles): string {
              role="img" aria-label="<?= e($r['name']) ?>"></div>
         <div class="rg-card__name"><?= e($r['name']) ?></div>
         <?php if ($r['description']): ?>
-          <div class="rg-card__desc"><?= e($r['description']) ?></div>
+          <div class="rg-card__desc"><?= e(roleText($r['description'], $r)) ?></div>
         <?php endif; ?>
         <div class="rg-card__meta">
           <?php if (!empty($r['sichtbar'])): ?>
@@ -49,8 +49,8 @@ function roles_data_json(array $roles): array {
         'name'        => $r['name'],
         'icon_url'    => roleIconUrl($r),
         'sichtbar'    => (bool)$r['sichtbar'],
-        'description' => $r['description'] ?? '',
-        'rules'       => $r['rules'] ?? '',
+        'description' => roleText($r['description'] ?? '', $r),
+        'rules'       => roleText($r['rules'] ?? '', $r),
         'cooldown'    => (int)$r['cooldown'],
     ], $roles);
 }

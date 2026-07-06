@@ -4,6 +4,21 @@ Jedes Backup erhält eine fortlaufende Versionsnummer (v0.0.x).
 
 ---
 
+## [v0.0.21] — 2026-07-06
+
+### Hinzugefügt
+- **Cooldown-Platzhalter `{cooldown}` in Rollentexten:** In Beschreibung und
+  Regeln einer Rolle kann `{cooldown}` geschrieben werden — bei der Anzeige
+  (Rollenkarte im Spiel, Rollen-Galerie, FAQ-Rollenregeln, Admin-Rollenkarte,
+  Spieler-Anleitung) wird er automatisch durch den aktuellen Cooldown-Wert der
+  Rolle ersetzt. Ändert der Admin den Cooldown, bleiben die Texte ohne
+  Handarbeit synchron. Zentrale Ersetzung in `roleText()` (`core/helpers.php`),
+  Hinweis im Rollen-Formular ergänzt.
+- Die Seed-Texte von Mörder und Hellseherin (fest „30 Minuten") nutzen jetzt
+  den Platzhalter — in `db/schema.sql`, `db/init.sql` und auf der Live-DB.
+
+---
+
 ## [v0.0.20] — 2026-07-06
 
 ### Hinzugefügt

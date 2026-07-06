@@ -61,7 +61,7 @@ function render_roles_rules_list(array $roles): string {
       <?php foreach ($roles as $i => $r): ?>
       <div class="role-rule-item animate-in"
            style="animation-delay:<?= $i * 0.04 ?>s"
-           data-search="<?= e(strtolower($r['name'] . ' ' . $r['description'] . ' ' . $r['rules'])) ?>">
+           data-search="<?= e(strtolower($r['name'] . ' ' . roleText($r['description'], $r) . ' ' . roleText($r['rules'], $r))) ?>">
 
         <!-- Kopfzeile (klickbar) -->
         <button class="role-rule-item__head" onclick="toggleRole(this)" aria-expanded="false">
@@ -85,12 +85,12 @@ function render_roles_rules_list(array $roles): string {
         <!-- Regeltext (eingeklappt) -->
         <div class="role-rule-item__body" hidden>
           <?php if ($r['description']): ?>
-          <p class="role-rule-item__desc"><?= e($r['description']) ?></p>
+          <p class="role-rule-item__desc"><?= e(roleText($r['description'], $r)) ?></p>
           <?php endif; ?>
           <?php if ($r['rules']): ?>
           <div class="role-rule-item__rules">
             <span class="role-rule-item__rules-label">📜 Regeln</span>
-            <?= e($r['rules']) ?>
+            <?= e(roleText($r['rules'], $r)) ?>
           </div>
           <?php endif; ?>
         </div>

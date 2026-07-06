@@ -196,9 +196,9 @@ require TEMPLATE_PATH . '/base.php';
           <?php endif; ?>
           <?php if ($myRole['description']): ?>
           <div class="panel mt-2 text-sm">
-            <strong class="text-accent">Deine Rolle:</strong> <?= e($myRole['description']) ?>
+            <strong class="text-accent">Deine Rolle:</strong> <?= e(roleText($myRole['description'], $myRole)) ?>
             <?php if ($myRole['rules']): ?>
-              <div class="text-dim mt-1 italic">📜 <?= e($myRole['rules']) ?></div>
+              <div class="text-dim mt-1 italic">📜 <?= e(roleText($myRole['rules'], $myRole)) ?></div>
             <?php endif; ?>
             <?php if ($myRole['cooldown'] > 0): ?>
               <div class="mt-2" id="cooldown-block">
@@ -490,10 +490,10 @@ require TEMPLATE_PATH . '/base.php';
       <div class="role-card-modal__badge">👁️ Ihr erkennt euch untereinander</div>
     <?php endif; ?>
     <?php if ($cardRole['description']): ?>
-      <p class="role-card-modal__desc"><?= e($cardRole['description']) ?></p>
+      <p class="role-card-modal__desc"><?= e(roleText($cardRole['description'], $cardRole)) ?></p>
     <?php endif; ?>
     <?php if ($cardRole['rules']): ?>
-      <div class="role-card-modal__rules">📜 <?= e($cardRole['rules']) ?></div>
+      <div class="role-card-modal__rules">📜 <?= e(roleText($cardRole['rules'], $cardRole)) ?></div>
     <?php endif; ?>
     <?php if ((int)($cardRole['cooldown'] ?? 0) > 0): ?>
       <div class="role-card-modal__cooldown">⏳ Cooldown: alle <?= (int)$cardRole['cooldown'] + 1 ?> Nächte</div>
