@@ -5,6 +5,40 @@ lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
 
 ---
 
+## [v0.28] — 2026-07-07
+
+### Geändert
+- **🐛 Debug-Menü konsolidiert:** Drei bisher verstreute Werkzeuge sind jetzt an
+  einem Ort (`admin/debug.php`, nur bei `app_debug` sichtbar):
+  - **„Spieler als tot melden"** aus dem Admin-Dashboard hierher verschoben
+    (Dropdown-Auswahl + Todesursache) — der per-Zeile „☠"-Schnellknopf in der
+    normalen Spielerliste bleibt unverändert für den echten Spielbetrieb erhalten.
+  - **Todesursache-Dropdown** auf zwei Optionen reduziert: 🔪 Mordwaffe und
+    ⚖️ Erhängt — „💀 Sonstiges" entfernt (war serverseitig ohnehin identisch zu
+    „Mordwaffe" behandelt, reine UI-Vereinfachung auf Wunsch).
+  - **Testspieler-Verwaltung** aus der eigenständigen Seite `admin/testplayers.php`
+    hierher verschoben (neue gemeinsame Render-Funktion `admin_render_testplayers()`
+    in `templates/testplayers_blocks.php`); die alte Seite ist jetzt ein reiner
+    AJAX-Endpunkt (create/delete/delete_all) und leitet bei direktem Aufruf ohne
+    Aktion auf das Debug-Menü um. Bewusst **nicht** an die Spielstatus-Prüfung
+    gekoppelt — Testspieler müssen oft schon in der Lobby anlegbar sein.
+  - **Neu:** Button „⏱️ Cooldown zurücksetzen" — setzt den Cooldown der eigenen
+    aktuellen Rolle sofort zurück (`game_players.cooldown_started_at = NULL`),
+    admin-only, neue API-Aktion `debug_reset_cooldown`.
+  - Admin-Dashboard-Kachel „Debug-Menü" entsprechend im Untertitel aktualisiert;
+    eigene Testspieler-Kachel entfernt.
+  - Beim Live-Test eine vergessene Altlast gefunden: die `liveBlocks()`-Zielliste
+    im Admin-Dashboard referenzierte noch `kill-quick-card` nach dessen Entfernung
+    — behoben.
+- **📖 Anleitung-Kachel im Admin-Dashboard ergänzt:** Direkter Link zum
+  Admin-Handbuch (`docs/admin.php`) fehlte bisher komplett im Verwaltungsbereich.
+
+### DB-Änderungen
+- Keine (nur Code-Änderungen, `cooldown_started_at`-Spalte existiert bereits seit
+  der ursprünglichen Cooldown-Funktion).
+
+---
+
 ## [v0.27] — 2026-07-07
 
 ### Hinzugefügt

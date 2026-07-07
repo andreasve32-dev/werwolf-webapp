@@ -445,8 +445,12 @@ function admin_render_kill_quick(array $s): string {
     ob_start();
     ?>
     <?php if ($game['status']==='running'): ?>
-    <div class="card animate-in mt-2" style="animation-delay:.14s">
-      <div class="section-title">Spieler als tot melden</div>
+    <div class="card card--glow animate-in mb-2" style="animation-delay:.045s;border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04)">
+      <div class="section-title" style="color:#fbbf24">☠ Spieler als tot melden</div>
+      <p class="text-dim text-xs mb-2">
+        Markiert einen Spieler manuell als tot — für Todesfälle, die außerhalb
+        der App entschieden wurden (z.B. mündliche Absprache).
+      </p>
       <div class="flex gap-sm kill-controls">
         <select id="kill-pid" class="form-input" style="flex:1">
           <option value="">Spieler wählen…</option>
@@ -457,9 +461,8 @@ function admin_render_kill_quick(array $s): string {
         <select id="kill-cause" class="form-input" style="width:auto">
           <option value="killer">🔪 Mordwaffe</option>
           <option value="vote">⚖️ Erhängt</option>
-          <option value="other">💀 Sonstiges</option>
         </select>
-        <button class="btn btn--danger" onclick="manualKill()">☠</button>
+        <button class="btn btn--danger" style="border-color:rgba(251,191,36,.4)" onclick="manualKill()">☠</button>
       </div>
     </div>
     <?php endif; ?>

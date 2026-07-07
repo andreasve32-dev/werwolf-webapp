@@ -132,21 +132,21 @@ require TEMPLATE_PATH . '/base.php';
         <span class="admin-link-card__arrow">→</span>
       </a>
 
+      <a href="<?= APP_URL ?>/docs/admin.php" class="admin-link-card">
+        <span class="admin-link-card__icon">📖</span>
+        <div class="admin-link-card__text">
+          <div class="admin-link-card__title">Anleitung</div>
+          <div class="admin-link-card__sub">Admin-Handbuch — Spielablauf &amp; Funktionen</div>
+        </div>
+        <span class="admin-link-card__arrow">→</span>
+      </a>
+
       <?php if (APP_DEBUG): ?>
       <a href="<?= APP_URL ?>/admin/debug.php" class="admin-link-card" style="border-color:rgba(251,191,36,.35)">
         <span class="admin-link-card__icon">🐛</span>
         <div class="admin-link-card__text">
           <div class="admin-link-card__title" style="color:#fbbf24">Debug-Menü</div>
-          <div class="admin-link-card__sub">Eigene Rolle wählen &amp; Tote wiederbeleben</div>
-        </div>
-        <span class="admin-link-card__arrow">→</span>
-      </a>
-
-      <a href="<?= APP_URL ?>/admin/testplayers.php" class="admin-link-card" style="border-color:rgba(251,191,36,.35)">
-        <span class="admin-link-card__icon">🤖</span>
-        <div class="admin-link-card__text">
-          <div class="admin-link-card__title" style="color:#fbbf24">Testspieler</div>
-          <div class="admin-link-card__sub">Bis zu 20 Test-Konten anlegen &amp; löschen</div>
+          <div class="admin-link-card__sub">Rolle/Cooldown, Spielkarte ansehen, Tote (be)leben, Testspieler</div>
         </div>
         <span class="admin-link-card__arrow">→</span>
       </a>
@@ -180,9 +180,6 @@ require TEMPLATE_PATH . '/base.php';
 
       <!-- Bürgerversammlung -->
       <div id="voting-card"><?= admin_render_voting($state) ?></div>
-
-      <!-- Als tot markieren (Schnellzugriff) -->
-      <div id="kill-quick-card"><?= admin_render_kill_quick($state) ?></div>
 
     </div>
   </div>
@@ -256,7 +253,7 @@ const dash = liveBlocks({
     'win-banner':'win-banner', 'assembly-banner':'assembly-banner',
     'game-controls':'game-controls', 'player-list-body':'player-list-body',
     'add-players-card':'add-players-card', 'role-preview-card':'role-preview-card',
-    'voting-card':'voting-card', 'kill-quick-card':'kill-quick-card',
+    'voting-card':'voting-card',
   },
   countdownId: 'poll-countdown',
 });
@@ -322,19 +319,12 @@ async function freeAccused(name) {
 }
 async function killPlayer(pid,name){
   if(!confirm(name+' als tot markieren?'))return;
-  const cause=document.getElementById('kill-cause')?.value||'other';
-  const r=await apiFetch(API_BASE+'/admin.php',{action:'kill_player',game_id:GAME_ID,player_id:pid,cause});
+  // Kein Ursache-Dropdown mehr auf dieser Seite (siehe Debug-Menü für die
+  // gezielte Auswahl Mordwaffe/Erhängt) — Todesursache ist serverseitig ohnehin
+  // nur für "Erhängt" (Versammlungsregeln) relevant, sonst irrelevant.
+  const r=await apiFetch(API_BASE+'/admin.php',{action:'kill_player',game_id:GAME_ID,player_id:pid,cause:'killer'});
   if(r.error==='session_expired')return;
   if(r.ok){showToast(r.message||(name+' gestorben'),'success');dash.refreshNow();}
-  else showToast(r.error||'Fehler','error');
-}
-async function manualKill(){
-  const pid=document.getElementById('kill-pid').value;
-  const cause=document.getElementById('kill-cause').value;
-  if(!pid){showToast('Spieler wählen!','error');return;}
-  const r=await apiFetch(API_BASE+'/admin.php',{action:'kill_player',game_id:GAME_ID,player_id:parseInt(pid),cause});
-  if(r.error==='session_expired')return;
-  if(r.ok){showToast(r.message||'Als tot markiert','success');dash.refreshNow();}
   else showToast(r.error||'Fehler','error');
 }
 JS;

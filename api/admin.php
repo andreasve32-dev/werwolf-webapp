@@ -308,6 +308,15 @@ switch($action){
     Database::execute("UPDATE game_players SET role_id=? WHERE game_id=? AND player_id=?", [$roleId, $gameId, $_adminId]);
     ok('🎭 Rolle gesetzt: ' . $role['name'], ['role_name' => $role['name']]);break;
 
+  case 'debug_reset_cooldown':
+    if (!APP_DEBUG) err('Nur im Debug-Modus verfügbar.', 403);
+    $g = Database::queryOne("SELECT * FROM games WHERE id=? AND status='running'", [$gameId]);
+    if (!$g) err('Spiel läuft nicht');
+    $me = Database::queryOne("SELECT id FROM game_players WHERE game_id=? AND player_id=?", [$gameId, $_adminId]);
+    if (!$me) err('Du bist nicht als Spieler im Spiel');
+    Database::execute("UPDATE game_players SET cooldown_started_at=NULL WHERE game_id=? AND player_id=?", [$gameId, $_adminId]);
+    ok('⏱️ Cooldown zurückgesetzt.');break;
+
   case 'debug_peek_role':
     // Zeigt die volle Rollenkarte eines beliebigen Spielers — ignoriert bewusst alle
     // normalen Sichtbarkeitsregeln (get_players etc.), daher nur im Debug-Modus.
@@ -552,7 +561,6 @@ switch($action){
         'add-players-card'  => admin_render_add_players($dashState),
         'role-preview-card' => admin_render_role_preview($dashState),
         'voting-card'       => admin_render_voting($dashState),
-        'kill-quick-card'   => admin_render_kill_quick($dashState),
     ], $input['blocks_hash'] ?? null);break;
 
   default:

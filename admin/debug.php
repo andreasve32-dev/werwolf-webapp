@@ -4,6 +4,7 @@
 // Eigene Seite statt inline im Dashboard, damit die Spielleitung übersichtlich bleibt.
 require_once dirname(__DIR__) . '/core/bootstrap.php';
 require_once TEMPLATE_PATH . '/admin_dashboard_blocks.php';
+require_once TEMPLATE_PATH . '/testplayers_blocks.php';
 Auth::requireAdmin();
 
 $game   = currentGame();
@@ -30,9 +31,13 @@ require TEMPLATE_PATH . '/base.php';
     ⚠️ Debug-Modus ist deaktiviert — aktiviere <code>app_debug</code> unter
     <a href="<?= APP_URL ?>/admin/settings.php">Server-Einstellungen</a>, um diese Werkzeuge zu nutzen.
   </div>
-  <?php elseif (!$game || $game['status'] !== 'running'): ?>
-  <div class="alert alert--warn">
-    Kein laufendes Spiel — Debug-Werkzeuge sind nur während eines laufenden Spiels verfügbar.
+  <?php else: ?>
+
+  <?php if (!$game || $game['status'] !== 'running'): ?>
+  <div class="alert alert--warn mb-2">
+    Kein laufendes Spiel — die spielbezogenen Debug-Werkzeuge (Rolle, Spielkarte,
+    Cooldown, Tod/Wiederbeleben) sind nur während eines laufenden Spiels verfügbar.
+    Die Testspieler-Verwaltung unten geht unabhängig davon jederzeit.
   </div>
   <?php else: ?>
 
@@ -43,7 +48,7 @@ require TEMPLATE_PATH . '/base.php';
       Setzt deine eigene Rolle im laufenden Spiel sofort.
       Aktuell: <span id="debug-current-role-label"><?php if ($adminGameEntry['role_name'] ?? null): ?><strong style="color:var(--text-bright)"><?= e($adminGameEntry['role_name']) ?></strong><?php else: ?><em>keine Rolle</em><?php endif; ?></span>
     </p>
-    <div class="flex gap-sm">
+    <div class="flex gap-sm mb-2">
       <select id="debug-role-select" class="form-input" style="flex:1">
         <option value="">Rolle wählen…</option>
         <?php foreach ($debugRoles as $r): ?>
@@ -56,11 +61,17 @@ require TEMPLATE_PATH . '/base.php';
       <button class="btn btn--ghost" style="border-color:rgba(251,191,36,.4);color:#fbbf24"
               onclick="debugSetOwnRole()">Setzen</button>
     </div>
-    <div id="debug-role-result" class="mt-1"></div>
+    <div id="debug-role-result" class="mb-1"></div>
+    <button class="btn btn--ghost btn--sm" style="border-color:rgba(251,191,36,.4);color:#fbbf24"
+            onclick="debugResetCooldown()">⏱️ Cooldown zurücksetzen</button>
+    <div id="debug-cooldown-result" class="mt-1"></div>
   </div>
 
+  <!-- Spieler als tot melden -->
+  <?= admin_render_kill_quick($state) ?>
+
   <!-- Spielkarte eines Spielers ansehen -->
-  <div class="card card--glow animate-in mb-2" style="animation-delay:.03s;border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04)">
+  <div class="card card--glow animate-in mb-2" style="animation-delay:.06s;border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04)">
     <div class="section-title" style="color:#fbbf24">🃏 Spielkarte ansehen</div>
     <p class="text-dim text-xs mb-2">
       Zeigt die volle Rollenkarte eines beliebigen Spielers — ignoriert bewusst alle
@@ -82,7 +93,7 @@ require TEMPLATE_PATH . '/base.php';
   </div>
 
   <!-- Tote wiederbeleben -->
-  <div class="card animate-in mb-2" style="animation-delay:.05s;border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04)">
+  <div class="card animate-in mb-2" style="animation-delay:.09s;border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04)">
     <div class="section-title" style="color:#fbbf24">🔮 Tote wiederbeleben</div>
     <p class="text-dim text-xs mb-2">
       Bringt einen Spieler ohne neue Runde zurück ins Spiel — löscht dabei auch seinen Todeslisten-Eintrag.
@@ -104,12 +115,17 @@ require TEMPLATE_PATH . '/base.php';
 
   <?php endif; ?>
 
+  <!-- Testspieler — unabhängig vom Spielstatus immer verfügbar (Debug-Modus reicht) -->
+  <?= admin_render_testplayers() ?>
+
+  <?php endif; ?>
+
 </div>
 
 <?php
 $page['inline_js'] = sprintf(
-    'const API_BASE = %s; const GAME_ID = %s;',
-    json_encode(API_URL), json_encode($gameId)
+    'const API_BASE = %s; const GAME_ID = %s; const TP_API = %s;',
+    json_encode(API_URL), json_encode($gameId), json_encode(APP_URL . '/admin/testplayers.php')
 );
 $page['inline_js'] .= <<<'JS'
 
@@ -166,6 +182,110 @@ async function revivePlayer(pid, name) {
   } else {
     showToast(r.error || 'Fehler', 'error');
   }
+}
+
+async function debugResetCooldown() {
+  const res = document.getElementById('debug-cooldown-result');
+  const r = await apiFetch(API_BASE+'/admin.php', {action:'debug_reset_cooldown', game_id:GAME_ID});
+  if (r.error === 'session_expired') return;
+  if (r.ok) res.innerHTML = `<div class="alert alert--success">${escHtml(r.message||'Cooldown zurückgesetzt')}</div>`;
+  else res.innerHTML = `<div class="alert alert--error">${escHtml(r.error||'Fehler')}</div>`;
+}
+
+async function manualKill(){
+  const pid=document.getElementById('kill-pid').value;
+  const cause=document.getElementById('kill-cause').value;
+  if(!pid){showToast('Spieler wählen!','error');return;}
+  const r=await apiFetch(API_BASE+'/admin.php',{action:'kill_player',game_id:GAME_ID,player_id:parseInt(pid),cause});
+  if(r.error==='session_expired')return;
+  if(r.ok){showToast(r.message||'Als tot markiert','success');location.reload();}
+  else showToast(r.error||'Fehler','error');
+}
+
+// ── Testspieler ────────────────────────────────────────────────
+function tpUpdateCounts(delta) {
+  const cur = document.getElementById('tp-cur-count');
+  const lc  = document.getElementById('tp-list-count');
+  if (cur) cur.textContent = Math.max(0, parseInt(cur.textContent) + delta);
+  if (lc)  lc.textContent  = Math.max(0, parseInt(lc.textContent)  + delta);
+  const count = parseInt((cur || lc).textContent);
+  const dab = document.getElementById('tp-delete-all-btn');
+  if (dab) dab.style.display = count > 0 ? '' : 'none';
+  const hint = document.getElementById('tp-empty-hint');
+  if (hint) hint.style.display = count === 0 ? '' : 'none';
+}
+
+function tpRowHtml(p) {
+  const row = document.createElement('div');
+  row.className = 'panel';
+  row.id = 'tp-' + p.id;
+  row.style.cssText = 'padding:.5rem .8rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap';
+  row.innerHTML =
+    '<div class="flex gap-sm" style="align-items:center">' +
+      '<span style="font-family:var(--font-display);font-size:.88rem;color:var(--text-bright)">' + escHtml(p.display_name) + '</span>' +
+      '<span class="text-dim text-xs">Login: <code style="font-family:monospace">' + escHtml(p.username) + '</code></span>' +
+    '</div>' +
+    '<button type="button" class="btn btn--ghost btn--sm" title="Löschen">🗑</button>';
+  row.querySelector('button').addEventListener('click', () => tpDeleteOne(p.id, p.display_name));
+  return row;
+}
+
+async function tpCreatePlayers() {
+  const count  = parseInt(document.getElementById('tp-create-count').value) || 1;
+  const result = document.getElementById('tp-create-result');
+  const fd = new FormData();
+  fd.append('count', count);
+  try {
+    const data = await (await fetch(TP_API + '?action=create', {method: 'POST', body: fd})).json();
+    result.style.display = '';
+    if (data.ok) {
+      const msg = data.created > 0
+        ? '✓ ' + data.created + ' Testspieler angelegt' + (data.skipped > 0 ? ' (' + data.skipped + ' vorhandene übersprungen).' : '.')
+        : 'Kein Platz mehr — das Maximum an Testspielern ist bereits angelegt.';
+      result.innerHTML = `<div class="alert alert--success" style="padding:.35rem .8rem;font-size:.84rem">${escHtml(msg)}</div>`;
+      if (data.created > 0) {
+        const list = document.getElementById('tp-list');
+        (data.rows || []).forEach(p => list.appendChild(tpRowHtml(p)));
+        tpUpdateCounts(data.created);
+      }
+    } else {
+      result.innerHTML = `<div class="alert alert--error" style="padding:.35rem .8rem;font-size:.84rem">${escHtml(data.error || 'Fehler')}</div>`;
+    }
+  } catch(e) {
+    result.style.display = '';
+    result.innerHTML = '<div class="alert alert--error" style="padding:.35rem .8rem;font-size:.84rem">Netzwerkfehler.</div>';
+  }
+}
+
+async function tpDeleteOne(pid, name) {
+  const fd = new FormData();
+  fd.append('player_id', pid);
+  try {
+    const data = await (await fetch(TP_API + '?action=delete', {method: 'POST', body: fd})).json();
+    if (data.ok) {
+      const row = document.getElementById('tp-' + pid);
+      if (row) { row.style.opacity = '0'; row.style.transition = 'opacity .25s'; setTimeout(() => row.remove(), 260); }
+      tpUpdateCounts(-1);
+      showToast('„' + name + '" gelöscht.', 'success');
+    } else {
+      showToast(data.error || 'Fehler', 'error');
+    }
+  } catch(e) { showToast('Netzwerkfehler.', 'error'); }
+}
+
+async function tpDeleteAll() {
+  const count = parseInt(document.getElementById('tp-list-count').textContent);
+  if (!count || !confirm(count + ' Testspieler wirklich alle löschen?')) return;
+  try {
+    const data = await (await fetch(TP_API + '?action=delete_all', {method: 'POST'})).json();
+    if (data.ok) {
+      document.querySelectorAll('#tp-list [id^="tp-"]').forEach(el => el.remove());
+      tpUpdateCounts(-count);
+      showToast('Alle Testspieler gelöscht.', 'success');
+    } else {
+      showToast(data.error || 'Fehler', 'error');
+    }
+  } catch(e) { showToast('Netzwerkfehler.', 'error'); }
 }
 JS;
 require TEMPLATE_PATH . '/base_end.php';
