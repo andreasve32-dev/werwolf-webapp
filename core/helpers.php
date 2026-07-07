@@ -282,6 +282,74 @@ function recordDeath(int $gameId, int $playerId, int $round, string $phase, ?str
             recordDeath($gameId, (int)$partner['player_id'], $round, $phase, 'Vor Kummer gestorben');
         }
     }
+
+    // Kill-Hinweise (z.B. Detektiv) nach jedem Tod neu prüfen — idempotent
+    // (Soll/Ist-Vergleich), läuft daher auch bei linked_death-Kaskaden sauber.
+    grantKillHints($gameId);
+}
+
+/**
+ * Kill-Hinweise vergeben (Rollen-Flag kill_hinweis, z.B. Detektiv):
+ * Immer wenn im Spiel so viele Morde (Tode ohne Hinrichtung) geschehen sind,
+ * wie es Killer gibt, erfährt jeder lebende Spieler einer kill_hinweis-Rolle
+ * automatisch einen zufälligen lebenden Nicht-Killer (role_insights,
+ * source='kill_hinweis' — Anzeige "✅ Kein Killer", nicht die volle Rolle).
+ * Idempotent über Soll/Ist-Vergleich, dadurch beliebig oft aufrufbar.
+ */
+function grantKillHints(int $gameId): void {
+    $totalKillers = (int)(Database::queryOne(
+        "SELECT COUNT(*) AS cnt FROM game_players gp JOIN roles r ON r.id=gp.role_id
+         WHERE gp.game_id=? AND r.is_killer=1", [$gameId]
+    )['cnt'] ?? 0);
+    if ($totalKillers < 1) return;
+
+    $kills = (int)(Database::queryOne(
+        "SELECT COUNT(*) AS cnt FROM deaths WHERE game_id=? AND is_gehenkt=0", [$gameId]
+    )['cnt'] ?? 0);
+    $due = intdiv($kills, $totalKillers);
+    if ($due < 1) return;
+
+    $detectives = Database::query(
+        "SELECT gp.player_id FROM game_players gp JOIN roles r ON r.id=gp.role_id
+         WHERE gp.game_id=? AND gp.is_alive=1 AND r.kill_hinweis=1", [$gameId]
+    );
+    foreach ($detectives as $det) {
+        $detId = (int)$det['player_id'];
+        $have = (int)(Database::queryOne(
+            "SELECT COUNT(*) AS cnt FROM role_insights
+             WHERE game_id=? AND viewer_player_id=? AND source='kill_hinweis'",
+            [$gameId, $detId]
+        )['cnt'] ?? 0);
+        $granted = false;
+        while ($have < $due) {
+            // Kandidat: lebender Nicht-Killer, nicht der Ermittler selbst, noch
+            // ohne Erkenntnis dieses Ermittlers (egal aus welcher Quelle)
+            $cand = Database::queryOne(
+                "SELECT gp.player_id FROM game_players gp
+                 LEFT JOIN roles r ON r.id=gp.role_id
+                 WHERE gp.game_id=? AND gp.is_alive=1 AND gp.player_id!=?
+                   AND (r.is_killer=0 OR r.id IS NULL)
+                   AND gp.player_id NOT IN (
+                     SELECT target_player_id FROM role_insights
+                     WHERE game_id=? AND viewer_player_id=?
+                   )
+                 ORDER BY RAND() LIMIT 1",
+                [$gameId, $detId, $gameId, $detId]
+            );
+            if (!$cand) break; // niemand mehr übrig
+            Database::execute(
+                "INSERT IGNORE INTO role_insights (game_id, viewer_player_id, target_player_id, source) VALUES (?,?,?,'kill_hinweis')",
+                [$gameId, $detId, (int)$cand['player_id']]
+            );
+            $have++;
+            $granted = true;
+        }
+        if ($granted) {
+            // Bewusst ohne Inhalt/Namen — Push erscheint auf dem Sperrbildschirm
+            require_once CORE_PATH . '/WebPush.php';
+            WebPush::sendToPlayer($detId, '🕵️ Neue Erkenntnis', 'Deine Ermittlung hat etwas ergeben — öffne das Spielfenster.');
+        }
+    }
 }
 
 /**

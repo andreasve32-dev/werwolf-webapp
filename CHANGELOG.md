@@ -4,6 +4,37 @@ Jedes Backup erhält eine fortlaufende Versionsnummer (v0.0.x).
 
 ---
 
+## [v0.0.25] — 2026-07-07
+
+### Hinzugefügt
+- **Detektiv überarbeitet — passive Kill-Hinweise:** Neues Rollen-Flag
+  `kill_hinweis` (per Checkbox für jede Rolle aktivierbar, Detektiv =
+  Standard). Vollautomatisch, kein Button: Immer wenn im Spiel so viele
+  Morde geschehen sind, wie es Killer gibt (Hinrichtungen zählen nicht),
+  erfährt jeder lebende Spieler einer solchen Rolle einen zufälligen
+  garantierten Nicht-Killer — als „✅ Kein Killer"-Badge in seiner
+  Spielerliste (bewusst NICHT die volle Rolle), mit Toast im offenen
+  Spielfenster und neutraler Push-Benachrichtigung (ohne Inhalt auf dem
+  Sperrbildschirm). Zentrale Logik in `grantKillHints()` (core/helpers.php),
+  aufgerufen aus `recordDeath()` — idempotent über Soll/Ist-Vergleich,
+  funktioniert daher auch bei linked_death-Kaskaden und mehreren
+  Detektiven. Nutzt die `role_insights`-Tabelle (source=`kill_hinweis`),
+  zählt damit automatisch in der Statistik mit.
+- `WebPush::sendToPlayer()` kann jetzt Titel/Text mitgeben (bisher nur
+  generischer Fallback).
+- Untersucht eine Rolle mit Rollensicht jemanden, den sie schon als
+  „kein Killer" kennt, wird die Erkenntnis zur vollen Rollensicht
+  aufgewertet (ON DUPLICATE KEY UPDATE), nie umgekehrt.
+- Detektiv-Rollentexte auf die neue passive Mechanik umgestellt (Seeds +
+  Live-DB); der alte Durchsuchen-Text ist in der lokalen
+  Rollen-Referenz-PDF dokumentiert.
+
+### DB-Änderungen (in frischem Schema enthalten, live bereits ausgeführt)
+- `ALTER TABLE roles ADD COLUMN kill_hinweis TINYINT(1) NOT NULL DEFAULT 0`
+- `UPDATE roles SET kill_hinweis=1 WHERE name='Detektiv'` + neue Texte
+
+---
+
 ## [v0.0.24] — 2026-07-06
 
 ### Geändert

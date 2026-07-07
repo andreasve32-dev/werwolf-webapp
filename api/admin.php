@@ -351,7 +351,7 @@ switch($action){
     $cooldown = (int)($input['cooldown'] ?? 0);
     if ($cooldown < 0 || $cooldown > 10080) err('Cooldown: 0–10080 Minuten (max. 7 Tage).');
     Database::execute(
-      "INSERT INTO roles (name,cooldown,description,rules,active,amount,fill,icon_path,sichtbar,killer_sichtbar,befragen,auto_eintrag,is_killer,sort_order,linked_death,rollensicht) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      "INSERT INTO roles (name,cooldown,description,rules,active,amount,fill,icon_path,sichtbar,killer_sichtbar,befragen,auto_eintrag,is_killer,sort_order,linked_death,rollensicht,kill_hinweis) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
       [
         $name,
         $cooldown,
@@ -369,6 +369,7 @@ switch($action){
         (int)($input['sort_order'] ?? 0),
         !empty($input['linked_death']) ? 1 : 0,
         !empty($input['rollensicht']) ? 1 : 0,
+        !empty($input['kill_hinweis']) ? 1 : 0,
       ]
     );
     $newRoleId = Database::lastId();
@@ -387,7 +388,7 @@ switch($action){
     $cooldown = (int)($input['cooldown'] ?? 0);
     if ($cooldown < 0 || $cooldown > 10080) err('Cooldown: 0–10080 Minuten (max. 7 Tage).');
     Database::execute(
-      "UPDATE roles SET name=?,cooldown=?,description=?,rules=?,active=?,amount=?,fill=?,icon_path=?,sichtbar=?,killer_sichtbar=?,befragen=?,auto_eintrag=?,is_killer=?,sort_order=?,linked_death=?,rollensicht=? WHERE id=?",
+      "UPDATE roles SET name=?,cooldown=?,description=?,rules=?,active=?,amount=?,fill=?,icon_path=?,sichtbar=?,killer_sichtbar=?,befragen=?,auto_eintrag=?,is_killer=?,sort_order=?,linked_death=?,rollensicht=?,kill_hinweis=? WHERE id=?",
       [
         $name,
         $cooldown,
@@ -405,6 +406,7 @@ switch($action){
         (int)($input['sort_order'] ?? 0),
         !empty($input['linked_death']) ? 1 : 0,
         !empty($input['rollensicht']) ? 1 : 0,
+        !empty($input['kill_hinweis']) ? 1 : 0,
         $roleId,
       ]
     );

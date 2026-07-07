@@ -149,9 +149,13 @@ require TEMPLATE_PATH . '/base.php';
         <td style="padding:.5rem .25rem;color:var(--text);font-weight:600;white-space:nowrap">💔 Gemeinsamer Tod</td>
         <td style="padding:.5rem .25rem;color:var(--text-dim)">Stirbt ein Spieler dieser Rolle, sterben automatisch alle anderen lebenden Spieler derselben Rolle mit („Vor Kummer gestorben", z.&nbsp;B. Das Paar).</td>
       </tr>
-      <tr>
+      <tr style="border-bottom:1px solid var(--border)">
         <td style="padding:.5rem .25rem;color:var(--text);font-weight:600;white-space:nowrap">🔮 Rollensicht</td>
         <td style="padding:.5rem .25rem;color:var(--text-dim)">Der Spieler wählt den Untersuchten im Dorfbewohner-Block aus (wie beim Anklagen) und drückt dann den Fähigkeit-Button — die Rolle bleibt danach dauerhaft in der Spielerliste sichtbar (z.&nbsp;B. Hellseherin). Braucht einen Cooldown-Wert &gt; 0, sonst erscheint der Button nicht. Untersuchungen fließen in die Statistik ein.</td>
+      </tr>
+      <tr>
+        <td style="padding:.5rem .25rem;color:var(--text);font-weight:600;white-space:nowrap">🕵️ Kill-Hinweise</td>
+        <td style="padding:.5rem .25rem;color:var(--text-dim)">Vollautomatisch, kein Button: Immer wenn im Spiel so viele Morde geschehen sind, wie es Killer gibt, erfährt der Spieler einen zufälligen garantierten Nicht-Killer — als „✅ Kein Killer"-Badge in seiner Spielerliste, mit Push-Benachrichtigung (z.&nbsp;B. Detektiv). Hinrichtungen zählen nicht als Morde. Fließt in die Statistik ein.</td>
       </tr>
     </table>
     <p>

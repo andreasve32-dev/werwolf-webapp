@@ -136,6 +136,11 @@ $v       = fn(string $key, $default = '') => $isEdit ? ($editRole[$key] ?? $defa
            style="width:18px;height:18px;accent-color:var(--accent)">
     <label class="form-label" for="<?= $prefix ?>rollensicht" style="margin:0">🔮 Rollensicht — untersuchte Spieler dauerhaft sehen (z.B. Hellseherin)</label>
   </div>
+  <div class="form-group flex gap-sm" style="align-items:center">
+    <input type="checkbox" id="<?= $prefix ?>kill_hinweis" <?= $v('kill_hinweis', 0) ? 'checked' : '' ?>
+           style="width:18px;height:18px;accent-color:var(--accent)">
+    <label class="form-label" for="<?= $prefix ?>kill_hinweis" style="margin:0">🕵️ Kill-Hinweise — erfährt automatisch Nicht-Killer (z.B. Detektiv)</label>
+  </div>
 </div>
 <p class="text-dim text-xs mt-1" style="margin-top:-.5rem">
   <strong>Auffüll-Rolle</strong>: Spieler ohne Sonderrolle bekommen diese Rolle (z.B. Bürger). &nbsp;|&nbsp;
@@ -147,5 +152,7 @@ $v       = fn(string $key, $default = '') => $isEdit ? ($editRole[$key] ?? $defa
   Spieler derselben Rolle mit ("Vor Kummer gestorben") — Ort bleibt bis zur Befragung verborgen wie bei jedem anderen Tod. &nbsp;|&nbsp;
   <strong>Rollensicht</strong>: Der Fähigkeit-Button fragt nach dem Untersuchungs-Ziel; dessen Rolle bleibt
   für diesen Spieler dauerhaft in der Spielerliste sichtbar. Braucht einen Cooldown-Wert &gt; 0 (der Button
-  erscheint nur mit Cooldown).
+  erscheint nur mit Cooldown). &nbsp;|&nbsp;
+  <strong>Kill-Hinweise</strong>: Vollautomatisch — immer wenn so viele Morde geschehen sind, wie es Killer
+  gibt, erfährt der Spieler einen zufälligen Nicht-Killer („✅ Kein Killer" in der Spielerliste, mit Push).
 </p>

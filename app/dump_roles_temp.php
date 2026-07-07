@@ -20,19 +20,20 @@ if (!$roles) {
 $pdo = Database::get();
 $esc = fn($v) => $v === null ? 'NULL' : $pdo->quote($v);
 
-echo "INSERT INTO roles (id, name, cooldown, description, rules, active, fill, amount, icon_path, sichtbar, killer_sichtbar, befragen, auto_eintrag, is_killer, sort_order, linked_death, rollensicht) VALUES\n";
+echo "INSERT INTO roles (id, name, cooldown, description, rules, active, fill, amount, icon_path, sichtbar, killer_sichtbar, befragen, auto_eintrag, is_killer, sort_order, linked_death, rollensicht, kill_hinweis) VALUES\n";
 
 $lines = [];
 foreach ($roles as $r) {
     $lines[] = sprintf(
-        "(%d, %s, %d, %s, %s, %d, %d, %d, %s, %d, %d, %d, %d, %d, %d, %d, %d)",
+        "(%d, %s, %d, %s, %s, %d, %d, %d, %s, %d, %d, %d, %d, %d, %d, %d, %d, %d)",
         $r['id'], $esc($r['name']), (int)$r['cooldown'],
         $esc($r['description']), $esc($r['rules']),
         (int)$r['active'], (int)$r['fill'], (int)$r['amount'],
         $esc($r['icon_path']),
         (int)$r['sichtbar'], (int)($r['killer_sichtbar'] ?? 0), (int)$r['befragen'],
         (int)$r['auto_eintrag'], (int)$r['is_killer'],
-        (int)$r['sort_order'], (int)($r['linked_death'] ?? 0), (int)($r['rollensicht'] ?? 0)
+        (int)$r['sort_order'], (int)($r['linked_death'] ?? 0), (int)($r['rollensicht'] ?? 0),
+        (int)($r['kill_hinweis'] ?? 0)
     );
 }
 echo implode(",\n", $lines) . ";\n";

@@ -58,6 +58,7 @@ CREATE TABLE roles (
   is_killer   TINYINT(1)   NOT NULL DEFAULT 0,    -- 1 = Killerteam (gewinnen wenn >= Überlebende Nicht-Killer)
   linked_death TINYINT(1)  NOT NULL DEFAULT 0,    -- 1 = stirbt ein Spieler dieser Rolle, sterben alle anderen lebenden Spieler derselben Rolle automatisch mit (Das Paar)
   rollensicht TINYINT(1)   NOT NULL DEFAULT 0,    -- 1 = darf Spieler untersuchen und sieht deren Rolle dauerhaft (Hellseherin) — Erkenntnisse in role_insights
+  kill_hinweis TINYINT(1)  NOT NULL DEFAULT 0,    -- 1 = erfährt automatisch je (Anzahl Killer) Morde einen zufälligen Nicht-Killer (Detektiv) — Erkenntnisse in role_insights
   sort_order  INT          NOT NULL DEFAULT 0,
   created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
   updated_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -297,8 +298,8 @@ INSERT INTO roles (id, name, cooldown, description, rules, active, fill, amount,
   1, 0, 1, 'assets/icons/roles/hellseherin.png', 0, 0, 0, 0, 40, 0),
 
 (5,  'Detektiv',    0,
-  'Kann Spieler durchsuchen. Trägt der Mörder die Waffe, ist er entlarvt.',
-  'Durchsuche einen Spieler. Trägt er die Mordwaffe, muss er sie abgeben. Stirbt der Detektiv danach, kann die Waffe vom zweiten Mörder zurückgeholt werden. Alternativ wird die Waffe als Beweis öffentlich abgelegt.',
+  'Ermittelt passiv: Nach jeder Mordserie erfährt er automatisch einen Spieler, der sicher kein Killer ist.',
+  'Deine Fähigkeit ist passiv — du musst nichts tun. Immer wenn so viele Morde geschehen sind, wie es Killer im Spiel gibt, zeigt dir die App automatisch einen zufälligen Spieler mit "✅ Kein Killer" in der Spielerliste an. Du bekommst dann eine Benachrichtigung.',
   1, 0, 1, 'assets/icons/roles/detektiv.png', 0, 0, 0, 0, 50, 0),
 
 (6,  'Das Paar',    0,
@@ -329,6 +330,7 @@ INSERT INTO roles (id, name, cooldown, description, rules, active, fill, amount,
 
 -- Flags, die nicht in der Spaltenliste des Seed-INSERTs stehen
 UPDATE roles SET rollensicht=1 WHERE name='Hellseherin';
+UPDATE roles SET kill_hinweis=1 WHERE name='Detektiv';
 
 -- ── 11. App-Einstellungen (DB-konfigurierbar) ─────────────────────
 CREATE TABLE settings (
@@ -343,7 +345,7 @@ CREATE TABLE settings (
 
 INSERT INTO settings (`key`, value, type, label, description, sort_order) VALUES
 ('app_name',           'Werwolf',                          'string', 'Spielname',              'Anzeigename der App — überall sichtbar.',                         10),
-('app_version',        '0.0.24',                          'string', 'Versionsnummer',          'Anzeigeversion z. B. in Fußzeile oder About-Seite.',             15),
+('app_version',        '0.0.25',                          'string', 'Versionsnummer',          'Anzeigeversion z. B. in Fußzeile oder About-Seite.',             15),
 ('beta_mode',          '1',                               'bool',   'Beta-Modus',              'Zeigt einen Beta-Hinweis im Spielfenster an.',                    16),
 ('app_debug',          '1',                               'bool',   'Debug-Modus',             'PHP-Fehler anzeigen. Im Produktivbetrieb auf 0 setzen.',          20),
 ('default_theme',      'gothic',                          'string', 'Standard-Theme',          'Theme für neue Nutzer ohne gespeichertes Theme.',                30),

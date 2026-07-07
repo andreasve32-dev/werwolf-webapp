@@ -509,6 +509,7 @@ require TEMPLATE_PATH . '/base.php';
 <?php
 $page['inline_js'] .= <<<'JS'
 let selectedTarget    = null;
+let _knownNotKiller   = null; // zuletzt bekannte "Kein Killer"-Hinweise (Toast bei Neuzugang)
 let _lastStatusHtml   = null; // zuletzt gerendertes my-status-actions-Fragment
 let _lastPlayersHtml  = null; // zuletzt gerenderte Spielerliste
 let _knownDead        = null; // Spieler-IDs, die beim letzten Update tot waren
@@ -592,6 +593,18 @@ function renderGameState(r) {
   }
   _knownDead = deadNow;
 
+  // Neuer Kill-Hinweis (z.B. Detektiv) seit dem letzten Update? → Toast
+  const notKillerNow = new Set(r.players.filter(p => p.not_killer).map(p => String(p.player_id)));
+  if (_knownNotKiller !== null && GAME_STATUS === 'running') {
+    for (const id of notKillerNow) {
+      if (!_knownNotKiller.has(id)) {
+        const p = r.players.find(x => String(x.player_id) === id);
+        if (p) showToast(`🕵️ Erkenntnis: ${p.display_name} ist kein Killer`, 'success', 8000);
+      }
+    }
+  }
+  _knownNotKiller = notKillerNow;
+
   window._lastPlayers = r.players; // u.a. für das Untersuchungs-Auswahlfenster (Rollensicht)
 
   if(r.players.length===0){
@@ -604,7 +617,9 @@ function renderGameState(r) {
     const canSel=!dead&&p.player_id!=PLAYER_ID&&MY_ALIVE&&GAME_STATUS==='running';
     const pName=p.display_name;
     const roleHtml = !dead && p.role_name
-      ? `<div class="player-card__role">${escHtml(p.role_name)}</div>` : '';
+      ? `<div class="player-card__role">${escHtml(p.role_name)}</div>`
+      : (!dead && p.not_killer
+          ? `<div class="player-card__role" style="color:var(--alert-success-text,#34d399)">✅ Kein Killer</div>` : '');
     const iconHtml = !dead && p.role_icon_path
       ? renderRoleIcon(p.role_icon_path)
       : `<span class="player-card__icon">${dead?'🕯️':'👤'}</span>`;

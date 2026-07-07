@@ -519,6 +519,7 @@ Aktivieren/Deaktivieren, Löschen, alles per Formular.
 | `is_killer` | 1 = Killer-Team (gewinnen wenn ≥ Überlebende Nicht-Killer) |
 | `linked_death` | 1 = Stirbt ein Spieler dieser Rolle, sterben alle anderen lebenden Spieler derselben Rolle automatisch mit ("Vor Kummer gestorben", z. B. Das Paar) |
 | `rollensicht` | 1 = Fähigkeit-Button fragt nach dem Untersuchungs-Ziel; dessen Rolle bleibt dauerhaft sichtbar (z. B. Hellseherin). Erkenntnisse in Tabelle `role_insights`, fließen in die Statistik ein. Braucht Cooldown > 0 |
+| `kill_hinweis` | 1 = Vollautomatisch: je (Anzahl Killer) Morde erfährt der Spieler einen zufälligen Nicht-Killer („✅ Kein Killer"-Badge + Push, z. B. Detektiv). Erkenntnisse in `role_insights` (source=`kill_hinweis`) |
 | `sort_order` | Reihenfolge in Listen |
 
 **Standard-Rollen (alle aktiv):**
@@ -529,7 +530,7 @@ Aktivieren/Deaktivieren, Löschen, alles per Formular.
 | 🔪 Mörder | Sichtbar (Mörder erkennen sich), Cooldown 30 Min. |
 | 💀 Nekromant | `befragen=1` — tote Spieler können Rolle, Ort und Zeit selbst eintragen |
 | 🔮 Hellseher | `rollensicht=1` — untersucht Spieler, deren Rolle bleibt dauerhaft sichtbar; Cooldown 30 Min. |
-| 🕵️ Detektiv | Kann Spieler durchsuchen |
+| 🕵️ Detektiv | `kill_hinweis=1` — erfährt automatisch nach je (Anzahl Killer) Morden einen garantierten Nicht-Killer |
 | 💑 Das Paar | 2 Spieler, sichtbar füreinander; `linked_death=1` — stirbt einer, stirbt der andere automatisch mit ("Vor Kummer gestorben") |
 | 🐔 Dodo | Gewinnt durch eigene Hinrichtung |
 | ⭐ Star | `auto_eintrag=1` — Tod + Zeit sofort öffentlich, unabhängig vom Nekromanten |

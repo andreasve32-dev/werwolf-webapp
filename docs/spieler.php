@@ -210,6 +210,15 @@ require TEMPLATE_PATH . '/base.php';
       sichtbar — auch nach Neuladen oder auf einem anderen Gerät. Erst danach startet dein
       Cooldown. Nur du siehst diese Information, kein anderer Spieler.
     </div>
+
+    <div class="tip-box" style="margin-top:.75rem">
+      <strong>🕵️ Automatische Ermittlung (z.&nbsp;B. Detektiv):</strong>
+      Manche Rollen ermitteln von selbst — du musst nichts drücken. Immer wenn so viele
+      Morde geschehen sind, wie es Killer im Spiel gibt, zeigt dir die App automatisch
+      einen zufälligen Spieler mit <strong>„✅ Kein Killer"</strong> in der Spielerliste an
+      und schickt dir eine Benachrichtigung. Hinrichtungen durch die Versammlung zählen
+      dabei nicht als Morde. Auch dieses Wissen sieht nur du.
+    </div>
   </div>
 
 

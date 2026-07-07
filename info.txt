@@ -30,7 +30,6 @@ Zweisprachigkeit Deutsch/Englisch — Umschalter in den Spieler-Einstellungen
     etappenweise committen + nach jeder Etappe Live-Smoke-Test; {cooldown}-Platzhalter
     (roleText) muss in beiden Sprachvarianten der Rollentexte funktionieren.
 Sheriff als bekannte Rolle — Permanent allen Spielern sichtbar; erhält nach jedem Kill zufällig einen garantierten Nicht-Killer angezeigt
-Detektiv überarbeitet — Nach X Kills (= Anzahl der Killer) bekommt Detektiv einen zufälligen Nicht-Killer angezeigt; Fähigkeit ist passiv, kein Cooldown
 Leichenfresser-Killer — Killt wie normal, aber Leichen können danach nicht vom Nekromant befragt werden und hinterlassen keine Orts-/Zeitspuren
 Auftragskiller — Bekommt zufälliges Ziel zugewiesen; nach Kill neues Ziel (5 min Cooldown)
 Schläfer/Verräter-Rolle — Killer der nach X Stunden die Seite wechselt; alle anderen Killer werden vorab gewarnt: "Einer von euch ist ein Verräter" (verzögerter Switch)
@@ -63,6 +62,28 @@ Sprachnachrichten an den Spielleiter — Warum: einige Spieler schreiben nur ung
     Passwortfeld, analog zu SETUP_PASSWORD-Handling) und DB-Speicherung darüber wie bei den
     anderen Bereichen (eigenes Formular + eigener Speichern-Button, siehe bestehendes Muster).
 ---
+✅ Gelöst (07.07.2026)
+
+[Feature] Detektiv überarbeitet — passive Kill-Hinweise nach Mordserien (→ v0.0.25)
+      → Neues Rollen-Flag kill_hinweis (per Checkbox aktivierbar, Detektiv = Standard,
+        alte Durchsuchen-Texte ersetzt; Alt-Stand in lokaler Rollen-Referenz-PDF
+        gesichert). Mechanik wie in der Idee konkretisiert: passiv, kein Cooldown —
+        immer wenn (Anzahl Killer im Spiel) Morde geschehen sind (deaths mit
+        is_gehenkt=0, Hinrichtungen zählen nicht), bekommt jeder lebende Spieler
+        einer kill_hinweis-Rolle automatisch einen zufälligen lebenden Nicht-Killer
+        zugeteilt. Anzeige bewusst NUR als "✅ Kein Killer"-Badge in der Spielerliste
+        (nicht die volle Rolle — schwächer als Hellseherin), Toast bei offenem
+        Spielfenster, neutraler Push ohne Inhalt (Sperrbildschirm verrät nichts).
+        Technik: grantKillHints() in core/helpers.php, aus recordDeath() aufgerufen,
+        idempotent (Soll = floor(Morde/Killer) vs. Ist aus role_insights) — sicher
+        bei linked_death-Kaskaden und mehreren Detektiven. Erkenntnisse in
+        role_insights mit source='kill_hinweis' (Statistik zählt automatisch mit);
+        get_players unterscheidet: rollensicht→Rolle zeigen, kill_hinweis→not_killer-
+        Feld. Hellseherin-Untersuchung wertet einen vorhandenen Kill-Hinweis zur
+        vollen Rollensicht auf (ON DUPLICATE KEY UPDATE), nie umgekehrt.
+        WebPush::sendToPlayer() um Titel/Text erweitert. Doku: Flag-Tabelle
+        docs/admin.php, Tipp-Box docs/spieler.php, README, Formular-Legende.
+
 ✅ Gelöst (06.07.2026)
 
 [Feature] Hellseherin: permanente Rollensicht — untersuchte Rollen dauerhaft sichtbar (→ v0.0.23)

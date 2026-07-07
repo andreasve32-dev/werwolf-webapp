@@ -55,12 +55,17 @@ switch($action){
     $myVisible        = $me ? (bool)((int)($me['role_sichtbar'] ?? 0)) : false;
     $myIsKiller       = $me ? (bool)((int)($me['role_is_killer'] ?? 0)) : false;
     $myKillerSichtbar = $me ? (bool)((int)($me['role_killer_sichtbar'] ?? 0)) : false;
-    // Erworbene Erkenntnisse (z.B. Hellseherin-Untersuchungen): deren Rollen
-    // bleiben für mich dauerhaft sichtbar — unabhängig von Flags
-    $myInsightIds = array_map('intval', array_column(Database::query(
-        "SELECT target_player_id FROM role_insights WHERE game_id=? AND viewer_player_id=?",
+    // Erworbene Erkenntnisse: rollensicht (Hellseherin) zeigt die volle Rolle,
+    // kill_hinweis (Detektiv) nur das "✅ Kein Killer"-Badge
+    $myInsightIds   = []; // volle Rollensicht
+    $myNotKillerIds = []; // nur "kein Killer"-Wissen
+    foreach (Database::query(
+        "SELECT target_player_id, source FROM role_insights WHERE game_id=? AND viewer_player_id=?",
         [$gameId, $playerId]
-    ), 'target_player_id'));
+    ) as $ins) {
+        if ($ins['source'] === 'kill_hinweis') $myNotKillerIds[] = (int)$ins['target_player_id'];
+        else                                   $myInsightIds[]   = (int)$ins['target_player_id'];
+    }
 
     foreach($players as &$p){
       $pRoleId         = $p['role_id'] !== null ? (int)$p['role_id'] : null;
@@ -93,6 +98,10 @@ switch($action){
         $p['role_icon_path'] = null;
         $p['role_sichtbar']  = 0;
       }
+      // Kill-Hinweis-Wissen (nur "kein Killer", nicht die Rolle) — Badge im
+      // Client, nur wenn die Rolle nicht ohnehin angezeigt wird
+      $p['not_killer'] = (!$isMe && !$isDead && $p['role_name'] === null
+                          && in_array((int)$p['player_id'], $myNotKillerIds, true)) ? 1 : 0;
       // Interne Flags nie an den Client geben — role_is_killer würde
       // sonst die Mörder an ALLE verraten
       unset($p['role_is_killer'], $p['role_killer_sichtbar']);
@@ -175,8 +184,11 @@ switch($action){
       );
       if(!$target){http_response_code(400);echo json_encode(['error'=>'Spieler ist nicht in diesem Spiel.']);exit;}
       if(!(int)$target['is_alive']){http_response_code(400);echo json_encode(['error'=>'Tote Spieler kannst du nicht untersuchen — ihre Rolle steht in der Todesliste.']);exit;}
+      // ON DUPLICATE statt IGNORE: ein evtl. vorhandener Kill-Hinweis ("kein
+      // Killer") wird zur vollen Rollensicht aufgewertet, nie umgekehrt
       Database::execute(
-        "INSERT IGNORE INTO role_insights (game_id, viewer_player_id, target_player_id, source) VALUES (?,?,?,'rollensicht')",
+        "INSERT INTO role_insights (game_id, viewer_player_id, target_player_id, source) VALUES (?,?,?,'rollensicht')
+         ON DUPLICATE KEY UPDATE source='rollensicht'",
         [$gameId,$playerId,$targetId]
       );
       $revealed = [

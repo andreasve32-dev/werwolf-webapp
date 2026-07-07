@@ -54,8 +54,8 @@ class WebPush {
 
     // ── Versand ───────────────────────────────────────────────
 
-    /** Push an einen einzelnen Spieler senden. */
-    public static function sendToPlayer(int $playerId): void {
+    /** Push an einen einzelnen Spieler senden ($title/$body leer = generischer Fallback im SW). */
+    public static function sendToPlayer(int $playerId, string $title = '', string $body = ''): void {
         try {
             [$pub, $priv] = self::loadKeys();
             if (!$pub) return;
@@ -63,8 +63,13 @@ class WebPush {
                 "SELECT endpoint FROM push_subscriptions WHERE player_id = ?",
                 [$playerId]
             );
+            $payload = '';
+            if ($title !== '' || $body !== '') {
+                $appName = defined('APP_NAME') ? APP_NAME : 'Spiel';
+                $payload = json_encode(['title' => $title, 'body' => $body, 'tag' => 'werwolf-event', 'app' => $appName]);
+            }
             foreach ($subs as $s) {
-                self::dispatch($s['endpoint'], $pub, $priv);
+                self::dispatch($s['endpoint'], $pub, $priv, $payload);
             }
         } catch (Throwable $e) {
             error_log('[WebPush] sendToPlayer error: ' . $e->getMessage());

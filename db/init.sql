@@ -253,7 +253,8 @@ ALTER TABLE roles
   ADD COLUMN IF NOT EXISTS is_killer       TINYINT(1) NOT NULL DEFAULT 0 AFTER auto_eintrag,
   ADD COLUMN IF NOT EXISTS sort_order      INT        NOT NULL DEFAULT 0  AFTER is_killer,
   ADD COLUMN IF NOT EXISTS linked_death    TINYINT(1) NOT NULL DEFAULT 0  AFTER sort_order,
-  ADD COLUMN IF NOT EXISTS rollensicht     TINYINT(1) NOT NULL DEFAULT 0  AFTER linked_death;
+  ADD COLUMN IF NOT EXISTS rollensicht     TINYINT(1) NOT NULL DEFAULT 0  AFTER linked_death,
+  ADD COLUMN IF NOT EXISTS kill_hinweis    TINYINT(1) NOT NULL DEFAULT 0  AFTER rollensicht;
 
 -- Rollen-Erkenntnisse: "Spieler A kennt die Rolle von Spieler B" (z.B. Hellseherin)
 CREATE TABLE IF NOT EXISTS role_insights (
@@ -325,8 +326,8 @@ VALUES
   1, 0, 1, 'assets/icons/roles/hellseherin.png', 0, 0, 0, 0, 40),
 
 (5,  'Detektiv',  0,
-  'Kann Spieler durchsuchen. Trägt der Mörder die Waffe, ist er entlarvt.',
-  'Durchsuche einen Spieler. Trägt er die Mordwaffe, muss er sie abgeben. Stirbt der Detektiv danach, kann die Waffe vom zweiten Mörder zurückgeholt werden.',
+  'Ermittelt passiv: Nach jeder Mordserie erfährt er automatisch einen Spieler, der sicher kein Killer ist.',
+  'Deine Fähigkeit ist passiv — du musst nichts tun. Immer wenn so viele Morde geschehen sind, wie es Killer im Spiel gibt, zeigt dir die App automatisch einen zufälligen Spieler mit "✅ Kein Killer" in der Spielerliste an. Du bekommst dann eine Benachrichtigung.',
   1, 0, 1, 'assets/icons/roles/detektiv.png', 0, 0, 0, 0, 50),
 
 (6,  'Das Paar',  0,
@@ -361,12 +362,13 @@ UPDATE roles SET is_killer=1 WHERE name='Mörder'     AND is_killer=0;
 UPDATE roles SET sichtbar=1  WHERE name IN ('Mörder','Das Paar') AND sichtbar=0;
 UPDATE roles SET linked_death=1 WHERE name='Das Paar' AND linked_death=0;
 UPDATE roles SET rollensicht=1 WHERE name='Hellseherin' AND rollensicht=0;
+UPDATE roles SET kill_hinweis=1 WHERE name='Detektiv' AND kill_hinweis=0;
 
 INSERT IGNORE INTO games (id, status) VALUES (1, 'lobby');
 
 INSERT IGNORE INTO settings (`key`, value, type, label, description, sort_order) VALUES
 ('app_name',           'Werwolf',                                       'string', 'Spielname',                     'Anzeigename der App — überall sichtbar.',                              10),
-('app_version',        '0.0.24',                                        'string', 'Versionsnummer',                'Anzeigeversion z. B. in Fußzeile oder About-Seite.',                   15),
+('app_version',        '0.0.25',                                        'string', 'Versionsnummer',                'Anzeigeversion z. B. in Fußzeile oder About-Seite.',                   15),
 ('beta_mode',          '1',                                             'bool',   'Beta-Modus',                    'Zeigt einen Beta-Hinweis im Spielfenster an.',                         16),
 ('app_debug',          '1',                                             'bool',   'Debug-Modus',                   'PHP-Fehler anzeigen. Im Produktivbetrieb auf 0 setzen.',               20),
 ('default_theme',      'gothic',                                        'string', 'Standard-Theme',                'Theme für neue Nutzer ohne gespeichertes Theme.',                      30),
