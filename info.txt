@@ -4,6 +4,14 @@
 ---
 💡 Neue Ideen & Features
 
+Geplante Rollen — WARTEN AUF RÜCKMELDUNG (Stand 07.07.2026): Leichenfresser,
+    Auftragskiller, Schläfer, Söldner + Zombie (Zombie-Modus) liegen fertig
+    ausformuliert als inaktive Rollen (active=0) in der DB und in
+    db/neue_rollen_vorlagen.sql. Mechaniken erst bauen, wenn der Betreiber
+    Rückmeldung (Mitspieler-Feedback) hat — nicht von selbst anfangen.
+    Gleiches gilt für die Bestandsrollen-Überarbeitungen Sheriff (bekannte
+    Rolle), Detektiv (Leichen befragen) und Gunslinger (Textschärfung).
+
 Zweisprachigkeit Deutsch/Englisch — Umschalter in den Spieler-Einstellungen
     Konkretisiert (06.07.2026): Kompletter Umfang (Spieler-Seiten + Admin-Bereich + docs/-
     Anleitungen + API-Meldungen + Push-Nachrichten). Zeitpunkt: erst angehen, wenn die
