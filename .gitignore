@@ -15,6 +15,9 @@ uploads/
 # ── Claude-Sitzungsdaten ─────────────────────────────────────
 .claude/
 
+# ── Lokale Notizen (Bugs/Ideen), nie ins Repo ────────────────
+info.txt
+
 # ── PDFs / lokale Dokumente ──────────────────────────────────
 *.pdf
 
