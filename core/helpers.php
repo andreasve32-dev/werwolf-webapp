@@ -149,6 +149,28 @@ function assetUrl(string $path): string {
     return APP_URL . '/' . $rel . '?v=' . $v;
 }
 
+/**
+ * Erkennt den echten MIME-Typ einer hochgeladenen Datei über ihren Inhalt
+ * (nie der vom Browser gemeldeten Endung/Angabe vertrauen — die ist fälschbar).
+ * Gemeinsamer Helper für api/upload_role_icon.php und api/messages.php (Sprachnachrichten).
+ */
+function detectMimeType(string $tmpPath): string|false {
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime  = finfo_file($finfo, $tmpPath);
+    finfo_close($finfo);
+    return $mime;
+}
+
+/**
+ * Legt ein Upload-Zielverzeichnis relativ zu ROOT_PATH an (falls nötig) und liefert
+ * den absoluten Pfad zurück, oder false bei Fehlschlag (z. B. fehlende Schreibrechte).
+ */
+function ensureUploadDir(string $relPath, int $mode = 0775): string|false {
+    $abs = ROOT_PATH . '/' . ltrim($relPath, '/');
+    if (!is_dir($abs) && !@mkdir($abs, $mode, true)) return false;
+    return $abs;
+}
+
 /** Icon-URL für eine Rolle (für <img src="…">, mask-image oder background-image) */
 function roleIconUrl(array $roleRow): string {
     $path = $roleRow['icon_path'] ?? '';

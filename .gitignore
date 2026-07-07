@@ -9,6 +9,9 @@ audio/*.mp3
 audio/*.ogg
 audio/*.wav
 
+# ── Nutzer-Uploads (Sprachnachrichten etc.) ──────────────────
+uploads/
+
 # ── Claude-Sitzungsdaten ─────────────────────────────────────
 .claude/
 

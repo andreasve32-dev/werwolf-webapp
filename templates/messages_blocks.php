@@ -32,6 +32,9 @@ function render_message_row(array $msg): string {
           <?php else: ?>
             <span id="pub-tag-<?= (int)$msg['id'] ?>" style="display:none" class="tag tag--alive" style="font-size:.65rem">📢 Im FAQ</span>
           <?php endif; ?>
+          <?php if (!empty($msg['voice_path'])): ?>
+            <span class="tag tag--night" style="font-size:.65rem">🎙️ Sprachnachricht</span>
+          <?php endif; ?>
           <!-- Vorschau der Frage wenn zugeklappt -->
           <?php if (!$isNew): ?>
           <span class="msg-preview text-dim" id="preview-<?= (int)$msg['id'] ?>"
@@ -43,12 +46,16 @@ function render_message_row(array $msg): string {
         <div class="flex gap-xs" onclick="event.stopPropagation()">
           <?php if (!$isNew): ?>
           <button class="btn btn--ghost btn--sm" id="pub-btn-<?= (int)$msg['id'] ?>"
-                  title="<?= $msg['published'] ? 'Aus FAQ entfernen' : 'Als FAQ veröffentlichen' ?>"
+                  title="<?= $msg['published'] ? 'Aus FAQ entfernen' : (!empty($msg['voice_path']) && empty($msg['faq_question']) ? 'Vor Veröffentlichung erst FAQ-Text hinterlegen' : 'Als FAQ veröffentlichen') ?>"
                   onclick="togglePublish(<?= (int)$msg['id'] ?>)">
             <?= $msg['published'] ? '📢 Veröffentlicht' : '📢 FAQ freigeben' ?>
           </button>
           <button class="btn btn--ghost btn--sm" title="FAQ-Text anonymisieren/bearbeiten"
                   onclick="toggleFaqEdit(<?= (int)$msg['id'] ?>)">✏️ FAQ-Text</button>
+          <?php if (!empty($msg['voice_path']) && VOICE_TRANSCRIPTION): ?>
+          <button class="btn btn--ghost btn--sm" title="Sprachnachricht automatisch transkribieren (OpenAI)"
+                  onclick="transcribeVoice(<?= (int)$msg['id'] ?>, this)">🎙️→📝 Transkribieren</button>
+          <?php endif; ?>
           <?php endif; ?>
           <button class="btn btn--ghost btn--sm" title="Löschen"
                   onclick="deleteMsg(<?= (int)$msg['id'] ?>)">🗑</button>
@@ -66,17 +73,34 @@ function render_message_row(array $msg): string {
         <!-- Frage des Spielers (Original, wird nie verändert) -->
         <div style="background:var(--panel-bg);border:1px solid var(--border);border-radius:8px;
                     padding:.6rem .85rem;margin-bottom:.6rem;font-size:.9rem;line-height:1.5">
-          <?= e($msg['message']) ?>
+          <?php if (!empty($msg['voice_path'])): ?>
+            <?php if (is_file(ROOT_PATH . '/' . $msg['voice_path'])): ?>
+              <?php // onerror fängt beschädigte/nicht dekodierbare Aufnahmen ab —
+                    // Player ausblenden, Hinweis daneben einblenden ?>
+              <audio controls preload="none" style="width:100%;max-width:340px;display:block"
+                     src="<?= e(API_URL) ?>/messages.php?action=voice_file&amp;id=<?= (int)$msg['id'] ?>"
+                     onerror="this.style.display='none';this.nextElementSibling.style.display=''"></audio>
+              <span class="text-dim text-sm" style="display:none">⚠️ Aufnahme kann nicht abgespielt werden (Datei beschädigt oder Format nicht unterstützt).</span>
+            <?php else: ?>
+              <span class="text-dim text-sm">⚠️ Aufnahme-Datei fehlt auf dem Server.</span>
+            <?php endif; ?>
+          <?php else: ?>
+            <?= e($msg['message']) ?>
+          <?php endif; ?>
         </div>
 
-        <!-- FAQ-Text bearbeiten (anonymisierte/gekürzte Version für die öffentliche FAQ) -->
+        <!-- FAQ-Text bearbeiten (anonymisierte/gekürzte Version für die öffentliche FAQ).
+             Bei Sprachnachrichten ist das die EINZIGE Möglichkeit, Inhalte zu veröffentlichen —
+             die Audiodatei selbst wird nie öffentlich, nur diese vom Spielleiter
+             geschriebene Textfassung. -->
         <?php if (!$isNew): ?>
         <div id="faq-edit-<?= (int)$msg['id'] ?>" style="display:none;margin-bottom:.6rem">
           <label class="text-dim text-xs" style="display:block;margin-bottom:.25rem">
             Text für die öffentliche FAQ (Namen/persönliche Angaben hier entfernen):
           </label>
           <textarea class="form-input" id="faq-text-<?= (int)$msg['id'] ?>" rows="2" maxlength="500"
-                    style="width:100%;font-size:.85rem;resize:vertical"><?= e($msg['faq_question'] ?? $msg['message']) ?></textarea>
+                    placeholder="<?= !empty($msg['voice_path']) ? 'Anonymisierte Textfassung der Sprachnachricht …' : '' ?>"
+                    style="width:100%;font-size:.85rem;resize:vertical"><?= e($msg['faq_question'] ?? (!empty($msg['voice_path']) ? '' : $msg['message'])) ?></textarea>
           <div class="flex gap-xs mt-1">
             <button class="btn btn--primary btn--sm" onclick="saveFaqQuestion(<?= (int)$msg['id'] ?>)">✓ Speichern</button>
             <button class="btn btn--ghost btn--sm" onclick="toggleFaqEdit(<?= (int)$msg['id'] ?>)">Abbrechen</button>

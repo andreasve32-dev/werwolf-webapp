@@ -5,7 +5,7 @@ require_once TEMPLATE_PATH . '/messages_blocks.php';
 Auth::requireAdmin();
 
 $messages = Database::query(
-    "SELECT m.id, m.message, m.faq_question, m.reply, m.created_at, m.replied_at, m.read_by_player, m.published,
+    "SELECT m.id, m.message, m.faq_question, m.voice_path, m.reply, m.created_at, m.replied_at, m.read_by_player, m.published,
             p.display_name, p.username
      FROM messages m
      JOIN players p ON p.id = m.player_id
@@ -150,6 +150,23 @@ async function saveFaqQuestion(id) {
     if (r.html) replaceMsgRow(id, r.html);
   } else {
     if (rd) { rd.style.display=''; rd.innerHTML='<div class="alert alert--error" style="padding:.3rem .7rem;font-size:.82rem">'+escHtml(r.error||'Fehler')+'</div>'; }
+  }
+}
+
+async function transcribeVoice(id, btn) {
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ Transkribiere …';
+  const r = await apiFetch(MSG_API, {action:'transcribe_voice', id});
+  if (r.error === 'session_expired') return;
+  if (r.ok) {
+    showToast(r.message || 'Transkribiert.', 'success');
+    if (r.html) replaceMsgRow(id, r.html);
+    toggleFaqEdit(id); // Textfassung direkt zum Gegenlesen/Anpassen aufklappen
+  } else {
+    showToast(r.error || 'Fehler', 'error');
+    btn.disabled = false;
+    btn.textContent = original;
   }
 }
 

@@ -13,6 +13,31 @@ require_once dirname(__DIR__) . '/config/themes.php';
 // sauber auszuloggen (oder eben nicht, wenn niemand eingeloggt war).
 $_hadAppSession = !empty($_COOKIE[SESSION_NAME]);
 
+/**
+ * Löscht rekursiv alle Dateien/Unterordner in $dir (der Ordner selbst bleibt
+ * erhalten). Genutzt beim Setup-Reset, damit alte Sprachnachrichten/Uploads
+ * nicht als Datei-Leichen auf der Platte liegen bleiben, sobald die
+ * referenzierende messages-Tabelle gleich per DROP TABLE geleert wird —
+ * die Dateien selbst liegen außerhalb der DB unter uploads/ und würden
+ * sonst nie wieder erreichbar/löschbar sein.
+ */
+function deleteDirContents(string $dir): int {
+    if (!is_dir($dir)) return 0;
+    $count = 0;
+    $items = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::CHILD_FIRST
+    );
+    foreach ($items as $item) {
+        if ($item->isDir()) {
+            @rmdir($item->getPathname());
+        } elseif (@unlink($item->getPathname())) {
+            $count++;
+        }
+    }
+    return $count;
+}
+
 function splitSqlStatements(string $sql): array {
     $lines = array_filter(explode("\n", $sql), fn($l) => !preg_match('/^\s*--/', $l));
     return array_values(array_filter(array_map('trim', explode(';', implode("\n", $lines))), fn($s) => $s !== ''));
@@ -158,7 +183,17 @@ if ($action === 'run') {
         sse('done', 'error', 10); exit;
     }
 
-    // 3. load schema
+    // 3. clean up old uploads (Sprachnachrichten etc.) — die Dateien liegen außerhalb
+    // der DB unter uploads/ und würden sonst als Datei-Leichen liegen bleiben, sobald
+    // die referenzierende messages-Tabelle gleich per DROP TABLE geleert wird
+    $uploadsDir    = dirname(__DIR__) . '/uploads';
+    $deletedUploads = deleteDirContents($uploadsDir);
+    sse('ok', $deletedUploads > 0
+        ? "Alte Uploads bereinigt ({$deletedUploads} Datei(en) aus uploads/ entfernt)."
+        : 'Keine alten Uploads gefunden.', 17);
+    usleep(400000);
+
+    // 4. load schema
     $schemaPath = dirname(__DIR__) . '/db/schema.sql';
     if (!is_file($schemaPath)) {
         sse('error', 'db/schema.sql nicht gefunden!', 14);
@@ -169,7 +204,7 @@ if ($action === 'run') {
     sse('ok', "Schema geladen — {$total} SQL-Anweisungen werden ausgeführt.", 20);
     usleep(600000);
 
-    // 4. execute statements
+    // 5. execute statements
     try {
         $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
         foreach ($stmts as $i => $stmt) {
@@ -385,6 +420,9 @@ $noPw        = SETUP_PASSWORD === '';
         <strong><?= htmlspecialchars(DB_NAME, ENT_QUOTES) ?></strong> werden gelöscht und neu angelegt.
         <br><br>
         <strong>Spieler, Spielstände, Rollen, Abstimmungen — alles geht verloren!</strong>
+        <br><br>
+        Zusätzlich werden alle Dateien im <code>uploads/</code>-Ordner (z.B. gespeicherte
+        Sprachnachrichten) unwiderruflich gelöscht.
         <br><br>
         Admin-Konto: <strong id="confirm-admin-name"></strong> (Spieler-Name: <strong id="confirm-admin-display"></strong>)
       </div>

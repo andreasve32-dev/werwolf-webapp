@@ -18,10 +18,8 @@ Auth::requireAdmin();
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024; // 2 MB
 const ICON_DIR_REL = 'assets/icons/roles';
 
-$iconDirAbs = ROOT_PATH . '/' . ICON_DIR_REL;
-if (!is_dir($iconDirAbs)) {
-    @mkdir($iconDirAbs, 0755, true);
-}
+$iconDirAbs = ensureUploadDir(ICON_DIR_REL, 0755);
+if (!$iconDirAbs) jsonError('Upload-Verzeichnis konnte nicht angelegt werden.');
 
 if (empty($_FILES['icon']) || $_FILES['icon']['error'] !== UPLOAD_ERR_OK) {
     $errCode = $_FILES['icon']['error'] ?? UPLOAD_ERR_NO_FILE;
@@ -39,11 +37,7 @@ if ($file['size'] > MAX_UPLOAD_BYTES) {
     jsonError('Datei ist zu groß (max. 2 MB).');
 }
 
-// MIME-Typ über den tatsächlichen Dateiinhalt prüfen (nicht nur die
-// vom Browser gemeldete Endung — die kann gefälscht sein).
-$finfo = finfo_open(FILEINFO_MIME_TYPE);
-$mime  = finfo_file($finfo, $file['tmp_name']);
-finfo_close($finfo);
+$mime = detectMimeType($file['tmp_name']);
 
 $allowedMimes = [
     'image/png'  => 'png',

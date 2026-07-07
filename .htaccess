@@ -25,7 +25,7 @@ DirectoryIndex index.php
 # Diese Ordner enthalten PHP-Klassen, SQL-Schemata, Konfiguration
 # und Templates — niemals per HTTP erreichbar.
 <IfModule mod_alias.c>
-  RedirectMatch 403 ^/(config|core|templates|db)(/|$)
+  RedirectMatch 403 ^/(config|core|templates|db|uploads)(/|$)
 </IfModule>
 
 # ── Alte Root-URLs auf app/ umleiten (Umzug 2026-07-04) ───────

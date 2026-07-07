@@ -44,33 +44,74 @@ Schläfer/Verräter-Rolle — Killer der nach X Stunden die Seite wechselt; alle
 Detektiv: Leichen befragen — Bekommt von der Leiche einen Spieler genannt, der definitiv nicht der Killer war
 Zombie-Spielmodus — Alternativer Modus: Alle starten als Söldner, nach 1–5h zufälliger Zombie-Start, Infizierte bekehren weitere Spieler
 Günslinger: Weiter schießen nach Killer-Treffer — Wenn Günslinger einen Killer erwischt, darf er weiter schießen
-Sprachnachrichten an den Spielleiter — Warum: einige Spieler schreiben nur ungern lange Texte
-    und reden lieber direkt mit dem Spielleiter, Sprachnachricht senkt die Hemmschwelle.
-    Im "Frage stellen"-Modal Auswahl Text/Sprachnachricht;
-    Aufnahme per MediaRecorder-API (Mikrofon), Wiedergabe per <audio>-Player in der Admin-Nachrichtenverwaltung.
-    Zu klären: Audioformat je nach Browser unterschiedlich (Chrome/Edge meist WebM/Opus, Safari eher MP4/AAC);
-    passt nicht zur FAQ-Anonymisierung (Stimme verrät Identität stärker als Text), da Stimme die
-    Identität stärker verrät als Text — Sprachnachrichten daher von der FAQ-Übernahme ausschließen,
-    es sei denn die Transkriptions-Option (siehe unten) wird genutzt.
-  Option: automatische Transkription per OpenAI-API (gpt-4o-mini-transcribe $0,003/Min. bzw.
-    gpt-4o-transcribe/whisper-1 $0,006/Min.) — bei typischen kurzen Fragen (15-30s) nur Bruchteile
-    eines Cents pro Nachricht, Kosten also kein Hindernis; würde einen OpenAI-API-Key in der Config
-    brauchen (bisher hat das Projekt keine externen API-Abhängigkeiten).
-  Erweiterung Admin-Bereich (Nachrichten-Verwaltung): Button "🎙️→📝 Audio zu Text" bei jeder
-    Sprachnachricht — schickt die Aufnahme an die OpenAI-Transkriptions-API und trägt das Ergebnis
-    direkt in das "FAQ-Text"-Feld ein (dasselbe Feld wie bei Text-Nachrichten, siehe messages.faq_question).
-    Admin muss den transkribierten Text dann nur noch gegenlesen/anonymisieren statt selbst mitzuschreiben,
-    bevor er die Antwort in die FAQ übernimmt.
-  Erweiterung Admin-Einstellungen: An/Aus-Schalter für Sprachnachrichten (neue Settings-Zeile,
-    z.B. voice_messages_enabled) — bei "Aus" verschwindet die Text/Sprachnachricht-Auswahl im
-    "Frage stellen"-Modal komplett, Spieler sehen nur noch das normale Textfeld wie bisher.
-  Eigener Akkordeon-Block "🎙️ Sprachnachrichten" in admin/settings.php (passend zur bestehenden
-    Bereichs-Struktur): enthält den An/Aus-Schalter, das Eingabefeld für den OpenAI-API-Key
-    (als eigene settings-Zeile, z.B. openai_api_key — Wert nur maskiert anzeigen wie ein
-    Passwortfeld, analog zu SETUP_PASSWORD-Handling) und DB-Speicherung darüber wie bei den
-    anderen Bereichen (eigenes Formular + eigener Speichern-Button, siehe bestehendes Muster).
 ---
 ✅ Gelöst (07.07.2026)
+
+[Feature] Sprachnachrichten an den Spielleiter — Grundfunktion ohne Transkription (→ v0.27)
+      → Wie in der Idee konzipiert: "Frage stellen"-Modal hat Tabs 📝 Text / 🎙️
+        Sprachnachricht (Tab nur sichtbar wenn Setting an UND Browser MediaRecorder
+        kann). Aufnahme max. 1 Minute (fixe Regel auf Nutzerwunsch, Auto-Stopp mit
+        Countdown), Vorschau + Neu-Aufnehmen, Format automatisch (Chrome/FF WebM/
+        Opus, Safari/iPhone MP4/AAC). Upload als Multipart an api/messages.php →
+        send_voice: finfo-MIME-Allowlist gegen echten Dateiinhalt (webm/m4a/ogg/
+        mp3/wav, video/*-Varianten wegen Browser-Eigenheiten), max. 3 MB, Ablage
+        unter uploads/voice/ (per .htaccess 403 + gitignored). Auslieferung NUR
+        über action=voice_file mit Auth (Admin oder Absender). Admin-Verwaltung:
+        Audio-Player + 🎙️-Badge statt Fragetext, Antworten wie gewohnt; Spieler-
+        Posteingang zeigt eigene Aufnahme mit Player. FAQ-Ausschluss serverseitig
+        UND im UI (Stimme verrät Identität — toggle_publish/set_faq_question
+        lehnen ab, Buttons fehlen). Robustheit auf Nutzerwunsch: fehlende Datei →
+        Hinweis statt Player (is_file-Check), beschädigte/nicht dekodierbare
+        Aufnahme → onerror-Fallback am <audio>; delete räumt die Datei mit ab.
+        Neuer Settings-Bereich "🎙️ Sprachnachrichten" (voice_messages_enabled,
+        Default an, Konstante VOICE_MESSAGES). Doku in beiden Anleitungen.
+        Transkription (OpenAI) zunächst zurückgestellt — siehe Nachtrag unten,
+        noch am selben Tag umgesetzt.
+
+[Nachtrag 07.07.2026] FAQ-Übernahme für Sprachnachrichten + automatische Transkription (→ v0.27)
+      → Entscheidung revidiert: Sprachnachrichten dürfen jetzt doch in die FAQ,
+        aber NIE als Audio — nur als vom Spielleiter geschriebene/geprüfte
+        Textfassung (toggle_publish verlangt bei Sprachnachrichten zwingend eine
+        gesetzte faq_question, sonst würde nur der Platzhaltertext veröffentlicht).
+        Warnhinweise im Frage-Modal (Text + Sprache) entsprechend vereinheitlicht:
+        keine Namen/identitätsverratenden Angaben, Inhalt kann anonymisiert in die
+        FAQ übernommen werden. Dazu automatische Transkription per OpenAI-API
+        (gpt-4o-mini-transcribe) wie in der ursprünglichen Idee entworfen: neuer
+        Button "🎙️→📝 Transkribieren" in der Nachrichten-Verwaltung (nur sichtbar
+        wenn Schalter an), trägt das Ergebnis direkt ins FAQ-Textfeld ein (öffnet
+        sich automatisch zum Gegenlesen/Anonymisieren). Zwei neue, unabhängige
+        Schalter in Admin → Einstellungen → Sprachnachrichten: "Sprachnachrichten"
+        (bestehend) und "Sprachnachrichten-Transkription" (neu, Default aus) +
+        maskiertes OpenAI-API-Key-Feld (leer lassen beim Speichern = Key
+        unverändert, eigener Entfernen-Button). Live getestet inkl. kompletter
+        Ablauf (Frage → Antwort → FAQ-Text → Veröffentlichen).
+
+[Nachtrag 07.07.2026] Nachrichten bei Spielstart löschen (→ v0.27)
+      → Neuer Schalter in Admin → Einstellungen → Spiel (Default aus): räumt beim
+        Spielstart automatisch auf — alle Sprachnachrichten werden unbedingt
+        gelöscht (Zeile + Datei, unabhängig vom FAQ-Status), alle Text-Fragen ohne
+        FAQ-Veröffentlichung ebenfalls; veröffentlichte Text-FAQ-Einträge bleiben
+        stehen. Beim Live-Test einen echten Bug gefunden und behoben: die Logik
+        lief zunächst VOR der Sonderrollen-Validierung in start_game, wodurch ein
+        wegen falscher Rollenzahl abgebrochener Spielstart trotzdem schon
+        Nachrichten gelöscht hätte — jetzt läuft sie erst ganz am Ende, nachdem
+        alle Prüfungen erfolgreich durchgelaufen sind.
+
+[Nachtrag 07.07.2026] Debug-Menü: Spielkarte eines Spielers ansehen (→ v0.27)
+      → Neue Karte in admin/debug.php (nur bei app_debug an, nur während laufendem
+        Spiel): Spieler aus Dropdown wählen, komplette Rollenkarte (Icon, Name,
+        Beschreibung, Regeln, Cooldown, "sichtbar"-Badge) erscheint darunter.
+        Ignoriert bewusst alle normalen Sichtbarkeitsregeln — reines Debug-Werkzeug
+        neben den bestehenden "Eigene Rolle wählen"/"Tote wiederbeleben". Neue
+        admin-only API-Aktion debug_peek_role. Live mit 12 Testspielern über alle
+        vergebenen Rollen getestet.
+
+[Feature] Setup-Assistent räumt Uploads mit auf (→ v0.27)
+      → admin/setup.php löscht beim DB-Reset jetzt zusätzlich den kompletten
+        uploads/-Ordner rekursiv (Sprachnachrichten etc.) — sonst blieben deren
+        Dateien nach dem DROP TABLE als Datei-Leichen liegen, weil nur die
+        DB-Zeilen, nie die Dateien auf der Platte betroffen sind. Warnhinweis in
+        der Bestätigung ergänzt. Neuer Helper deleteDirContents().
 
 [Review] Drei Rest-Beobachtungen aus Review v0.0.18/19 abgearbeitet (→ v0.26)
       → (1) kill_player mit cause='vote' ("⚖️ Erhängt" im Quick-Kill) nutzt jetzt

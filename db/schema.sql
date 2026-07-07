@@ -163,6 +163,7 @@ CREATE TABLE messages (
   player_id      INT NOT NULL,
   message        TEXT NOT NULL,
   faq_question   TEXT NULL,        -- anonymisierte/bearbeitete Frage für die FAQ (NULL = message wird 1:1 verwendet)
+  voice_path     VARCHAR(255) NULL, -- Sprachnachricht-Datei unter uploads/voice/ (NULL = Textnachricht). Auslieferung nur über api/messages.php (Auth), nie direkt
   reply          TEXT NULL,
   created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   replied_at     TIMESTAMP NULL,
@@ -371,7 +372,7 @@ CREATE TABLE settings (
 
 INSERT INTO settings (`key`, value, type, label, description, sort_order) VALUES
 ('app_name',           'Werwolf',                          'string', 'Spielname',              'Anzeigename der App — überall sichtbar.',                         10),
-('app_version',        '0.26',                            'string', 'Versionsnummer',          'Anzeigeversion z. B. in Fußzeile oder About-Seite.',             15),
+('app_version',        '0.27',                            'string', 'Versionsnummer',          'Anzeigeversion z. B. in Fußzeile oder About-Seite.',             15),
 ('beta_mode',          '1',                               'bool',   'Beta-Modus',              'Zeigt einen Beta-Hinweis im Spielfenster an.',                    16),
 ('app_debug',          '1',                               'bool',   'Debug-Modus',             'PHP-Fehler anzeigen. Im Produktivbetrieb auf 0 setzen.',          20),
 ('default_theme',      'gothic',                          'string', 'Standard-Theme',          'Theme für neue Nutzer ohne gespeichertes Theme.',                30),
@@ -386,6 +387,10 @@ INSERT INTO settings (`key`, value, type, label, description, sort_order) VALUES
 ('login_logo',         '',                                'string', 'Login-Logo',              'Pfad zum Bild auf der Anmeldeseite (leer = Wolf-Emoji 🐺).',       5),
 ('game_timezone',      'Europe/Berlin',                   'string', 'Zeitzone',                'PHP-Zeitzone des Servers (z.B. Europe/Berlin, UTC).',             20),
 ('push_cooldown',      '5',                               'int',    'Push-Cooldown (Min.)',    'Mindestwartezeit zwischen zwei Auto-Push-Benachrichtigungen.',    26),
+('voice_messages_enabled', '1',                           'bool',   'Sprachnachrichten',       'Spieler dürfen Fragen als Sprachnachricht (max. 1 Min.) aufnehmen.', 27),
+('voice_transcription_enabled', '0',                       'bool',   'Sprachnachrichten-Transkription', 'Erlaubt dem Spielleiter, Sprachnachrichten per OpenAI-API automatisch in Text umzuwandeln (Grundlage für die FAQ-Übernahme).', 28),
+('openai_api_key',      '',                                'string', 'OpenAI API-Key',          'Wird nur für die Sprachnachrichten-Transkription verwendet. Wert wird in der Oberfläche nie im Klartext angezeigt.', 29),
+('clear_messages_on_start', '0',                           'bool',   'Nachrichten bei Spielstart löschen', 'Beim Start eines neuen Spiels: alle Sprachnachrichten (immer) sowie alle Text-Fragen ohne FAQ-Veröffentlichung werden gelöscht.', 22),
 ('push_last_sent',     '0',                               'int',    'Push: letzter Versand (intern)', 'Unix-Timestamp des letzten gesendeten Pushes (intern).', 999);
 
 -- ── 12. Erstes Spiel anlegen ──────────────────────────────────────

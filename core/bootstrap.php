@@ -47,6 +47,9 @@ define('LOGIN_LOGO',         $_cfg['login_logo']         ?? '');
 define('MINI_LOGO',          $_cfg['mini_logo']          ?? '');
 define('ASSET_VERSION',      $_cfg['asset_version']      ?? '1');
 define('GAME_TIMEZONE',      $_cfg['game_timezone']      ?? 'Europe/Berlin');
+define('VOICE_MESSAGES',     filter_var($_cfg['voice_messages_enabled'] ?? '1', FILTER_VALIDATE_BOOLEAN));
+define('VOICE_TRANSCRIPTION', filter_var($_cfg['voice_transcription_enabled'] ?? '0', FILTER_VALIDATE_BOOLEAN));
+define('CLEAR_MESSAGES_ON_START', filter_var($_cfg['clear_messages_on_start'] ?? '0', FILTER_VALIDATE_BOOLEAN));
 date_default_timezone_set(GAME_TIMEZONE);
 unset($_cfg);
 

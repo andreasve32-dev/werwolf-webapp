@@ -59,6 +59,28 @@ require TEMPLATE_PATH . '/base.php';
     <div id="debug-role-result" class="mt-1"></div>
   </div>
 
+  <!-- Spielkarte eines Spielers ansehen -->
+  <div class="card card--glow animate-in mb-2" style="animation-delay:.03s;border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04)">
+    <div class="section-title" style="color:#fbbf24">🃏 Spielkarte ansehen</div>
+    <p class="text-dim text-xs mb-2">
+      Zeigt die volle Rollenkarte eines beliebigen Spielers — ignoriert bewusst alle
+      normalen Sichtbarkeitsregeln, nur für dich als Debug-Werkzeug sichtbar.
+    </p>
+    <div class="flex gap-sm">
+      <select id="debug-peek-select" class="form-input" style="flex:1">
+        <option value="">Spieler wählen…</option>
+        <?php foreach ($gamePlayers as $gp): ?>
+        <option value="<?= (int)$gp['player_id'] ?>">
+          <?= e($gp['display_name']) ?><?= $gp['is_alive'] ? '' : ' (tot)' ?>
+        </option>
+        <?php endforeach; ?>
+      </select>
+      <button class="btn btn--ghost" style="border-color:rgba(251,191,36,.4);color:#fbbf24"
+              onclick="debugPeekRole()">Anzeigen</button>
+    </div>
+    <div id="debug-peek-result" class="mt-2"></div>
+  </div>
+
   <!-- Tote wiederbeleben -->
   <div class="card animate-in mb-2" style="animation-delay:.05s;border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04)">
     <div class="section-title" style="color:#fbbf24">🔮 Tote wiederbeleben</div>
@@ -105,6 +127,26 @@ async function debugSetOwnRole() {
   } else {
     res.innerHTML = `<div class="alert alert--error">${escHtml(r.error||'Fehler')}</div>`;
   }
+}
+
+async function debugPeekRole() {
+  const sel = document.getElementById('debug-peek-select');
+  const res = document.getElementById('debug-peek-result');
+  const pid = parseInt(sel?.value);
+  if (!pid) { showToast('Kein Spieler gewählt', 'error'); return; }
+  const r = await apiFetch(API_BASE+'/admin.php', {action:'debug_peek_role', game_id:GAME_ID, player_id:pid});
+  if (r.error === 'session_expired') return;
+  if (!r.ok) { res.innerHTML = `<div class="alert alert--error">${escHtml(r.error||'Fehler')}</div>`; return; }
+  res.innerHTML = `
+    <div class="panel" style="padding:1rem;text-align:center">
+      <div style="width:72px;height:72px;margin:0 auto .6rem;border-radius:50%;background-size:cover;background-position:center;background-image:url('${escHtml(r.icon_url)}')"></div>
+      <div style="font-family:var(--font-display);font-size:1.05rem;color:var(--text-bright)">${escHtml(r.role_name)}</div>
+      <div class="text-dim text-xs mt-1">${escHtml(r.display_name)}${r.is_alive ? '' : ' · ☠️ tot'}</div>
+      ${r.sichtbar ? '<div class="tag tag--alive mt-1" style="font-size:.65rem">👁️ Erkennt sich mit Rollengleichen</div>' : ''}
+      ${r.description ? `<p class="text-sm mt-2" style="text-align:left">${escHtml(r.description)}</p>` : ''}
+      ${r.rules ? `<div class="text-dim text-xs mt-1" style="text-align:left">📜 ${escHtml(r.rules)}</div>` : ''}
+      ${r.cooldown > 0 ? `<div class="text-dim text-xs mt-1">⏳ Cooldown: alle ${r.cooldown + 1} Nächte</div>` : ''}
+    </div>`;
 }
 
 async function revivePlayer(pid, name) {

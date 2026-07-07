@@ -398,11 +398,21 @@ require TEMPLATE_PATH . '/base.php';
           PHP-Zeitzone des Servers (z.B. Europe/Berlin). Beeinflusst Bürgerversammlungs-Uhrzeit.
         </td>
       </tr>
-      <tr>
+      <tr style="border-bottom:1px solid var(--border)">
         <td style="padding:.5rem .25rem;color:var(--text);font-weight:600">Dorf-Sprüche</td>
         <td style="padding:.5rem .5rem;color:var(--text-dim)">
           Über <a href="<?= APP_URL ?>/admin/slogans.php" style="color:var(--accent)">Sprüche verwalten</a>
           — bis zu 20 Tag- und 20 Nacht-Sprüche, rotieren alle 2 Minuten im Spieler-Banner.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:.5rem .25rem;color:var(--text);font-weight:600">Nachrichten bei Spielstart löschen</td>
+        <td style="padding:.5rem .5rem;color:var(--text-dim)">
+          Standard: aus. Ist der Schalter an, räumt jeder Spielstart automatisch auf:
+          alle Sprachnachrichten (immer, samt Datei) und alle Text-Fragen ohne
+          FAQ-Veröffentlichung werden gelöscht. Bereits veröffentlichte Text-FAQ-
+          Einträge bleiben stehen. Betrifft alle bisherigen Spiele, nicht nur das
+          gerade beendete.
         </td>
       </tr>
     </table>
@@ -412,7 +422,10 @@ require TEMPLATE_PATH . '/base.php';
     <strong>💡 Als Admin bist du auch Spieler.</strong> Deine eigene Rolle ist im Spieler-Fenster
     sichtbar, aber du siehst bewusst <em>nicht</em> die Rollen der anderen Spieler —
     auch nicht die der Toten im Admin-Panel — damit du nicht gespoilert wirst.
-    Aufgedeckte Rollen erscheinen wie für alle Spieler in der Totenliste.
+    Aufgedeckte Rollen erscheinen wie für alle Spieler in der Totenliste. Ausnahme:
+    Im <a href="<?= APP_URL ?>/admin/debug.php" style="color:var(--accent)">Debug-Menü</a>
+    kannst du dir (nur bei aktivem Debug-Modus) trotzdem gezielt die Rollenkarte
+    eines beliebigen Spielers ansehen.
   </div>
 
   <!-- ═══════════════════════════════════════════
@@ -434,10 +447,71 @@ require TEMPLATE_PATH . '/base.php';
       <strong>Tipp:</strong> Nutze Spieler-Nachrichten für Rollenfragen in der Nacht —
       statt zu flüstern kannst du z.B. der Hellseherin das Ergebnis als Nachricht schicken.
     </div>
+    <p style="margin-top:.75rem">
+      <strong>🎙️ Sprachnachrichten:</strong> Ist der Schalter unter
+      <em>Einstellungen → Sprachnachrichten</em> aktiv, können Spieler ihre Frage auch
+      einsprechen (max. 1 Minute). In der Nachrichten-Verwaltung erscheint dann ein
+      Audio-Player statt des Fragetexts. Du antwortest wie gewohnt per Text.
+      Die Aufnahme selbst wird <strong>nie</strong> veröffentlicht (die Stimme würde
+      den Absender verraten) — willst du den Inhalt in die FAQ übernehmen, schreibe
+      über <em>✏️ FAQ-Text</em> erst eine anonymisierte Textfassung; erst danach lässt
+      sich die Frage veröffentlichen. Beim Löschen einer Nachricht wird die Aufnahme
+      mit gelöscht.
+    </p>
+    <div class="tip-box" style="margin-top:.75rem">
+      <strong>🎙️→📝 Automatische Transkription:</strong> Aktivierst du zusätzlich
+      <em>Einstellungen → Sprachnachrichten → Sprachnachrichten-Transkription</em>
+      und hinterlegst dort einen OpenAI API-Key, erscheint bei jeder Sprachnachricht
+      der Button <em>🎙️→📝 Transkribieren</em>. Er schickt die Aufnahme an OpenAI
+      und trägt den erkannten Text direkt ins FAQ-Textfeld ein (öffnet sich
+      automatisch) — lies ihn gegen, entferne alles Identifizierende und
+      veröffentliche wie gewohnt über <em>📢 FAQ freigeben</em>. Ohne API-Key oder
+      bei ausgeschaltetem Schalter bleibt der Button unsichtbar bzw. meldet einen
+      Fehler.
+    </div>
   </div>
 
   <!-- ═══════════════════════════════════════════
-       10. Diagnose
+       10. Debug-Werkzeuge
+  ═══════════════════════════════════════════ -->
+  <div class="section-sep"><span>Debug-Werkzeuge</span></div>
+
+  <div class="card animate-in" style="animation-delay:.215s">
+    <div class="section-title">🐛 Debug-Menü</div>
+    <p class="text-dim text-sm" style="line-height:1.6;margin-bottom:.75rem">
+      Unter <a href="<?= APP_URL ?>/admin/debug.php" style="color:var(--accent)">Admin → Debug-Menü</a>
+      findest du drei Werkzeuge zum Testen — alle nur sichtbar, wenn <em>Debug-Modus</em>
+      (Einstellungen → System) aktiv ist, und nur während ein Spiel <strong>läuft</strong>.
+      Sie ignorieren bewusst die normalen Sichtbarkeits- und Spielregeln — im echten
+      Betrieb solltest du den Debug-Modus danach wieder ausschalten.
+    </p>
+    <table style="width:100%;border-collapse:collapse;font-size:.87rem">
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.5rem .25rem;color:var(--text);font-weight:600">🎭 Eigene Rolle wählen</td>
+        <td style="padding:.5rem .5rem;color:var(--text-dim)">
+          Setzt deine eigene Rolle im laufenden Spiel sofort um — praktisch, um eine
+          bestimmte Rollenmechanik selbst durchzuspielen.
+        </td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:.5rem .25rem;color:var(--text);font-weight:600">🔮 Tote wiederbeleben</td>
+        <td style="padding:.5rem .5rem;color:var(--text-dim)">
+          Bringt einen Spieler ohne neue Runde zurück ins Spiel und löscht dabei
+          seinen Todeslisten-Eintrag — z.B. um einen Testtod rückgängig zu machen.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:.5rem .25rem;color:var(--text);font-weight:600">🃏 Spielkarte ansehen</td>
+        <td style="padding:.5rem .5rem;color:var(--text-dim)">
+          Zeigt die komplette Rollenkarte eines beliebigen Spielers (Icon, Beschreibung,
+          Regeln, Cooldown) — auch von Toten, deren Rolle sonst verborgen bleibt.
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       11. Diagnose
   ═══════════════════════════════════════════ -->
   <div class="section-sep"><span>Diagnose &amp; Hilfe</span></div>
 

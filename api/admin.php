@@ -157,6 +157,27 @@ switch($action){
       );
     }
 
+    // Spielerfragen aufräumen, wenn der Admin das per Einstellung so will — ERST hier,
+    // nachdem alle Prüfungen (Spieleranzahl, Sonderrollen, Preset) erfolgreich durchlaufen
+    // sind, damit ein abgebrochener Spielstart (z.B. Sonderrollen übersteigen Spieler-
+    // anzahl) niemals Nachrichten löscht. Sprachnachrichten werden IMMER gelöscht (auch
+    // wenn ihr Text schon in der FAQ steht — die Aufnahme-Datei ist danach ohnehin nicht
+    // mehr nötig), Text-Fragen nur, wenn sie nicht bereits veröffentlicht sind
+    // (published=0). Betrifft alle Spiele, nicht nur das gerade startende.
+    $clearedMsgCount = 0;
+    if (CLEAR_MESSAGES_ON_START) {
+        $toDelete = Database::query("SELECT voice_path FROM messages WHERE voice_path IS NOT NULL OR published = 0");
+        foreach ($toDelete as $tr) {
+            if ($tr['voice_path'] && str_starts_with($tr['voice_path'], 'uploads/voice/')) {
+                @unlink(ROOT_PATH . '/' . $tr['voice_path']);
+            }
+        }
+        $clearedMsgCount = count($toDelete);
+        if ($clearedMsgCount > 0) {
+            Database::execute("DELETE FROM messages WHERE voice_path IS NOT NULL OR published = 0");
+        }
+    }
+
     // Spiel starten
     Database::execute("UPDATE games SET status='running',phase='day',round=1 WHERE id=?",[$gameId]);
 
@@ -166,6 +187,7 @@ switch($action){
     $msg .= $fillRole ? $fillRole['name'] : 'ohne Rolle';
     $msg .= " vergeben.";
     if ($presetName !== null) $msg .= " (Preset „{$presetName}\" angewendet)";
+    if ($clearedMsgCount > 0) $msg .= " {$clearedMsgCount} alte Spielerfrage(n) aufgeräumt.";
     ok($msg);break;
 
   case 'switch_phase':
@@ -285,6 +307,34 @@ switch($action){
     if (!$me) err('Du bist nicht als Spieler im Spiel');
     Database::execute("UPDATE game_players SET role_id=? WHERE game_id=? AND player_id=?", [$roleId, $gameId, $_adminId]);
     ok('🎭 Rolle gesetzt: ' . $role['name'], ['role_name' => $role['name']]);break;
+
+  case 'debug_peek_role':
+    // Zeigt die volle Rollenkarte eines beliebigen Spielers — ignoriert bewusst alle
+    // normalen Sichtbarkeitsregeln (get_players etc.), daher nur im Debug-Modus.
+    if (!APP_DEBUG) err('Nur im Debug-Modus verfügbar.', 403);
+    $g = Database::queryOne("SELECT * FROM games WHERE id=? AND status='running'", [$gameId]);
+    if (!$g) err('Spiel läuft nicht');
+    $pid = (int)($input['player_id'] ?? 0);
+    if (!$pid) err('Kein Spieler gewählt');
+    $gp = Database::queryOne(
+      "SELECT gp.role_id, gp.is_alive, p.display_name
+       FROM game_players gp JOIN players p ON p.id = gp.player_id
+       WHERE gp.game_id=? AND gp.player_id=?",
+      [$gameId, $pid]
+    );
+    if (!$gp) err('Spieler nicht im Spiel');
+    $role = $gp['role_id'] ? Database::queryOne("SELECT * FROM roles WHERE id=?", [$gp['role_id']]) : null;
+    $role = $role ?: roleFallback();
+    ok('', [
+      'display_name' => $gp['display_name'],
+      'is_alive'     => (bool)$gp['is_alive'],
+      'role_name'    => $role['name'],
+      'icon_url'     => roleIconUrl($role),
+      'sichtbar'     => (bool)($role['sichtbar'] ?? 0),
+      'description'  => roleText($role['description'] ?? '', $role),
+      'rules'        => roleText($role['rules'] ?? '', $role),
+      'cooldown'     => (int)($role['cooldown'] ?? 0),
+    ]);break;
 
   case 'add_player':
     $pid=(int)($input['player_id']??0);

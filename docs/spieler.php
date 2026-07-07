@@ -370,6 +370,17 @@ require TEMPLATE_PATH . '/base.php';
       dein Name erscheint dabei nie, aber der Text deiner Frage wird unverändert
       übernommen. Schreib deshalb keine Namen oder andere persönlichen Angaben hinein.
     </p>
+    <div class="tip-box" style="margin-top:.75rem">
+      <strong>🎙️ Sprachnachricht statt Text:</strong> Wenn der Spielleiter es aktiviert hat,
+      kannst du im „Frage stellen"-Fenster auf <strong>Sprachnachricht</strong> umschalten
+      und deine Frage einfach einsprechen — <strong>max. 1 Minute</strong>, der Browser
+      fragt einmalig nach Mikrofon-Erlaubnis. Deine Aufnahme selbst hört nur der
+      Spielleiter und wird <strong>nie</strong> veröffentlicht — er/sie kann den Inhalt
+      aber, genau wie bei Text-Fragen, anonymisiert als Text in die FAQ übernehmen.
+      Nenne deshalb auch hier keine Namen oder Angaben, die deine Rolle oder Identität
+      verraten könnten. Deine gesendeten Aufnahmen kannst du im Posteingang selbst noch
+      einmal anhören.
+    </div>
   </div>
 
   <!-- ═══════════════════════════════════════════

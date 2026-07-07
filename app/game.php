@@ -65,7 +65,7 @@ if ($gameId && ($game['status'] ?? '') === 'running') {
 $page = [
     'title'    => 'Spielfeld',
     'inline_js' => sprintf(
-        'const GAME_ID=%s,PLAYER_ID=%s,API_BASE=%s,DAY_SLOGANS=%s,NIGHT_SLOGANS=%s,MY_COOLDOWN_MINS=%s,MY_COOLDOWN_REMAINING=%s,ASSEMBLY_DATA=%s,MY_IS_ADMIN=%s,MY_ROLLENSICHT=%s;'
+        'const GAME_ID=%s,PLAYER_ID=%s,API_BASE=%s,DAY_SLOGANS=%s,NIGHT_SLOGANS=%s,MY_COOLDOWN_MINS=%s,MY_COOLDOWN_REMAINING=%s,ASSEMBLY_DATA=%s,MY_IS_ADMIN=%s,MY_ROLLENSICHT=%s,VOICE_ENABLED=%s;'
         . 'let MY_ALIVE=%s,GAME_STATUS=%s,GAME_PHASE=%s,MY_IN_GAME=%s;',
         json_encode($gameId),
         json_encode($player['id']),
@@ -77,6 +77,7 @@ $page = [
         json_encode($currentAssembly),
         json_encode((bool)$player['is_admin']),
         json_encode($myRole ? (bool)($myRole['rollensicht'] ?? 0) : false),
+        json_encode(VOICE_MESSAGES),
         json_encode($myGP ? (bool)$myGP['is_alive'] : false),
         json_encode($game['status'] ?? null),
         json_encode($game['phase']  ?? null),
@@ -450,17 +451,51 @@ require TEMPLATE_PATH . '/base.php';
             opacity:0;pointer-events:none;transition:opacity .22s ease,backdrop-filter .22s ease,background .22s ease">
   <div class="role-card-modal" onclick="event.stopPropagation()" style="max-width:380px;text-align:left;cursor:default">
     <div class="role-card-modal__title" style="font-size:1.25rem;margin-bottom:1rem">✉️ Frage an den Spielleiter</div>
-    <div class="alert alert--warn" style="font-size:.85rem;line-height:1.5;margin-bottom:.75rem;font-weight:600">
-      ⚠️ Keine Namen oder persönlichen Angaben in die Frage schreiben — beantwortete
-      Fragen können anonym in die öffentliche FAQ übernommen werden!
+
+    <?php if (VOICE_MESSAGES): ?>
+    <!-- Umschalter Text / Sprachnachricht (Sprach-Tab blendet sich per JS aus,
+         falls der Browser kein MediaRecorder kann) -->
+    <div class="flex gap-xs" id="ask-mode-tabs" style="margin-bottom:.75rem">
+      <button class="btn btn--sm btn--primary" style="flex:1" id="ask-tab-text"  onclick="askMode('text')">📝 Text</button>
+      <button class="btn btn--sm btn--ghost"   style="flex:1" id="ask-tab-voice" onclick="askMode('voice')">🎙️ Sprachnachricht</button>
     </div>
-    <textarea id="ask-text" class="form-input"
-              placeholder="Deine Frage …" rows="4" maxlength="500"
-              style="width:100%;font-size:.9rem;resize:vertical;margin-bottom:.75rem;box-sizing:border-box"></textarea>
-    <div class="flex gap-sm">
-      <button class="btn btn--primary" style="flex:1" onclick="sendAsk()">Senden</button>
-      <button class="btn btn--ghost"   style="flex:1" onclick="closeAskModal()">Abbrechen</button>
+    <?php endif; ?>
+
+    <div id="ask-area-text">
+      <div class="alert alert--warn" style="font-size:.85rem;line-height:1.5;margin-bottom:.75rem;font-weight:600">
+        ⚠️ Keine Namen oder Angaben schreiben, die deine Rolle oder Identität im Spiel
+        verraten könnten — der Spielleiter kann deine Frage anonymisiert in die
+        öffentliche FAQ übernehmen, wenn er/sie das möchte.
+      </div>
+      <textarea id="ask-text" class="form-input"
+                placeholder="Deine Frage …" rows="4" maxlength="500"
+                style="width:100%;font-size:.9rem;resize:vertical;margin-bottom:.75rem;box-sizing:border-box"></textarea>
+      <div class="flex gap-sm">
+        <button class="btn btn--primary" style="flex:1" onclick="sendAsk()">Senden</button>
+        <button class="btn btn--ghost"   style="flex:1" onclick="closeAskModal()">Abbrechen</button>
+      </div>
     </div>
+
+    <?php if (VOICE_MESSAGES): ?>
+    <div id="ask-area-voice" style="display:none">
+      <p class="text-dim text-sm" style="margin-bottom:.75rem;line-height:1.5">
+        Max. <strong>1 Minute</strong>. Deine Aufnahme geht an den Spielleiter — er/sie
+        kann den Inhalt anonymisiert (als Text, nie die Aufnahme selbst) in die
+        öffentliche FAQ übernehmen, wenn gewünscht. Bitte keine Namen oder Angaben
+        nennen, die deine Rolle oder Identität im Spiel verraten könnten.
+      </p>
+      <div class="flex-center" style="flex-direction:column;gap:.6rem;margin-bottom:.75rem">
+        <button class="btn btn--primary btn--full" id="voice-rec-btn" onclick="toggleRecording()">🔴 Aufnahme starten</button>
+        <div id="voice-timer" class="text-dim" style="display:none;font-family:var(--font-display);font-size:1.1rem">0:00 / 1:00</div>
+        <audio id="voice-preview" controls style="display:none;width:100%"></audio>
+      </div>
+      <div class="flex gap-sm">
+        <button class="btn btn--primary" style="flex:1" id="voice-send-btn" onclick="sendVoice()" disabled>Senden</button>
+        <button class="btn btn--ghost"   style="flex:1" onclick="closeAskModal()">Abbrechen</button>
+      </div>
+    </div>
+    <?php endif; ?>
+
     <div id="ask-result" style="margin-top:.6rem"></div>
   </div>
 </div>
@@ -1001,10 +1036,149 @@ function _closeOverlay(id) {
 function openAskModal() {
   document.getElementById('ask-result').innerHTML = '';
   document.getElementById('ask-text').value = '';
+  _resetVoiceUi();
+  askMode('text');
+  const vTab = document.getElementById('ask-tab-voice');
+  if (vTab) {
+    // Zwei getrennte Gründe, warum der Sprach-Tab fehlen kann — für Support/Debugging
+    // auseinandergehalten statt in einer Bedingung verschmolzen.
+    const disabledByAdmin  = !VOICE_ENABLED; // Spielleiter hat Sprachnachrichten global deaktiviert
+    const unsupportedByEnv = !window.MediaRecorder || !navigator.mediaDevices?.getUserMedia; // Browser/HTTPS kann nicht aufnehmen
+    if (disabledByAdmin || unsupportedByEnv) {
+      document.getElementById('ask-mode-tabs').style.display = 'none';
+    }
+  }
   _openOverlay('ask-overlay');
   setTimeout(() => document.getElementById('ask-text').focus(), 260);
 }
-function closeAskModal() { _closeOverlay('ask-overlay'); }
+function closeAskModal() {
+  _stopRecording(true); // laufende Aufnahme sauber beenden, Mikro freigeben
+  _closeOverlay('ask-overlay');
+}
+
+function askMode(mode) {
+  const tText = document.getElementById('ask-tab-text');
+  const tVoice = document.getElementById('ask-tab-voice');
+  if (!tVoice) return; // Sprachnachrichten deaktiviert
+  if (mode !== 'voice') _stopRecording(true);
+  document.getElementById('ask-area-text').style.display  = mode === 'voice' ? 'none' : '';
+  document.getElementById('ask-area-voice').style.display = mode === 'voice' ? '' : 'none';
+  tText.classList.toggle('btn--primary', mode !== 'voice');
+  tText.classList.toggle('btn--ghost',  mode === 'voice');
+  tVoice.classList.toggle('btn--primary', mode === 'voice');
+  tVoice.classList.toggle('btn--ghost',  mode !== 'voice');
+}
+
+// ── Sprachnachricht aufnehmen (max. 60 s, feste Regel) ───────
+const VOICE_MAX_SECS = 60;
+let _voiceRec = {rec: null, chunks: [], blob: null, timer: null, start: 0, stream: null};
+
+function _pickAudioMime() {
+  // Chrome/Firefox: WebM/Opus — Safari (iPhone!): MP4/AAC
+  for (const m of ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']) {
+    if (MediaRecorder.isTypeSupported?.(m)) return m;
+  }
+  return ''; // Browser-Default
+}
+
+async function toggleRecording() {
+  if (_voiceRec.rec && _voiceRec.rec.state === 'recording') { _stopRecording(false); return; }
+  const rd = document.getElementById('ask-result');
+  try {
+    _voiceRec.stream = await navigator.mediaDevices.getUserMedia({audio: true});
+  } catch (e) {
+    rd.innerHTML = '<div class="alert alert--error">Mikrofon-Zugriff verweigert — bitte in den Browser-Einstellungen erlauben.</div>';
+    return;
+  }
+  rd.innerHTML = '';
+  _voiceRec.chunks = []; _voiceRec.blob = null;
+  const mime = _pickAudioMime();
+  try {
+    _voiceRec.rec = new MediaRecorder(_voiceRec.stream, mime ? {mimeType: mime} : undefined);
+  } catch (e) {
+    _voiceRec.rec = new MediaRecorder(_voiceRec.stream); // Fallback: Browser wählt selbst
+  }
+  _voiceRec.rec.ondataavailable = e => { if (e.data && e.data.size > 0) _voiceRec.chunks.push(e.data); };
+  _voiceRec.rec.onstop = () => {
+    _voiceRec.stream?.getTracks().forEach(t => t.stop()); // Mikro-Anzeige des Browsers aus
+    _voiceRec.stream = null;
+    if (!_voiceRec.chunks.length) return;
+    _voiceRec.blob = new Blob(_voiceRec.chunks, {type: _voiceRec.rec.mimeType || 'audio/webm'});
+    const prev = document.getElementById('voice-preview');
+    prev.src = URL.createObjectURL(_voiceRec.blob);
+    prev.style.display = '';
+    document.getElementById('voice-send-btn').disabled = false;
+    document.getElementById('voice-rec-btn').textContent = '🔄 Neu aufnehmen';
+  };
+  _voiceRec.rec.start();
+  _voiceRec.start = Date.now();
+  document.getElementById('voice-rec-btn').textContent = '⏹ Aufnahme beenden';
+  document.getElementById('voice-send-btn').disabled = true;
+  document.getElementById('voice-preview').style.display = 'none';
+  const timerEl = document.getElementById('voice-timer');
+  timerEl.style.display = '';
+  clearInterval(_voiceRec.timer);
+  _voiceRec.timer = setInterval(() => {
+    const secs = Math.floor((Date.now() - _voiceRec.start) / 1000);
+    timerEl.textContent = `${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')} / 1:00`;
+    if (secs >= VOICE_MAX_SECS) _stopRecording(false); // harte 1-Minuten-Grenze
+  }, 250);
+}
+
+function _stopRecording(discard) {
+  clearInterval(_voiceRec.timer);
+  _voiceRec.timer = null;
+  if (_voiceRec.rec && _voiceRec.rec.state === 'recording') {
+    if (discard) _voiceRec.rec.ondataavailable = null; // verworfene Aufnahme nicht übernehmen
+    try { _voiceRec.rec.stop(); } catch (e) {}
+  }
+  if (discard) {
+    _voiceRec.stream?.getTracks().forEach(t => t.stop());
+    _voiceRec.stream = null;
+    _resetVoiceUi();
+  } else {
+    const btn = document.getElementById('voice-rec-btn');
+    if (btn) btn.textContent = '🔄 Neu aufnehmen';
+  }
+}
+
+function _resetVoiceUi() {
+  _voiceRec.chunks = []; _voiceRec.blob = null;
+  const btn = document.getElementById('voice-rec-btn');
+  const timer = document.getElementById('voice-timer');
+  const prev = document.getElementById('voice-preview');
+  const send = document.getElementById('voice-send-btn');
+  if (btn)   btn.textContent = '🔴 Aufnahme starten';
+  if (timer) { timer.style.display = 'none'; timer.textContent = '0:00 / 1:00'; }
+  if (prev)  { prev.style.display = 'none'; prev.removeAttribute('src'); }
+  if (send)  send.disabled = true;
+}
+
+async function sendVoice() {
+  const rd = document.getElementById('ask-result');
+  if (!_voiceRec.blob) { rd.innerHTML = '<div class="alert alert--error">Bitte zuerst eine Aufnahme machen.</div>'; return; }
+  const btn = document.getElementById('voice-send-btn');
+  btn.disabled = true;
+  const fd = new FormData();
+  fd.append('action', 'send_voice');
+  const ext = (_voiceRec.blob.type.includes('mp4')) ? 'm4a' : (_voiceRec.blob.type.includes('ogg') ? 'ogg' : 'webm');
+  fd.append('voice', _voiceRec.blob, 'aufnahme.' + ext);
+  try {
+    const res = await fetch(MSG_API, {method: 'POST', body: fd});
+    const r = await res.json();
+    if (r.ok) {
+      rd.innerHTML = '<div class="alert alert--success">✓ Sprachnachricht gesendet — der Spielleiter hört sie sich an.</div>';
+      _resetVoiceUi();
+      setTimeout(closeAskModal, 1800);
+    } else {
+      rd.innerHTML = '<div class="alert alert--error">' + escHtml(r.error || 'Fehler beim Senden') + '</div>';
+      btn.disabled = false;
+    }
+  } catch (e) {
+    rd.innerHTML = '<div class="alert alert--error">Netzwerkfehler beim Senden der Aufnahme.</div>';
+    btn.disabled = false;
+  }
+}
 
 async function sendAsk() {
   const ta  = document.getElementById('ask-text');
@@ -1054,9 +1228,16 @@ async function loadInbox() {
            <span style="color:var(--text-bright)">${escHtml(m.reply)}</span>
          </div>`
       : `<div class="text-dim text-xs mt-1" style="font-style:italic">⏳ Warte auf Antwort …</div>`;
+    // Eigene Sprachnachricht: Player statt Text (onerror fängt fehlende/defekte Datei ab)
+    const bodyHtml = m.voice_path
+      ? `<audio controls preload="none" style="width:100%;max-width:320px"
+                src="${MSG_API}?action=voice_file&id=${parseInt(m.id,10)}"
+                onerror="this.style.display='none';this.nextElementSibling.style.display=''"></audio>
+         <span class="text-dim text-xs" style="display:none">⚠️ Aufnahme nicht mehr abspielbar.</span>`
+      : `<div style="font-size:.9rem;line-height:1.5">${escHtml(m.message)}</div>`;
     return `<div style="padding:.7rem 0;border-bottom:1px solid var(--border)">
-      <div class="text-dim text-xs mb-1">${escHtml(date)}</div>
-      <div style="font-size:.9rem;line-height:1.5">${escHtml(m.message)}</div>
+      <div class="text-dim text-xs mb-1">${escHtml(date)}${m.voice_path ? ' · 🎙️ Sprachnachricht' : ''}</div>
+      ${bodyHtml}
       ${replyHtml}
     </div>`;
   }).join('');

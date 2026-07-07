@@ -5,6 +5,86 @@ lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
 
 ---
 
+## [v0.27] — 2026-07-07
+
+### Hinzugefügt
+- **🎙️ Sprachnachrichten an den Spielleiter:** Im „Frage stellen"-Fenster können
+  Spieler auf Sprachnachricht umschalten und ihre Frage einsprechen — max.
+  1 Minute (Auto-Stopp mit Countdown), Vorschau vor dem Senden, Neu-Aufnehmen
+  möglich. Aufnahme per MediaRecorder (Chrome/Firefox: WebM/Opus, Safari/iPhone:
+  MP4/AAC — Format wird automatisch gewählt); ohne MediaRecorder-Unterstützung
+  bleibt nur der Text-Tab sichtbar. In der Admin-Nachrichtenverwaltung erscheint
+  ein Audio-Player statt des Fragetexts (mit „🎙️"-Badge), geantwortet wird wie
+  gewohnt per Text; der Spieler kann seine eigene Aufnahme im Posteingang anhören.
+- **Datenschutz:** Aufnahmen liegen unter `uploads/voice/` (per .htaccess
+  gesperrt, gitignored) und werden ausschließlich über
+  `api/messages.php?action=voice_file` mit Auth ausgeliefert — nur Admin und
+  der Absender selbst. Die Audiodatei selbst wird nie veröffentlicht — der
+  Spielleiter kann aber wie bei Text-Fragen über „✏️ FAQ-Text" eine
+  anonymisierte Textfassung hinterlegen und diese in die öffentliche FAQ
+  übernehmen (`toggle_publish` verlangt bei Sprachnachrichten zwingend eine
+  gesetzte `faq_question`, sonst würde nur der Platzhaltertext veröffentlicht).
+  Hinweistexte im Frage-Modal (Text + Sprache) weisen entsprechend einheitlich
+  darauf hin, keine identitätsverratenden Angaben zu machen. Beim Löschen
+  einer Nachricht wird die Audio-Datei mit entfernt.
+- **Robustheit:** Server prüft den echten Dateiinhalt (finfo-MIME-Allowlist,
+  max. 3 MB); fehlende oder beschädigte Aufnahmen stürzen nichts ab — Player
+  zeigt stattdessen einen Hinweis (Existenz-Check + onerror-Fallback).
+- **Neue Einstellung „Sprachnachrichten"** (eigener Bereich in Admin →
+  Einstellungen, Standard: an): schaltet den Sprach-Tab für alle Spieler
+  ein/aus. Neuer Settings-Key `voice_messages_enabled`, Konstante
+  `VOICE_MESSAGES` (bootstrap).
+- **🎙️→📝 Automatische Transkription (OpenAI):** eigener Schalter „Sprachnachrichten-
+  Transkription" (Standard: aus, Settings-Key `voice_transcription_enabled`,
+  Konstante `VOICE_TRANSCRIPTION`) plus maskiertes API-Key-Feld (Settings-Key
+  `openai_api_key`, nie im Klartext angezeigt, leer lassen beim Speichern = Key
+  unverändert, eigener „🗑 Entfernen"-Button). Ist beides gesetzt, erscheint in der
+  Nachrichten-Verwaltung bei jeder Sprachnachricht der Button „🎙️→📝
+  Transkribieren" — schickt die Aufnahme an `gpt-4o-mini-transcribe`
+  (api/messages.php → `transcribe_voice`, admin-only) und trägt das Ergebnis
+  direkt ins FAQ-Textfeld ein (öffnet sich automatisch zum Gegenlesen/
+  Anonymisieren, bevor der Spielleiter veröffentlicht — die Aufnahme selbst wird
+  dabei nie an Dritte als Audio weitergegeben, nur der transkribierte Text geht
+  an OpenAI).
+- **Nachrichten bei Spielstart löschen** (Einstellungen → Spiel, Standard: aus):
+  Ist der Schalter an, räumt `start_game` (api/admin.php) beim Start eines neuen
+  Spiels automatisch auf — alle Sprachnachrichten werden unbedingt gelöscht
+  (Zeile + Datei, unabhängig vom FAQ-Status, da danach keine Aufnahme mehr nötig
+  ist), alle Text-Fragen ohne FAQ-Veröffentlichung ebenfalls; bereits
+  veröffentlichte Text-FAQ-Einträge bleiben stehen. Betrifft alle bisherigen
+  Spiele, nicht nur das gerade beendete. Neuer Settings-Key
+  `clear_messages_on_start`, Konstante `CLEAR_MESSAGES_ON_START`. Die Aufräum-Logik
+  läuft bewusst erst NACH allen Validierungen (Spieleranzahl, Sonderrollen-Pool,
+  Preset) und unmittelbar vor dem eigentlichen Statuswechsel auf „running" — ein
+  Fund beim Live-Test: in einer früheren Fassung lief sie direkt nach dem
+  Lobby-Check, wodurch ein wegen falscher Sonderrollen-Anzahl abgebrochener
+  Spielstart trotzdem schon alle Nachrichten gelöscht hätte.
+- **🐛 Debug-Menü: Spielkarte eines Spielers ansehen** (nur bei aktivem `app_debug`,
+  nur während eines laufenden Spiels): neue Karte in `admin/debug.php` — Spieler aus
+  Dropdown wählen, komplette Rollenkarte (Icon, Name, Beschreibung, Regeln, Cooldown,
+  „sichtbar"-Badge) erscheint direkt darunter. Ignoriert bewusst alle normalen
+  Sichtbarkeitsregeln (auch bei toten Spielern, deren Rolle sonst verborgen bleibt) —
+  ausschließlich als Debug-Werkzeug für die Spielleitung gedacht. Neue admin-only
+  API-Aktion `debug_peek_role` (api/admin.php), live getestet mit 12 Testspielern
+  über alle vergebenen Rollen hinweg (inkl. Cooldown- und Sichtbarkeits-Anzeige).
+
+### DB-Änderungen (live bereits ausgeführt + getestet)
+- `ALTER TABLE messages ADD COLUMN voice_path VARCHAR(255) NULL AFTER faq_question`
+- Settings-Zeilen `voice_messages_enabled` (bool, Default 1), `voice_transcription_enabled`
+  (bool, Default 0), `openai_api_key` (string, Default '') und `clear_messages_on_start`
+  (bool, Default 0) — vollständig live nachgezogen und per Testspiel end-to-end verifiziert
+  (Text-Frage + FAQ-Veröffentlichung + Sprachnachricht angelegt, Spielstart ausgelöst:
+  FAQ-Eintrag blieb erhalten, unveröffentlichte Text-Frage + Sprachnachricht samt Datei
+  wurden korrekt gelöscht). Referenz-SQL für andere Umgebungen:
+  ```sql
+  INSERT IGNORE INTO settings (`key`, value, type, label, description, sort_order) VALUES
+  ('voice_transcription_enabled', '0', 'bool', 'Sprachnachrichten-Transkription', 'Erlaubt dem Spielleiter, Sprachnachrichten per OpenAI-API automatisch in Text umzuwandeln (Grundlage für die FAQ-Übernahme).', 28),
+  ('openai_api_key', '', 'string', 'OpenAI API-Key', 'Wird nur für die Sprachnachrichten-Transkription verwendet. Wert wird in der Oberfläche nie im Klartext angezeigt.', 29),
+  ('clear_messages_on_start', '0', 'bool', 'Nachrichten bei Spielstart löschen', 'Beim Start eines neuen Spiels: alle Sprachnachrichten (immer) sowie alle Text-Fragen ohne FAQ-Veröffentlichung werden gelöscht.', 22);
+  ```
+
+---
+
 ## [v0.26] — 2026-07-07
 
 Versionsschema von 0.0.xx auf 0.xx umgestellt (0.0.25 → 0.26).
