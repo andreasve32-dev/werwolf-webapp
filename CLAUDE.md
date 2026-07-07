@@ -86,10 +86,13 @@ Vanilla-JS, mobile-first. Struktur siehe README.md.
 
 ## Rollen-System
 
-- **`dump_roles_temp.php` ist eine dauerhafte Backup-Seite** (Rollen-Tabelle
-  als INSERT-Dump, Admin-geschützt) — trotz des Namens NICHT löschen und
-  nicht als temporär einstufen. Bei neuen Rollen-Flags die Spaltenliste
-  dort mitpflegen.
+- **Rollen-Backups:** `dump_roles_temp.php` wurde am 07.07.2026 auf Wunsch des
+  Betreibers gelöscht (ihr Server-Unikat mit gesicherten Rollen war zuvor durch
+  einen Deploy überschrieben worden — Lehre: Server-Dateien vor scp auf
+  Abweichung prüfen!). Rollen-Stand sichern jetzt per
+  `docker exec meine_datenbank mariadb-dump … werwolf roles`; geplante Rollen
+  liegen versioniert in `db/neue_rollen_vorlagen.sql` und als inaktive Seeds
+  (active=0) in `db/schema.sql`/`db/init.sql`.
 
 - **Rollen sind komplett datenbankgesteuert** (`roles`-Tabelle, Pflege über
   `admin/roles.php`). Später kommen weitere Flags dazu — **niemals

@@ -27,7 +27,6 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 │   ├── datenschutz.php     ← Datenschutzerklärung (öffentlich, kein Login nötig)
 │   ├── impressum.php       ← Impressum (öffentlich, kein Login nötig)
 │   ├── nutzungsbedingungen.php ← Nutzungsbedingungen (öffentlich, kein Login nötig)
-│   └── dump_roles_temp.php ← Rollen-Backup-Seite (Admin): roles-Tabelle als INSERT-Dump
 │       Alte Root-URLs (z. B. /game.php) leiten per 301 auf /app/… um (.htaccess).
 │
 ├── admin/              ← Admin-Bereich (nur für eingeloggte Admins zugänglich)
