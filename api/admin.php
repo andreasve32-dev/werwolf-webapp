@@ -240,7 +240,19 @@ switch($action){
     if(!$g)err('Spiel läuft nicht');
     $pid=(int)($input['player_id']??0);
     $isGehenkt = ($input['cause'] ?? '') === 'vote';
+    if ($isGehenkt) {
+        // Manuelles "⚖️ Erhängt" respektiert dieselben Versammlungsregeln wie
+        // execute_vote: gleicher Lock (nicht parallel zu einer laufenden
+        // Hinrichtung) und max. 1 Hinrichtung pro Versammlung. Die Mindest-
+        // stimmen-Prüfung entfällt bewusst — dieser Pfad ist für Hinrichtungen
+        // gedacht, die außerhalb der App-Abstimmung entschieden wurden.
+        $hangLock="ww_hang_{$gameId}";
+        $gotLock=Database::queryOne("SELECT GET_LOCK(?,3) AS ok",[$hangLock]);
+        if(empty($gotLock['ok']))err('Eine Hinrichtung wird gerade verarbeitet — bitte kurz warten.');
+        if(hangedThisAssembly($gameId))err('In dieser Bürgerversammlung wurde bereits jemand gehenkt.');
+    }
     recordDeath($gameId,$pid,$g['round'],$g['phase'],null,$isGehenkt);
+    if ($isGehenkt) Database::queryOne("SELECT RELEASE_LOCK(?) AS ok",[$hangLock]);
     $kn=Database::queryOne("SELECT display_name FROM players WHERE id=?",[$pid]);
     $winner = checkAndEndGame($gameId);
     if (!$winner) WebPush::sendToGame($gameId,true,'💀 Ein Spieler ist tot',($kn['display_name']??'Jemand').' ist aus dem Spiel ausgeschieden.');

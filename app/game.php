@@ -541,10 +541,10 @@ function _updatePhaseBanner(status, phase) {
   }
 }
 
-function renderRoleIcon(iconPath){
-  const base = API_BASE.replace('/api','');
-  const fullUrl = base + '/' + iconPath + '?v=' + ASSET_VER;
-  return `<span class="player-card__icon-photo" style="background-image:url('${fullUrl}')"></span>`;
+function renderRoleIcon(iconUrl){
+  // Server liefert die fertige URL inkl. filemtime-Cache-Buster (assetUrl) —
+  // hier nichts mehr zusammensetzen (ASSET_VER bumpt nur bei Uploads)
+  return `<span class="player-card__icon-photo" style="background-image:url('${iconUrl}')"></span>`;
 }
 
 function renderGameState(r) {
@@ -620,8 +620,8 @@ function renderGameState(r) {
       ? `<div class="player-card__role">${escHtml(p.role_name)}</div>`
       : (!dead && p.not_killer
           ? `<div class="player-card__role" style="color:var(--alert-success-text,#34d399)">✅ Kein Killer</div>` : '');
-    const iconHtml = !dead && p.role_icon_path
-      ? renderRoleIcon(p.role_icon_path)
+    const iconHtml = !dead && p.role_icon_url
+      ? renderRoleIcon(p.role_icon_url)
       : `<span class="player-card__icon">${dead?'🕯️':'👤'}</span>`;
     return `<div class="player-card${dead?' player-card--dead':''}" id="pc-${p.player_id}"
       onclick="${canSel?`selectTarget(${p.player_id},'${escHtml(pName)}')`:''}" >

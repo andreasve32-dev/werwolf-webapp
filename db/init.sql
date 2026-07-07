@@ -81,7 +81,6 @@ CREATE TABLE IF NOT EXISTS game_players (
   player_id           INT NOT NULL,
   role_id             INT NULL,
   is_alive            TINYINT(1)  NOT NULL DEFAULT 1,
-  last_ability_round  INT         NULL,
   cooldown_started_at TIMESTAMP   NULL DEFAULT NULL,
   joined_at           TIMESTAMP   DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (game_id)   REFERENCES games(id)   ON DELETE CASCADE,
@@ -274,7 +273,14 @@ ALTER TABLE games
   ADD COLUMN IF NOT EXISTS winner ENUM('killer','citizen','dodo') NULL DEFAULT NULL AFTER status;
 
 ALTER TABLE game_players
-  ADD COLUMN IF NOT EXISTS cooldown_started_at TIMESTAMP NULL DEFAULT NULL AFTER last_ability_round;
+  ADD COLUMN IF NOT EXISTS cooldown_started_at TIMESTAMP NULL DEFAULT NULL AFTER is_alive;
+
+-- last_ability_round entfernen falls noch vorhanden (Altlast: rundenbasierte
+-- Cooldown-Idee, nie genutzt — Timer läuft über cooldown_started_at in Minuten)
+SET @_has_lar = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='game_players' AND COLUMN_NAME='last_ability_round');
+SET @_sql_lar = IF(@_has_lar=1,'ALTER TABLE game_players DROP COLUMN last_ability_round','SELECT 1');
+PREPARE _stmt_lar FROM @_sql_lar; EXECUTE _stmt_lar; DEALLOCATE PREPARE _stmt_lar;
 
 ALTER TABLE deaths
   ADD COLUMN IF NOT EXISTS is_gehenkt       TINYINT(1)   NOT NULL DEFAULT 0   AFTER phase,
@@ -393,7 +399,7 @@ INSERT IGNORE INTO games (id, status) VALUES (1, 'lobby');
 
 INSERT IGNORE INTO settings (`key`, value, type, label, description, sort_order) VALUES
 ('app_name',           'Werwolf',                                       'string', 'Spielname',                     'Anzeigename der App — überall sichtbar.',                              10),
-('app_version',        '0.0.25',                                        'string', 'Versionsnummer',                'Anzeigeversion z. B. in Fußzeile oder About-Seite.',                   15),
+('app_version',        '0.26',                                          'string', 'Versionsnummer',                'Anzeigeversion z. B. in Fußzeile oder About-Seite.',                   15),
 ('beta_mode',          '1',                                             'bool',   'Beta-Modus',                    'Zeigt einen Beta-Hinweis im Spielfenster an.',                         16),
 ('app_debug',          '1',                                             'bool',   'Debug-Modus',                   'PHP-Fehler anzeigen. Im Produktivbetrieb auf 0 setzen.',               20),
 ('default_theme',      'gothic',                                        'string', 'Standard-Theme',                'Theme für neue Nutzer ohne gespeichertes Theme.',                      30),

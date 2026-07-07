@@ -394,26 +394,6 @@ function cooldownRemainingSecs(int $cooldownMins, int|string|null $elapsedSecs):
     return max(0, min($total, $total - (int)$elapsedSecs));
 }
 
-/**
- * Prüft, ob ein Spieler seine Rollenfähigkeit in der aktuellen Runde
- * einsetzen darf (Cooldown-Logik). $currentRound = aktuelle Spielrunde.
- *
- * HINWEIS: Diese Funktion ist vorbereitete Infrastruktur für eine
- * zukünftige Nachtphasen-Mechanik (gezielte Fähigkeiten wie Seher-Blick,
- * Hexen-Tränke, Heiler-Schutz mit echter Cooldown-Durchsetzung). Aktuell
- * wird der Cooldown-Wert einer Rolle nur informativ angezeigt
- * (siehe public/game.php), aber noch nicht aktiv durchgesetzt — es gibt
- * noch keine UI für rollenspezifische Nachtaktionen. Kein toter Code,
- * sondern bewusst vorbereiteter Baustein für den nächsten Ausbauschritt.
- */
-function canUseAbility(array $gamePlayerRow, int $currentRound): bool {
-    $cooldown = (int)($gamePlayerRow['role_cooldown'] ?? 0);
-    if ($cooldown <= 0) return true; // kein Cooldown definiert
-    $last = $gamePlayerRow['last_ability_round'] ?? null;
-    if ($last === null) return true; // noch nie genutzt
-    return ($currentRound - (int)$last) >= ($cooldown + 1);
-}
-
 /** Asset-Version in DB erhöhen — nach jedem Bild-Upload aufrufen. */
 function bumpAssetVersion(): void {
     $current = (int)(Database::queryOne('SELECT value FROM settings WHERE `key` = ?', ['asset_version'])['value'] ?? 0);
@@ -424,10 +404,3 @@ function bumpAssetVersion(): void {
     );
 }
 
-/** Markiert, dass die Fähigkeit in dieser Runde genutzt wurde. */
-function markAbilityUsed(int $gameId, int $playerId, int $round): void {
-    Database::execute(
-        "UPDATE game_players SET last_ability_round = ? WHERE game_id = ? AND player_id = ?",
-        [$round, $gameId, $playerId]
-    );
-}

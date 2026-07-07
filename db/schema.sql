@@ -106,7 +106,6 @@ CREATE TABLE game_players (
   player_id          INT NOT NULL,
   role_id            INT NULL,                  -- FK auf roles.id (NULL = noch keine Rolle zugewiesen)
   is_alive           TINYINT(1) NOT NULL DEFAULT 1,
-  last_ability_round  INT NULL,                  -- letzte Runde, in der die Fähigkeit genutzt wurde (Cooldown)
   cooldown_started_at TIMESTAMP NULL DEFAULT NULL, -- Zeitpunkt, zu dem der Spieler seinen Cooldown manuell gestartet hat
   joined_at           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (game_id)   REFERENCES games(id)   ON DELETE CASCADE,
@@ -372,7 +371,7 @@ CREATE TABLE settings (
 
 INSERT INTO settings (`key`, value, type, label, description, sort_order) VALUES
 ('app_name',           'Werwolf',                          'string', 'Spielname',              'Anzeigename der App — überall sichtbar.',                         10),
-('app_version',        '0.0.25',                          'string', 'Versionsnummer',          'Anzeigeversion z. B. in Fußzeile oder About-Seite.',             15),
+('app_version',        '0.26',                            'string', 'Versionsnummer',          'Anzeigeversion z. B. in Fußzeile oder About-Seite.',             15),
 ('beta_mode',          '1',                               'bool',   'Beta-Modus',              'Zeigt einen Beta-Hinweis im Spielfenster an.',                    16),
 ('app_debug',          '1',                               'bool',   'Debug-Modus',             'PHP-Fehler anzeigen. Im Produktivbetrieb auf 0 setzen.',          20),
 ('default_theme',      'gothic',                          'string', 'Standard-Theme',          'Theme für neue Nutzer ohne gespeichertes Theme.',                30),

@@ -6,7 +6,7 @@
  * ============================================================
  *  Hinweis: Rollen-Namen/Icons werden NICHT mehr hier hartcodiert.
  *  Sie kommen live aus der Datenbank (Tabelle `roles`) über die
- *  API-Felder role_name / role_icon_path / role_sichtbar.
+ *  API-Felder role_name / role_icon_url / role_sichtbar.
  * ============================================================
  */
 

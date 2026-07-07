@@ -72,6 +72,20 @@ Sprachnachrichten an den Spielleiter — Warum: einige Spieler schreiben nur ung
 ---
 ✅ Gelöst (07.07.2026)
 
+[Review] Drei Rest-Beobachtungen aus Review v0.0.18/19 abgearbeitet (→ v0.26)
+      → (1) kill_player mit cause='vote' ("⚖️ Erhängt" im Quick-Kill) nutzt jetzt
+        denselben GET_LOCK wie execute_vote und prüft die Versammlungs-Sperre
+        (max. 1 Hinrichtung) — Mindeststimmen bewusst NICHT geprüft, der Pfad ist
+        für außerhalb der App entschiedene Hinrichtungen da. (2) Einheiten-Altlast
+        entfernt: canUseAbility()/markAbilityUsed() (Runden-Rechnung, keinerlei
+        Aufrufer) gelöscht + Spalte game_players.last_ability_round gedroppt
+        (schema.sql, init.sql mit bedingtem DROP, Live-DB). (3) Spielfeld-Icons:
+        get_players liefert role_icon_url fertig mit filemtime-Buster (assetUrl),
+        renderRoleIcon() setzt nichts mehr aus ASSET_VER zusammen — scp-ersetzte
+        Icons erscheinen jetzt ohne 7-Tage-Wartezeit.
+        Außerdem: Versionsschema auf Wunsch von 0.0.xx auf 0.xx umgestellt
+        (0.0.25 → 0.26), CHANGELOG-Kopf entsprechend angepasst.
+
 [Feature] Detektiv überarbeitet — passive Kill-Hinweise nach Mordserien (→ v0.0.25)
       → Neues Rollen-Flag kill_hinweis (per Checkbox aktivierbar, Detektiv = Standard,
         alte Durchsuchen-Texte ersetzt; Alt-Stand in lokaler Rollen-Referenz-PDF

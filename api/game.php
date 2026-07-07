@@ -98,6 +98,11 @@ switch($action){
         $p['role_icon_path'] = null;
         $p['role_sichtbar']  = 0;
       }
+      // Fertige Icon-URL mit filemtime-Cache-Buster liefern (assetUrl) —
+      // der Client soll keine URLs aus ASSET_VER zusammensetzen (das DB-Setting
+      // wird nur bei Uploads gebumpt, nicht bei scp-ersetzten Dateien)
+      $p['role_icon_url'] = $p['role_icon_path'] ? assetUrl($p['role_icon_path']) : null;
+      unset($p['role_icon_path']);
       // Kill-Hinweis-Wissen (nur "kein Killer", nicht die Rolle) — Badge im
       // Client, nur wenn die Rolle nicht ohnehin angezeigt wird
       $p['not_killer'] = (!$isMe && !$isDead && $p['role_name'] === null

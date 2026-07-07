@@ -1,6 +1,35 @@
 # Changelog — Werwolf Web-App
 
-Jedes Backup erhält eine fortlaufende Versionsnummer (v0.0.x).
+Jedes Backup erhält eine fortlaufende Versionsnummer (v0.x — bis v0.0.25
+lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
+
+---
+
+## [v0.26] — 2026-07-07
+
+Versionsschema von 0.0.xx auf 0.xx umgestellt (0.0.25 → 0.26).
+Abarbeitung der drei Rest-Beobachtungen aus dem Code-Review v0.0.18/19.
+
+### Behoben
+- **Manuelles „⚖️ Erhängt" (kill_player, cause=vote) respektiert jetzt die
+  Versammlungsregeln:** gleicher GET_LOCK wie `execute_vote` (keine parallele
+  Doppel-Hinrichtung) und die Sperre „max. 1 Hinrichtung pro Versammlung".
+  Die Mindeststimmen-Prüfung entfällt auf diesem Pfad bewusst — er ist für
+  Hinrichtungen gedacht, die außerhalb der App-Abstimmung entschieden wurden.
+- **Rollen-Icons im Spielfeld cachen jetzt korrekt nach Datei-Ersatz:**
+  `get_players` liefert die fertige Icon-URL mit filemtime-Cache-Buster
+  (`role_icon_url` via `assetUrl()`); das JS setzt keine URLs mehr aus dem
+  nur bei Uploads gebumpten `ASSET_VER`-Setting zusammen.
+
+### Entfernt
+- **Einheiten-Altlast beim Cooldown:** Die nie aufgerufenen Helfer
+  `canUseAbility()`/`markAbilityUsed()` (rechneten in Runden, während
+  `roles.cooldown` überall sonst Minuten bedeutet) sind gelöscht, ebenso die
+  ungenutzte Spalte `game_players.last_ability_round` (Schema + init-Migration
+  + Live-DB). Der echte Timer läuft unverändert über `cooldown_started_at`.
+
+### DB-Änderungen (in frischem Schema enthalten, live bereits ausgeführt)
+- `ALTER TABLE game_players DROP COLUMN last_ability_round`
 
 ---
 
