@@ -326,7 +326,34 @@ INSERT INTO roles (id, name, cooldown, description, rules, active, fill, amount,
 (10, 'Sheriff',     0,
   'Kann unbegrenzt Spieler erschießen — tötet er jedoch einen Unschuldigen, stirbt er selbst.',
   'Du kannst so viele Spieler erschießen wie du willst. Tötest du jedoch nicht den Dodo oder einen Mörder, stirbst du selbst.',
-  1, 0, 1, 'assets/icons/roles/sheriff.png', 0, 0, 0, 0, 100, 0);
+  1, 0, 1, 'assets/icons/roles/sheriff.png', 0, 0, 0, 0, 100, 0),
+
+-- Geplante Rollen (active=0) — Mechaniken noch nicht gebaut, Details
+-- und benötigte Flags siehe db/neue_rollen_vorlagen.sql
+(11, 'Leichenfresser', 30,
+  'Killer, dessen Opfer spurlos verschwinden — sie können nicht vom Nekromanten befragt werden.',
+  'Zeige einem anderen Spieler die Mordwaffe — dieser ist sofort tot. Deine Opfer hinterlassen keine Orts- und Zeitspuren und können NICHT vom Nekromanten befragt werden. Abklingzeit: {cooldown} Minuten.',
+  0, 0, 1, NULL, 0, 0, 0, 1, 110, 0),
+
+(12, 'Auftragskiller', 5,
+  'Killer mit Auftrag: Er bekommt ein zufälliges Ziel — erst nach dessen Tod das nächste.',
+  'Die App zeigt dir ein zufälliges Ziel. Nur dieses Ziel darfst du töten (Mordwaffe zeigen). Nach dem Kill bekommst du nach {cooldown} Minuten Abklingzeit ein neues Ziel zugewiesen.',
+  0, 0, 1, NULL, 0, 0, 0, 1, 120, 0),
+
+(13, 'Schläfer', 0,
+  'Beginnt als Killer — wechselt aber nach einiger Zeit heimlich die Seite und spielt dann für das Dorf.',
+  'Du startest im Killer-Team und kennst die anderen Killer. Nach einer zufälligen Zeit wechselst du automatisch die Seite: Ab dann gewinnst du mit den Bürgern. Die anderen Killer wissen von Anfang an nur: "Einer von euch ist ein Verräter."',
+  0, 0, 1, NULL, 1, 0, 0, 1, 130, 0),
+
+(14, 'Söldner', 0,
+  'Startrolle im Zombie-Modus: Überlebe die Zombie-Plage.',
+  'Alle Spieler starten als Söldner. Irgendwann in den ersten Stunden verwandelt sich einer von euch in den ersten Zombie. Findet und eliminiert die Zombies, bevor sie euch alle bekehren.',
+  0, 1, 0, NULL, 0, 0, 0, 0, 140, 0),
+
+(15, 'Zombie', 0,
+  'Bekehrt Söldner statt sie zu töten — die Plage wächst.',
+  'Zeige einem Söldner deine Karte — er ist ab sofort ebenfalls Zombie und spielt für euch weiter. Ihr gewinnt, wenn alle Spieler infiziert sind. Zombies erkennen sich gegenseitig.',
+  0, 0, 1, NULL, 1, 0, 0, 1, 150, 0);
 
 -- Flags, die nicht in der Spaltenliste des Seed-INSERTs stehen
 UPDATE roles SET rollensicht=1 WHERE name='Hellseherin';
