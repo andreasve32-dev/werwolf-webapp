@@ -55,6 +55,36 @@ function describeSql(string $sql): string {
     return 'SQL-Anweisung ausgefuehrt.';
 }
 
+// ── Brute-Force-Bremse für den Setup-Zugang ──────────────────
+// Dateibasiert (sys_get_temp_dir), damit sie auch VOR dem ersten Setup
+// funktioniert, wenn noch keine DB existiert. Nach zu vielen Fehlversuchen
+// wird der Zugang kurz gesperrt.
+function setupThrottleFile(): string {
+    return sys_get_temp_dir() . '/ww_setup_attempts.json';
+}
+function setupThrottleState(): array {
+    $f = setupThrottleFile();
+    if (!is_file($f)) return ['fails' => 0, 'until' => 0];
+    $d = json_decode((string)@file_get_contents($f), true);
+    return is_array($d) ? ($d + ['fails' => 0, 'until' => 0]) : ['fails' => 0, 'until' => 0];
+}
+/** Ist der Zugang gerade gesperrt? Rückgabe [gesperrt(bool), restSekunden(int)]. */
+function setupThrottleCheck(): array {
+    $s = setupThrottleState();
+    $wait = (int)($s['until'] ?? 0) - time();
+    return $wait > 0 ? [true, $wait] : [false, 0];
+}
+function setupThrottleFail(): void {
+    $s = setupThrottleState();
+    $s['fails'] = (int)($s['fails'] ?? 0) + 1;
+    // Ab 5 Fehlversuchen 5 Minuten sperren, Zähler zurücksetzen
+    if ($s['fails'] >= 5) { $s['until'] = time() + 300; $s['fails'] = 0; }
+    @file_put_contents(setupThrottleFile(), json_encode($s), LOCK_EX);
+}
+function setupThrottleReset(): void {
+    @unlink(setupThrottleFile());
+}
+
 // Isolated setup session — must not share the app session cookie
 session_name('ww_setup');
 session_set_cookie_params(['lifetime' => 1800, 'httponly' => true, 'samesite' => 'Strict']);
@@ -65,12 +95,28 @@ $action = $_GET['action'] ?? '';
 // POST ?action=auth
 if ($action === 'auth') {
     header('Content-Type: application/json');
-    $pw = $_POST['pw'] ?? '';
-    if (SETUP_PASSWORD === '' || $pw === SETUP_PASSWORD) {
+    // Brute-Force-Bremse zuerst prüfen
+    [$blocked, $wait] = setupThrottleCheck();
+    if ($blocked) {
+        echo json_encode(['ok' => false, 'error' => "Zu viele Fehlversuche — bitte {$wait} Sekunden warten."]);
+        exit;
+    }
+    // Leeres Setup-Passwort = GESPERRT (kein offener Zugang mehr). Der destruktive
+    // Setup-Assistent darf nie ohne gesetztes Passwort erreichbar sein.
+    if (SETUP_PASSWORD === '') {
+        echo json_encode(['ok' => false, 'error' => 'Setup ist gesperrt: In config/config.php ist kein SETUP_PASSWORD gesetzt.']);
+        exit;
+    }
+    $pw = (string)($_POST['pw'] ?? '');
+    // Timing-sicherer Vergleich
+    if (hash_equals(SETUP_PASSWORD, $pw)) {
+        setupThrottleReset();
+        session_regenerate_id(true); // gegen Session-Fixation
         $_SESSION['setup_auth'] = true;
         $_SESSION['setup_ts']   = time();
         echo json_encode(['ok' => true]);
     } else {
+        setupThrottleFail();
         echo json_encode(['ok' => false, 'error' => 'Passwort falsch.']);
     }
     exit;
@@ -139,11 +185,35 @@ if ($action === 'save_admin') {
     echo json_encode(['ok' => true]); exit;
 }
 
+// POST ?action=confirm  →  Bestätigungsphrase serverseitig prüfen
+// Erst danach darf der destruktive run-Stream laufen. Ohne diese Freigabe kann
+// selbst ein authentifizierter Setup-Zugang die DB nicht per direktem GET auf
+// ?action=run löschen (die Client-Abfrage allein war bisher umgehbar).
+if ($action === 'confirm') {
+    header('Content-Type: application/json');
+    if (empty($_SESSION['setup_auth'])) {
+        echo json_encode(['ok' => false, 'error' => 'Nicht autorisiert.']); exit;
+    }
+    $phrase = trim((string)($_POST['phrase'] ?? ''));
+    if ($phrase !== 'LÖSCHEN') {
+        echo json_encode(['ok' => false, 'error' => 'Bestätigungsphrase stimmt nicht.']); exit;
+    }
+    $_SESSION['setup_confirmed'] = time();
+    echo json_encode(['ok' => true]); exit;
+}
+
 // GET ?action=run  →  SSE stream for real-time progress
 if ($action === 'run') {
     if (empty($_SESSION['setup_auth']) || (time() - ($_SESSION['setup_ts'] ?? 0)) > 1800) {
         http_response_code(403); exit;
     }
+    // Destruktiven Lauf nur nach serverseitiger Bestätigung (action=confirm),
+    // die maximal 10 Minuten gültig ist. Verhindert direkten ?action=run-Aufruf.
+    if (empty($_SESSION['setup_confirmed']) || (time() - (int)$_SESSION['setup_confirmed']) > 600) {
+        http_response_code(403); exit;
+    }
+    // Einmal-Freigabe: nach dem Start sofort verbrauchen
+    unset($_SESSION['setup_confirmed']);
     session_write_close();
 
     header('Content-Type: text/event-stream');
@@ -326,9 +396,11 @@ $noPw        = SETUP_PASSWORD === '';
     <div class="card card--glow setup-panel setup-panel--active" id="panel-1">
       <div class="section-title">🔐 Setup-Zugang</div>
       <?php if ($noPw): ?>
-      <div class="alert alert--warn mb-2">
-        ⚠️ Kein Setup-Passwort gesetzt (<code>SETUP_PASSWORD</code> in <code>config/config.php</code> ist leer).<br>
-        Die Setup-Seite ist ohne Passwort öffentlich zugänglich — bitte unbedingt ein Passwort setzen!
+      <div class="alert alert--error mb-2">
+        🔒 <strong>Setup gesperrt.</strong> In <code>config/config.php</code> ist kein
+        <code>SETUP_PASSWORD</code> gesetzt.<br>
+        Aus Sicherheitsgründen ist der destruktive Setup-Assistent ohne gesetztes Passwort
+        <strong>nicht</strong> nutzbar. Bitte ein sicheres Passwort eintragen und die Seite neu laden.
       </div>
       <?php else: ?>
       <p class="text-dim text-sm mb-2">
@@ -337,14 +409,12 @@ $noPw        = SETUP_PASSWORD === '';
       <?php endif; ?>
       <div id="pw-error" class="alert alert--error mb-2" style="display:none"></div>
       <div class="form-group">
-        <label class="form-label" for="setup-pw">
-          <?= $noPw ? 'Kein Passwort erforderlich — direkt weiter' : 'Setup-Passwort' ?>
-        </label>
+        <label class="form-label" for="setup-pw">Setup-Passwort</label>
         <input class="form-input" type="password" id="setup-pw"
-               placeholder="<?= $noPw ? '(kein Passwort gesetzt)' : 'Setup-Passwort eingeben…' ?>"
+               placeholder="<?= $noPw ? '(gesperrt — kein Passwort gesetzt)' : 'Setup-Passwort eingeben…' ?>"
                <?= $noPw ? 'disabled' : '' ?> autocomplete="off">
       </div>
-      <button class="btn btn--primary btn--full btn--lg mt-1" onclick="step1Next()">
+      <button class="btn btn--primary btn--full btn--lg mt-1" onclick="step1Next()" <?= $noPw ? 'disabled' : '' ?>>
         Weiter →
       </button>
     </div>
@@ -627,9 +697,26 @@ async function step3Next() {
   btn.textContent = 'Weiter →';
 }
 
-// step 4 – confirm
-function step4Next() {
-  document.getElementById('btn-confirm').disabled = true;
+// step 4 – confirm (Phrase erst serverseitig freigeben, dann destruktiven Lauf starten)
+async function step4Next() {
+  const btn = document.getElementById('btn-confirm');
+  const phrase = document.getElementById('confirm-text').value;
+  btn.disabled = true;
+  try {
+    const fd = new FormData();
+    fd.append('phrase', phrase);
+    const res  = await fetch(API + '?action=confirm', {method:'POST', body: fd});
+    const data = await res.json();
+    if (!data.ok) {
+      alert(data.error || 'Bestätigung fehlgeschlagen.');
+      btn.disabled = false;
+      return;
+    }
+  } catch(e) {
+    alert('Netzwerkfehler: ' + e.message);
+    btn.disabled = false;
+    return;
+  }
   document.getElementById('confirm-text').disabled = true;
   goStep(5);
   runSetup();
@@ -709,10 +796,7 @@ function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// skip step 1 when SETUP_PASSWORD is empty
-<?php if ($noPw): ?>
-document.addEventListener('DOMContentLoaded', () => step1Next());
-<?php endif; ?>
+<?php /* Kein Auto-Skip mehr bei leerem Passwort: leeres SETUP_PASSWORD = gesperrt (siehe auth-Action). */ ?>
 </script>
 
 </body>

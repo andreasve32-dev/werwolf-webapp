@@ -2,6 +2,8 @@
 // Copyright (c) 2026 Andreas Vetter
 // Debug-Werkzeuge für die Spielleitung — nur sichtbar/nutzbar wenn APP_DEBUG an ist.
 // Eigene Seite statt inline im Dashboard, damit die Spielleitung übersichtlich bleibt.
+// Aufbau als Akkordeon wie die Server-Einstellungen: jeder Block klappt einzeln
+// auf, immer nur einer offen. System-Log steht oben und startet aufgeklappt.
 require_once dirname(__DIR__) . '/core/bootstrap.php';
 require_once TEMPLATE_PATH . '/admin_dashboard_blocks.php';
 require_once TEMPLATE_PATH . '/testplayers_blocks.php';
@@ -12,9 +14,49 @@ $gameId = $game['id'] ?? null;
 $state  = $gameId ? admin_compute_state($gameId) : [];
 extract($state);
 
+// Klappbarer Sektions-Header (wie settingsAccHead in admin/settings.php).
+// $badge ist bereits fertiges, sicheres HTML (nur ints/feste Strings).
+function debugAccHead(string $icon, string $title, string $badge = '', bool $open = false): void {
+    ?>
+    <button type="button" class="debug-acc__head" aria-expanded="<?= $open ? 'true' : 'false' ?>" onclick="toggleDebugAcc(this)">
+      <span class="debug-acc__title"><?= $icon ?> <?= e($title) ?><?= $badge ?></span>
+      <span class="debug-acc__chevron">▾</span>
+    </button>
+    <?php
+}
+
 $page = ['title' => 'Debug-Menü'];
 require TEMPLATE_PATH . '/base.php';
 ?>
+
+<style>
+.debug-acc__head {
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+  width: 100%; padding: 0; margin: 0;
+  background: none; border: none; cursor: pointer;
+  text-align: left; font-family: inherit;
+}
+.debug-acc__title {
+  font-family: var(--font-display, inherit);
+  font-size: 1.05rem; font-weight: 600; color: var(--text-bright);
+  display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+}
+.debug-acc__head[aria-expanded="true"] .debug-acc__title { color: var(--accent); }
+.debug-acc__chevron {
+  flex-shrink: 0; font-size: .75rem; color: var(--text-dim);
+  transition: transform .22s ease;
+}
+.debug-acc__head[aria-expanded="true"] .debug-acc__chevron { transform: rotate(180deg); }
+.debug-acc__body { margin-top: 1rem; }
+/* Von Render-Funktionen (Testspieler, Tot melden) erzeugte innere .card in der
+   Accordion-Body optisch abflachen — ihr eigener Titel entfällt (der Kopf zeigt ihn). */
+.debug-acc__body > .card {
+  border: none !important; background: none !important; box-shadow: none !important;
+  padding: 0 !important; margin: 0 !important; animation: none !important;
+}
+.debug-acc__body > .card > .section-title:first-child { display: none; }
+.debug-badge { font-size: .72rem; font-weight: 700; }
+</style>
 
 <div class="container page-wrap">
 
@@ -33,92 +75,7 @@ require TEMPLATE_PATH . '/base.php';
   </div>
   <?php else: ?>
 
-  <?php if (!$game || $game['status'] !== 'running'): ?>
-  <div class="alert alert--warn mb-2">
-    Kein laufendes Spiel — die spielbezogenen Debug-Werkzeuge (Rolle, Spielkarte,
-    Cooldown, Tod/Wiederbeleben) sind nur während eines laufenden Spiels verfügbar.
-    Die Testspieler-Verwaltung unten geht unabhängig davon jederzeit.
-  </div>
-  <?php else: ?>
-
-  <!-- Eigene Rolle wählen -->
-  <div class="card card--glow animate-in mb-2" style="border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04)">
-    <div class="section-title" style="color:#fbbf24">🎭 Eigene Rolle wählen</div>
-    <p class="text-dim text-xs mb-2">
-      Setzt deine eigene Rolle im laufenden Spiel sofort.
-      Aktuell: <span id="debug-current-role-label"><?php if ($adminGameEntry['role_name'] ?? null): ?><strong style="color:var(--text-bright)"><?= e($adminGameEntry['role_name']) ?></strong><?php else: ?><em>keine Rolle</em><?php endif; ?></span>
-    </p>
-    <div class="flex gap-sm mb-2">
-      <select id="debug-role-select" class="form-input" style="flex:1">
-        <option value="">Rolle wählen…</option>
-        <?php foreach ($debugRoles as $r): ?>
-        <option value="<?= (int)$r['id'] ?>"
-          <?= (int)($adminGameEntry['role_id'] ?? 0) === (int)$r['id'] ? 'selected' : '' ?>>
-          <?= e($r['name']) ?>
-        </option>
-        <?php endforeach; ?>
-      </select>
-      <button class="btn btn--ghost" style="border-color:rgba(251,191,36,.4);color:#fbbf24"
-              onclick="debugSetOwnRole()">Setzen</button>
-    </div>
-    <div id="debug-role-result" class="mb-1"></div>
-    <button class="btn btn--ghost btn--sm" style="border-color:rgba(251,191,36,.4);color:#fbbf24"
-            onclick="debugResetCooldown()">⏱️ Cooldown zurücksetzen</button>
-    <div id="debug-cooldown-result" class="mt-1"></div>
-  </div>
-
-  <!-- Spieler als tot melden -->
-  <?= admin_render_kill_quick($state) ?>
-
-  <!-- Spielkarte eines Spielers ansehen -->
-  <div class="card card--glow animate-in mb-2" style="animation-delay:.06s;border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04)">
-    <div class="section-title" style="color:#fbbf24">🃏 Spielkarte ansehen</div>
-    <p class="text-dim text-xs mb-2">
-      Zeigt die volle Rollenkarte eines beliebigen Spielers — ignoriert bewusst alle
-      normalen Sichtbarkeitsregeln, nur für dich als Debug-Werkzeug sichtbar.
-    </p>
-    <div class="flex gap-sm">
-      <select id="debug-peek-select" class="form-input" style="flex:1">
-        <option value="">Spieler wählen…</option>
-        <?php foreach ($gamePlayers as $gp): ?>
-        <option value="<?= (int)$gp['player_id'] ?>">
-          <?= e($gp['display_name']) ?><?= $gp['is_alive'] ? '' : ' (tot)' ?>
-        </option>
-        <?php endforeach; ?>
-      </select>
-      <button class="btn btn--ghost" style="border-color:rgba(251,191,36,.4);color:#fbbf24"
-              onclick="debugPeekRole()">Anzeigen</button>
-    </div>
-    <div id="debug-peek-result" class="mt-2"></div>
-  </div>
-
-  <!-- Tote wiederbeleben -->
-  <div class="card animate-in mb-2" style="animation-delay:.09s;border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04)">
-    <div class="section-title" style="color:#fbbf24">🔮 Tote wiederbeleben</div>
-    <p class="text-dim text-xs mb-2">
-      Bringt einen Spieler ohne neue Runde zurück ins Spiel — löscht dabei auch seinen Todeslisten-Eintrag.
-    </p>
-    <?php $deadPlayers = array_filter($gamePlayers, fn($p) => !$p['is_alive']); ?>
-    <?php if (empty($deadPlayers)): ?>
-    <p class="text-dim text-sm" id="debug-dead-empty">Niemand ist tot.</p>
-    <?php endif; ?>
-    <div id="debug-dead-list" style="display:flex;flex-direction:column;gap:.4rem">
-      <?php foreach ($deadPlayers as $gp): ?>
-      <div class="panel flex-between" style="padding:.5rem .8rem" id="debug-dead-row-<?= (int)$gp['player_id'] ?>">
-        <span style="font-family:var(--font-display);font-size:.88rem"><?= e($gp['display_name']) ?></span>
-        <button class="btn btn--ghost btn--sm"
-                onclick="revivePlayer(<?= (int)$gp['player_id'] ?>,'<?= e($gp['username']) ?>')">🔮 Wiederbeleben</button>
-      </div>
-      <?php endforeach; ?>
-    </div>
-  </div>
-
-  <?php endif; ?>
-
-  <!-- Testspieler — unabhängig vom Spielstatus immer verfügbar (Debug-Modus reicht) -->
-  <?= admin_render_testplayers() ?>
-
-  <!-- System-Log ansehen -->
+  <!-- ── System-Log (immer verfügbar, startet aufgeklappt) ────────── -->
   <?php
     $__logEntries = logParse(LOG_PATH);
     $__logMeta    = logLevelMeta();
@@ -128,23 +85,134 @@ require TEMPLATE_PATH . '/base.php';
         elseif ($__le['level'] === 'ERROR') $__logErr++;
     }
     $__logTotal = count($__logEntries);
+    // Badge im Kopf: Anzahl kritischer/Fehler-Einträge auch bei zugeklapptem Block sichtbar
+    $__logBadge = '';
+    if ($__logCrit > 0 || $__logErr > 0) {
+        $__parts = [];
+        if ($__logCrit > 0) $__parts[] = '<span class="debug-badge" style="color:' . $__logMeta['CRITICAL']['color'] . '">⛔ ' . $__logCrit . '</span>';
+        if ($__logErr  > 0) $__parts[] = '<span class="debug-badge" style="color:' . $__logMeta['ERROR']['color'] . '">❌ ' . $__logErr . '</span>';
+        $__logBadge = ' ' . implode(' ', $__parts);
+    }
   ?>
-  <div class="card card--glow animate-in mt-2" style="border-color:rgba(148,163,184,.35)">
-    <div class="section-title">📜 System-Log</div>
-    <p class="text-dim text-xs mb-2">
-      Aufgezeichnete Fehler &amp; Ereignisse durchsuchen — nach Schweregrad geordnet
-      (kritisch → Info). Aktuell <strong><?= $__logTotal ?></strong> Einträge<?php
-        if ($__logCrit > 0 || $__logErr > 0): ?>, davon
-        <?php if ($__logCrit > 0): ?><span style="color:<?= $__logMeta['CRITICAL']['color'] ?>">⛔ <?= $__logCrit ?> kritisch</span><?php endif; ?>
-        <?php if ($__logCrit > 0 && $__logErr > 0): ?> · <?php endif; ?>
-        <?php if ($__logErr > 0): ?><span style="color:<?= $__logMeta['ERROR']['color'] ?>">❌ <?= $__logErr ?> Fehler</span><?php endif; ?>
-      <?php endif; ?>.
-    </p>
-    <a href="<?= APP_URL ?>/admin/logs.php" class="btn btn--primary btn--sm">📜 Log öffnen</a>
-    <?php if ($__logCrit > 0): ?>
-    <a href="<?= APP_URL ?>/admin/logs.php?level=CRITICAL&sort=severity" class="btn btn--ghost btn--sm"
-       style="color:<?= $__logMeta['CRITICAL']['color'] ?>">⛔ Nur kritische</a>
-    <?php endif; ?>
+  <div class="card card--glow animate-in mb-2" style="border-color:rgba(148,163,184,.35)">
+    <?php debugAccHead('📜', 'System-Log', $__logBadge, true); ?>
+    <div class="debug-acc__body">
+      <p class="text-dim text-xs mb-2">
+        Aufgezeichnete Fehler &amp; Ereignisse durchsuchen — nach Schweregrad geordnet
+        (kritisch → Info). Aktuell <strong><?= $__logTotal ?></strong> Einträge<?php
+          if ($__logCrit > 0 || $__logErr > 0): ?>, davon
+          <?php if ($__logCrit > 0): ?><span style="color:<?= $__logMeta['CRITICAL']['color'] ?>">⛔ <?= $__logCrit ?> kritisch</span><?php endif; ?>
+          <?php if ($__logCrit > 0 && $__logErr > 0): ?> · <?php endif; ?>
+          <?php if ($__logErr > 0): ?><span style="color:<?= $__logMeta['ERROR']['color'] ?>">❌ <?= $__logErr ?> Fehler</span><?php endif; ?>
+        <?php endif; ?>.
+      </p>
+      <a href="<?= APP_URL ?>/admin/logs.php" class="btn btn--primary btn--sm">📜 Log öffnen</a>
+      <?php if ($__logCrit > 0): ?>
+      <a href="<?= APP_URL ?>/admin/logs.php?level=CRITICAL&sort=severity" class="btn btn--ghost btn--sm"
+         style="color:<?= $__logMeta['CRITICAL']['color'] ?>">⛔ Nur kritische</a>
+      <?php endif; ?>
+    </div>
+  </div>
+
+  <?php if (!$game || $game['status'] !== 'running'): ?>
+  <div class="alert alert--warn mb-2">
+    Kein laufendes Spiel — die spielbezogenen Debug-Werkzeuge (Rolle, Spielkarte,
+    Cooldown, Tod/Wiederbeleben) sind nur während eines laufenden Spiels verfügbar.
+    Die Testspieler-Verwaltung unten geht unabhängig davon jederzeit.
+  </div>
+  <?php else: ?>
+
+  <!-- ── Eigene Rolle wählen ──────────────────────────────────────── -->
+  <div class="card card--glow animate-in mb-2" style="border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04)">
+    <?php debugAccHead('🎭', 'Eigene Rolle wählen'); ?>
+    <div class="debug-acc__body" hidden>
+      <p class="text-dim text-xs mb-2">
+        Setzt deine eigene Rolle im laufenden Spiel sofort.
+        Aktuell: <span id="debug-current-role-label"><?php if ($adminGameEntry['role_name'] ?? null): ?><strong style="color:var(--text-bright)"><?= e($adminGameEntry['role_name']) ?></strong><?php else: ?><em>keine Rolle</em><?php endif; ?></span>
+      </p>
+      <div class="flex gap-sm mb-2">
+        <select id="debug-role-select" class="form-input" style="flex:1">
+          <option value="">Rolle wählen…</option>
+          <?php foreach ($debugRoles as $r): ?>
+          <option value="<?= (int)$r['id'] ?>"
+            <?= (int)($adminGameEntry['role_id'] ?? 0) === (int)$r['id'] ? 'selected' : '' ?>>
+            <?= e($r['name']) ?>
+          </option>
+          <?php endforeach; ?>
+        </select>
+        <button class="btn btn--ghost" style="border-color:rgba(251,191,36,.4);color:#fbbf24"
+                onclick="debugSetOwnRole()">Setzen</button>
+      </div>
+      <div id="debug-role-result" class="mb-1"></div>
+      <button class="btn btn--ghost btn--sm" style="border-color:rgba(251,191,36,.4);color:#fbbf24"
+              onclick="debugResetCooldown()">⏱️ Cooldown zurücksetzen</button>
+      <div id="debug-cooldown-result" class="mt-1"></div>
+    </div>
+  </div>
+
+  <!-- ── Spieler als tot melden ───────────────────────────────────── -->
+  <div class="card card--glow animate-in mb-2" style="border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04)">
+    <?php debugAccHead('☠', 'Spieler als tot melden'); ?>
+    <div class="debug-acc__body" hidden>
+      <?= admin_render_kill_quick($state) ?>
+    </div>
+  </div>
+
+  <!-- ── Spielkarte eines Spielers ansehen ────────────────────────── -->
+  <div class="card card--glow animate-in mb-2" style="border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04)">
+    <?php debugAccHead('🃏', 'Spielkarte ansehen'); ?>
+    <div class="debug-acc__body" hidden>
+      <p class="text-dim text-xs mb-2">
+        Zeigt die volle Rollenkarte eines beliebigen Spielers — ignoriert bewusst alle
+        normalen Sichtbarkeitsregeln, nur für dich als Debug-Werkzeug sichtbar.
+      </p>
+      <div class="flex gap-sm">
+        <select id="debug-peek-select" class="form-input" style="flex:1">
+          <option value="">Spieler wählen…</option>
+          <?php foreach ($gamePlayers as $gp): ?>
+          <option value="<?= (int)$gp['player_id'] ?>">
+            <?= e($gp['display_name']) ?><?= $gp['is_alive'] ? '' : ' (tot)' ?>
+          </option>
+          <?php endforeach; ?>
+        </select>
+        <button class="btn btn--ghost" style="border-color:rgba(251,191,36,.4);color:#fbbf24"
+                onclick="debugPeekRole()">Anzeigen</button>
+      </div>
+      <div id="debug-peek-result" class="mt-2"></div>
+    </div>
+  </div>
+
+  <!-- ── Tote wiederbeleben ───────────────────────────────────────── -->
+  <div class="card animate-in mb-2" style="border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04)">
+    <?php debugAccHead('🔮', 'Tote wiederbeleben'); ?>
+    <div class="debug-acc__body" hidden>
+      <p class="text-dim text-xs mb-2">
+        Bringt einen Spieler ohne neue Runde zurück ins Spiel — löscht dabei auch seinen Todeslisten-Eintrag.
+      </p>
+      <?php $deadPlayers = array_filter($gamePlayers, fn($p) => !$p['is_alive']); ?>
+      <?php if (empty($deadPlayers)): ?>
+      <p class="text-dim text-sm" id="debug-dead-empty">Niemand ist tot.</p>
+      <?php endif; ?>
+      <div id="debug-dead-list" style="display:flex;flex-direction:column;gap:.4rem">
+        <?php foreach ($deadPlayers as $gp): ?>
+        <div class="panel flex-between" style="padding:.5rem .8rem" id="debug-dead-row-<?= (int)$gp['player_id'] ?>">
+          <span style="font-family:var(--font-display);font-size:.88rem"><?= e($gp['display_name']) ?></span>
+          <button class="btn btn--ghost btn--sm"
+                  onclick="revivePlayer(<?= (int)$gp['player_id'] ?>,'<?= e($gp['username']) ?>')">🔮 Wiederbeleben</button>
+        </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  </div>
+
+  <?php endif; ?>
+
+  <!-- ── Testspieler (immer verfügbar, standardmäßig eingeklappt) ──── -->
+  <div class="card card--glow animate-in mb-2" style="border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04)">
+    <?php debugAccHead('🤖', 'Testspieler'); ?>
+    <div class="debug-acc__body" hidden>
+      <?= admin_render_testplayers() ?>
+    </div>
   </div>
 
   <?php endif; ?>
@@ -157,6 +225,22 @@ $page['inline_js'] = sprintf(
     json_encode(API_URL), json_encode($gameId), json_encode(APP_URL . '/admin/testplayers.php')
 );
 $page['inline_js'] .= <<<'JS'
+
+// Akkordeon wie in den Server-Einstellungen: immer nur EIN Block offen.
+function toggleDebugAcc(btn) {
+  const body = btn.nextElementSibling;
+  const open = btn.getAttribute('aria-expanded') === 'true';
+  if (!open) {
+    document.querySelectorAll('.debug-acc__head[aria-expanded="true"]').forEach(other => {
+      if (other !== btn) {
+        other.setAttribute('aria-expanded', 'false');
+        other.nextElementSibling.hidden = true;
+      }
+    });
+  }
+  btn.setAttribute('aria-expanded', String(!open));
+  body.hidden = open;
+}
 
 async function debugSetOwnRole() {
   const sel   = document.getElementById('debug-role-select');
@@ -318,4 +402,3 @@ async function tpDeleteAll() {
 }
 JS;
 require TEMPLATE_PATH . '/base_end.php';
-?>

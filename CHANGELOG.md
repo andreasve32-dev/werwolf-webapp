@@ -5,6 +5,35 @@ lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
 
 ---
 
+## [v0.30] — 2026-07-08
+
+### Geändert
+- **🐛 Debug-Menü als Accordion** (wie die Server-Einstellungen aufgebaut): jeder
+  Block klappt einzeln auf, immer nur einer offen. **📜 System-Log steht jetzt ganz
+  oben und startet aufgeklappt** (mit Fehler-Badge ⛔/❌ im Kopf), alle übrigen Blöcke
+  — inklusive **Testspieler** — sind standardmäßig eingeklappt. Die von Render-
+  Funktionen erzeugten inneren Karten werden per CSS abgeflacht (keine Änderung an
+  den geteilten Templates nötig).
+
+### Sicherheit
+- **`admin/setup.php` gehärtet** (der destruktive Setup-Assistent ist login-los erreichbar):
+  - Leeres `SETUP_PASSWORD` = **gesperrt** (bisher: offen für alle).
+  - Timing-sicherer Passwortvergleich (`hash_equals`).
+  - **Brute-Force-Bremse** (dateibasiert, funktioniert auch ohne DB): nach 5 Fehlversuchen 5 Min. Sperre.
+  - **Serverseitige Bestätigungsphrase** (`action=confirm`) vor dem destruktiven Lauf —
+    `?action=run` war bisher per direktem GET ohne Bestätigung auslösbar.
+  - Session-Regenerierung nach erfolgreichem Login (gegen Session-Fixation).
+
+### Geplant (nur dokumentiert, nicht umgesetzt)
+- **Update-System** (ZIP-basiert, Web-Upload, digitale Signatur zur Manipulations-
+  erkennung, Versionsprüfung, automatisches Datei-Kopieren + DB-Migration): Konzept in
+  `info.txt` festgehalten — Umsetzung **erst nach Release 1.0**, nicht in der Beta.
+
+### DB-Änderungen
+- Nur `app_version` → `0.30` (Setting). Keine Schema-Änderungen.
+
+---
+
 ## [v0.29] — 2026-07-08
 
 ### Hinzugefügt
