@@ -1,7 +1,8 @@
 # ── Zugangsdaten (NIEMALS ins Repo) ─────────────────────────
 config/config.php
 
-# ── Privater Update-Signaturschlüssel (NUR lokal, nie ins Repo!) ─
+# ── Entwickler-Only: Bau-Tools + privater Signaturschlüssel (NUR lokal!) ─
+dev-local/
 config/update_privkey.secret
 updates/*.wwupd
 updates/backups/
