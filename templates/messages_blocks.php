@@ -121,6 +121,10 @@ function render_message_row(array $msg): string {
             <p style="margin:0;color:var(--text-bright)" id="reply-text-display-<?= (int)$msg['id'] ?>">
               <?= e($msg['reply']) ?>
             </p>
+            <?php if (!empty($msg['reply_voice_path'])): ?>
+            <audio controls preload="none" style="width:100%;max-width:320px;margin-top:.4rem;display:block"
+                   src="<?= e(API_URL) ?>/messages.php?action=voice_file&amp;which=reply&amp;id=<?= (int)$msg['id'] ?>"></audio>
+            <?php endif; ?>
             <button class="btn btn--ghost btn--sm mt-1"
                     onclick="openEditReply(<?= (int)$msg['id'] ?>, <?= htmlspecialchars(json_encode($msg['reply']), ENT_QUOTES) ?>)">
               ✏️ Bearbeiten
@@ -145,6 +149,25 @@ function render_message_row(array $msg): string {
             <?php endif; ?>
           </div>
           <div id="reply-result-<?= (int)$msg['id'] ?>" style="display:none;margin-top:.4rem"></div>
+
+          <?php if (VOICE_MESSAGES): ?>
+          <!-- Sprachantwort aufnehmen (MediaRecorder, max. 1 Min.) -->
+          <div style="margin-top:.5rem;border-top:1px dashed var(--border);padding-top:.5rem">
+            <button class="btn btn--ghost btn--sm" type="button"
+                    onclick="rvOpen(<?= (int)$msg['id'] ?>, this)">🎙️ Per Sprache antworten</button>
+            <div id="rv-box-<?= (int)$msg['id'] ?>" style="display:none;margin-top:.4rem">
+              <div class="flex gap-xs" style="align-items:center;flex-wrap:wrap">
+                <button class="btn btn--ghost btn--sm" type="button"
+                        id="rv-rec-<?= (int)$msg['id'] ?>" onclick="rvToggleRec(<?= (int)$msg['id'] ?>)">🔴 Aufnahme starten</button>
+                <span id="rv-timer-<?= (int)$msg['id'] ?>" class="text-dim text-xs" style="display:none">0:00 / 1:00</span>
+                <button class="btn btn--primary btn--sm" type="button"
+                        id="rv-send-<?= (int)$msg['id'] ?>" onclick="rvSend(<?= (int)$msg['id'] ?>)" disabled>✓ Sprachantwort senden</button>
+              </div>
+              <audio id="rv-preview-<?= (int)$msg['id'] ?>" controls style="display:none;width:100%;max-width:320px;margin-top:.3rem"></audio>
+              <div id="rv-result-<?= (int)$msg['id'] ?>" style="display:none;margin-top:.3rem"></div>
+            </div>
+          </div>
+          <?php endif; ?>
         </div>
 
       </div><!-- /body -->

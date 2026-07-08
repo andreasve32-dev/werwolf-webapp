@@ -536,10 +536,13 @@ function cooldownRemainingSecs(int $cooldownMins, int|string|null $elapsedSecs):
 function cleanupOrphanedVoiceFiles(): int {
     $dir = ROOT_PATH . '/uploads/voice';
     if (!is_dir($dir)) return 0;
-    $refs = array_flip(array_column(
-        Database::query("SELECT voice_path FROM messages WHERE voice_path IS NOT NULL"),
-        'voice_path'
-    ));
+    // Sowohl die Frage-Aufnahme (voice_path) als auch die Admin-Sprachantwort
+    // (reply_voice_path) gelten als referenziert — beide dürfen nicht gelöscht werden.
+    $refs = [];
+    foreach (Database::query("SELECT voice_path, reply_voice_path FROM messages") as $r) {
+        if (!empty($r['voice_path']))       $refs[$r['voice_path']] = true;
+        if (!empty($r['reply_voice_path'])) $refs[$r['reply_voice_path']] = true;
+    }
     $deleted = 0;
     foreach (glob($dir . '/*') ?: [] as $f) {
         if (!is_file($f)) continue;

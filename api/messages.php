@@ -19,7 +19,7 @@ $player = Auth::player();
 /** Lädt eine Nachricht inkl. Spielername für render_message_row(). */
 function fetchMessageRow(int $id): array {
     return Database::queryOne(
-        "SELECT m.id, m.message, m.faq_question, m.voice_path, m.reply, m.created_at, m.replied_at,
+        "SELECT m.id, m.message, m.faq_question, m.voice_path, m.reply, m.reply_voice_path, m.created_at, m.replied_at,
                 m.read_by_player, m.published, p.display_name, p.username
          FROM messages m JOIN players p ON p.id = m.player_id
          WHERE m.id = ?",
@@ -121,15 +121,17 @@ switch ($action) {
         jsonOk('Sprachnachricht gesendet.', ['id' => $id]);
 
     case 'voice_file':
-        // Audio-Auslieferung mit Auth: nur Admin oder der Absender selbst.
-        // Der uploads/-Ordner ist per .htaccess gesperrt — dies ist der einzige Weg.
-        $mid = (int)($_GET['id'] ?? 0);
-        $row = $mid ? Database::queryOne("SELECT player_id, voice_path FROM messages WHERE id = ?", [$mid]) : null;
-        if (!$row || !$row['voice_path']) { http_response_code(404); exit('Nicht gefunden'); }
+        // Audio-Auslieferung mit Auth: nur Admin oder der Absender/Empfänger selbst.
+        // which=reply liefert die Sprach-ANTWORT des Admins (an den Spieler), sonst die
+        // Frage-Aufnahme des Spielers. Der uploads/-Ordner ist per .htaccess gesperrt.
+        $mid   = (int)($_GET['id'] ?? 0);
+        $which = ($_GET['which'] ?? '') === 'reply' ? 'reply_voice_path' : 'voice_path';
+        $row = $mid ? Database::queryOne("SELECT player_id, {$which} AS vp FROM messages WHERE id = ?", [$mid]) : null;
+        if (!$row || !$row['vp']) { http_response_code(404); exit('Nicht gefunden'); }
         if (!$player['is_admin'] && (int)$row['player_id'] !== (int)$player['id']) {
             http_response_code(403); exit('Kein Zugriff');
         }
-        $abs = ROOT_PATH . '/' . $row['voice_path'];
+        $abs = ROOT_PATH . '/' . $row['vp'];
         $ext = strtolower(pathinfo($abs, PATHINFO_EXTENSION));
         if (!is_file($abs) || !isset(VOICE_EXT_MIME[$ext])) { http_response_code(404); exit('Datei fehlt'); }
         header('Content-Type: ' . VOICE_EXT_MIME[$ext]);
@@ -159,7 +161,7 @@ switch ($action) {
 
     case 'get_my':
         $msgs = Database::query(
-            "SELECT id, message, voice_path, reply, created_at, replied_at, read_by_player
+            "SELECT id, message, voice_path, reply, reply_voice_path, created_at, replied_at, read_by_player
              FROM messages WHERE player_id = ? ORDER BY created_at DESC",
             [$player['id']]
         );
@@ -196,6 +198,54 @@ switch ($action) {
         WebPush::sendToPlayer((int)$msgRow['player_id']);
         require_once TEMPLATE_PATH . '/messages_blocks.php';
         jsonOk('Antwort gespeichert.', ['html' => render_message_row(fetchMessageRow($mid))]);
+
+    case 'reply_voice':
+        // Admin antwortet per Sprachnachricht. Multipart-POST: id + Audio im Feld "voice".
+        // Ist die Transkription an, wird die Antwort direkt in Text umgesetzt (Feld reply).
+        if (!$player['is_admin']) jsonError('Kein Zugriff.', 403);
+        if (!VOICE_MESSAGES)      jsonError('Sprachnachrichten sind deaktiviert.');
+        $mid = (int)($_POST['id'] ?? 0);
+        if (!$mid) jsonError('Ungültige ID.');
+        $msgRow = Database::queryOne("SELECT id, player_id, reply FROM messages WHERE id = ?", [$mid]);
+        if (!$msgRow) jsonError('Nachricht nicht gefunden.', 404);
+        if (empty($_FILES['voice']) || $_FILES['voice']['error'] !== UPLOAD_ERR_OK) {
+            jsonError('Keine Aufnahme empfangen — bitte erneut versuchen.');
+        }
+        $file = $_FILES['voice'];
+        if ($file['size'] > VOICE_MAX_BYTES) jsonError('Aufnahme zu groß (max. 3 MB).');
+        if ($file['size'] < 200)             jsonError('Aufnahme ist leer.');
+        $mime = detectMimeType($file['tmp_name']);
+        if (!isset($voiceMimeToExt[$mime])) jsonError('Ungültiges Audioformat (' . $mime . ').');
+        $ext = $voiceMimeToExt[$mime];
+        $dirAbs = ensureUploadDir('uploads/voice');
+        if (!$dirAbs) jsonError('Upload-Verzeichnis konnte nicht angelegt werden.');
+        $name = 'reply_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        if (!move_uploaded_file($file['tmp_name'], $dirAbs . '/' . $name)) {
+            jsonError('Speichern der Aufnahme fehlgeschlagen.');
+        }
+        $relPath = 'uploads/voice/' . $name;
+
+        // Optional transkribieren, wenn die Funktion an ist und ein Key hinterlegt ist.
+        $transcript = null;
+        if (VOICE_TRANSCRIPTION) {
+            $apiKey = trim(Database::queryOne("SELECT value FROM settings WHERE `key`='openai_api_key'")['value'] ?? '');
+            if ($apiKey !== '') {
+                $t = transcribeVoiceFile($dirAbs . '/' . $name, $ext, $apiKey);
+                if ($t !== false) $transcript = $t;
+            }
+        }
+        // reply-Text: Transkript, sonst vorhandener Text, sonst Platzhalter (damit die
+        // Nachricht als beantwortet gilt — die "beantwortet"-Prüfung schaut auf reply).
+        $replyText = $transcript ?? ($msgRow['reply'] ?: '🎙️ Sprachantwort');
+        Database::execute(
+            "UPDATE messages SET reply_voice_path = ?, reply = ?, replied_at = NOW(), read_by_player = 0 WHERE id = ?",
+            [$relPath, $replyText, $mid]
+        );
+        require_once CORE_PATH . '/WebPush.php';
+        WebPush::sendToPlayer((int)$msgRow['player_id']);
+        require_once TEMPLATE_PATH . '/messages_blocks.php';
+        jsonOk($transcript !== null ? 'Sprachantwort gesendet & transkribiert.' : 'Sprachantwort gesendet.',
+            ['html' => render_message_row(fetchMessageRow($mid))]);
 
     case 'toggle_publish':
         if (!$player['is_admin']) jsonError('Kein Zugriff.', 403);

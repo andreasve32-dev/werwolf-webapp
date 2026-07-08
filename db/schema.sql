@@ -165,6 +165,7 @@ CREATE TABLE messages (
   faq_question   TEXT NULL,        -- anonymisierte/bearbeitete Frage für die FAQ (NULL = message wird 1:1 verwendet)
   voice_path     VARCHAR(255) NULL, -- Sprachnachricht-Datei unter uploads/voice/ (NULL = Textnachricht). Auslieferung nur über api/messages.php (Auth), nie direkt
   reply          TEXT NULL,
+  reply_voice_path VARCHAR(255) NULL, -- Sprach-ANTWORT des Admins (uploads/voice/), Auslieferung nur über api/messages.php?action=voice_file&which=reply
   created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   replied_at     TIMESTAMP NULL,
   read_by_player TINYINT(1) NOT NULL DEFAULT 0,

@@ -5,6 +5,30 @@ lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
 
 ---
 
+## [v0.33] — 2026-07-08
+
+### Hinzugefügt
+- **🎙️ Sprachantworten des Spielleiters:** Der Admin kann Spielerfragen jetzt auch
+  **per Sprachnachricht** beantworten — Aufnahme direkt im Antwort-Bereich der
+  Nachrichten-Verwaltung (MediaRecorder, max. 1 Min., Vorschau vor dem Senden). Ist die
+  **Transkription aktiviert**, wird die Sprachantwort automatisch in Text umgewandelt und
+  als Antworttext gespeichert (per OpenAI, wie bei den Spielerfragen). Der Spieler hört
+  die Antwort im Posteingang (Audio-Player) inkl. Transkript-Text.
+  - Neue API-Aktion `reply_voice` (Admin-only, Upload + optional Transkription + Push).
+  - `voice_file` um `which=reply` erweitert — auth-geschützte Auslieferung (Admin oder der
+    Empfänger-Spieler), der `uploads/`-Ordner bleibt HTTP-gesperrt.
+  - Die Aufräumfunktion (`cleanupOrphanedVoiceFiles`) berücksichtigt jetzt auch
+    `reply_voice_path`, damit Sprachantworten nie fälschlich als verwaist gelöscht werden.
+
+### DB-Änderungen
+- Neue Spalte **`messages.reply_voice_path`** (Pfad der Admin-Sprachantwort):
+  ```sql
+  ALTER TABLE messages ADD COLUMN IF NOT EXISTS reply_voice_path VARCHAR(255) NULL AFTER reply;
+  ```
+- `app_version` → `0.33`.
+
+---
+
 ## [v0.32] — 2026-07-08
 
 ### Sicherheit

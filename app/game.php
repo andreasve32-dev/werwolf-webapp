@@ -1221,11 +1221,17 @@ async function loadInbox() {
   }
   list.innerHTML = r.messages.map(m => {
     const date = new Date(m.created_at).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-    const replyHtml = m.reply
+    const replyVoiceHtml = m.reply_voice_path
+      ? `<audio controls preload="none" style="width:100%;max-width:300px;margin-top:.4rem;display:block"
+                src="${MSG_API}?action=voice_file&which=reply&id=${parseInt(m.id,10)}"
+                onerror="this.style.display='none'"></audio>`
+      : '';
+    const replyHtml = (m.reply || m.reply_voice_path)
       ? `<div style="border-left:2px solid var(--accent-border);padding:.5rem .75rem;margin-top:.5rem;
                      font-size:.85rem;line-height:1.5;background:var(--panel-bg);border-radius:0 6px 6px 0">
-           <div class="text-dim text-xs mb-1">Antwort des Spielleiters</div>
-           <span style="color:var(--text-bright)">${escHtml(m.reply)}</span>
+           <div class="text-dim text-xs mb-1">Antwort des Spielleiters${m.reply_voice_path ? ' · 🎙️ Sprachantwort' : ''}</div>
+           ${m.reply ? `<span style="color:var(--text-bright)">${escHtml(m.reply)}</span>` : ''}
+           ${replyVoiceHtml}
          </div>`
       : `<div class="text-dim text-xs mt-1" style="font-style:italic">⏳ Warte auf Antwort …</div>`;
     // Eigene Sprachnachricht: Player statt Text (onerror fängt fehlende/defekte Datei ab)
