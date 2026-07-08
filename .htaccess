@@ -81,6 +81,11 @@ DirectoryIndex index.php
   Header always set X-XSS-Protection        "1; mode=block"
   Header unset X-Powered-By
   Header always unset X-Powered-By
+  # HTTPS verpflichtend: HSTS weist Browser an, die Domain 1 Jahr lang NUR über
+  # HTTPS anzusprechen (HTTP wird gar nicht mehr versucht). Wird nur über eine
+  # bereits sichere Verbindung ausgewertet — der Port-80-vHost leitet ohnehin
+  # per 301 auf HTTPS um. Zusammen = HTTP für die ganze App praktisch tot.
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
 </IfModule>
 
 # ── Service Worker: Scope trotz assets/js/-Speicherort auf "/" erlauben ──
