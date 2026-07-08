@@ -5,6 +5,33 @@ lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
 
 ---
 
+## [v0.31] — 2026-07-08
+
+### Hinzugefügt
+- **⬆️ Update-Center** (`admin/update.php`, Admin-only): signierte Update-Pakete
+  (`.wwupd`) per Web-Upload einspielen — **0 manueller Server-Zugriff nötig**. Vor dem
+  Anwenden zeigt es Zielversion, Release-Notes und DB-/Neuaufsetzen-Hinweise; auf
+  Bestätigung werden Dateien automatisch ersetzt (mit Backup) und additive DB-Migrationen
+  angewendet, danach `app_version` gesetzt.
+- **Sicherheit des Update-Systems** (`core/Updater.php`):
+  - **Ed25519-Signatur** (libsodium): nur mit dem privaten Entwickler-Schlüssel signierte
+    Pakete werden akzeptiert (Public Key in `config/update_pubkey.php`, Private Key nur lokal).
+  - **Manipulationserkennung**: SHA-256 jeder Datei gegen das signierte Manifest — verändertes
+    Paket, untergeschobene Datei oder gefälschte Signatur werden erkannt und abgelehnt.
+  - **Versionsprüfung**: nur passende/neuere Pakete (kein Einspielen über Kreuz) — dadurch
+    greift das System praktisch erst ab v1.0.
+  - **Pfad-sicheres Kopieren** (kein Traversal, nur unter Webroot), **Backup vor Überschreiben**
+    mit Rollback bei Fehler, destruktive Migrationen (DROP/TRUNCATE) verboten.
+  - `updates/`-Ordner per `.htaccess` HTTP-gesperrt.
+  - 10/10 Sicherheitstests bestanden (gültig / manipuliert / gefälscht / Traversal / Version / Anwenden).
+- **Paket-Werkzeuge** (lokal, nicht auf dem Server): `tools/build_update.php` (baut & signiert
+  `.wwupd`-Pakete), `tools/gen_update_keys.php` (Schlüsselpaar erzeugen).
+
+### DB-Änderungen
+- Nur `app_version` → `0.31` (Setting). Keine Schema-Änderungen.
+
+---
+
 ## [v0.30] — 2026-07-08
 
 ### Geändert

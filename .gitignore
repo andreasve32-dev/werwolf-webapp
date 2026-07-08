@@ -1,6 +1,11 @@
 # ── Zugangsdaten (NIEMALS ins Repo) ─────────────────────────
 config/config.php
 
+# ── Privater Update-Signaturschlüssel (NUR lokal, nie ins Repo!) ─
+config/update_privkey.secret
+updates/*.wwupd
+updates/backups/
+
 # ── Backup-ZIPs ──────────────────────────────────────────────
 public/
 

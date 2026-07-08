@@ -522,6 +522,33 @@ require TEMPLATE_PATH . '/base.php';
   </div>
 
   <!-- ═══════════════════════════════════════════
+       10b. Update-Center
+  ═══════════════════════════════════════════ -->
+  <div class="section-sep"><span>Updates</span></div>
+
+  <div class="card animate-in" style="animation-delay:.217s">
+    <div class="section-title">⬆️ Update-Center</div>
+    <p class="text-dim text-sm" style="line-height:1.6;margin-bottom:.75rem">
+      Unter <a href="<?= APP_URL ?>/admin/update.php" style="color:var(--accent)">Admin → Update-Center</a>
+      spielst du neue Versionen ein — <strong>ohne Server-Zugriff</strong>. Ein Update kommt als
+      <strong>signiertes Paket</strong> (<code>.wwupd</code>), das du einfach hochlädst. Die App prüft
+      automatisch:
+    </p>
+    <ul class="text-dim text-sm" style="line-height:1.7;margin:0 0 .75rem 1.1rem">
+      <li><strong>Signatur</strong> — nur vom Entwickler signierte Pakete werden akzeptiert.</li>
+      <li><strong>Prüfsummen</strong> — jede nachträgliche Manipulation an einer Datei wird erkannt und das Paket abgelehnt.</li>
+      <li><strong>Version</strong> — nur passende, neuere Updates werden zugelassen (kein Einspielen in falscher Reihenfolge).</li>
+    </ul>
+    <p class="text-dim text-sm" style="line-height:1.6">
+      Vor dem Anwenden siehst du Zielversion, Änderungsliste und ob DB-Änderungen enthalten sind.
+      Beim Installieren werden die Dateien automatisch ersetzt (mit <strong>Backup</strong>) und
+      DB-Änderungen angewendet. Verlangt ein Update ausnahmsweise ein komplettes Neu-Aufsetzen,
+      weist die Anzeige darauf hin und verlinkt die <em>Ersteinrichtung</em> — für Datenverlust-freie
+      Updates ist das aber nie nötig.
+    </p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
        11. Diagnose
   ═══════════════════════════════════════════ -->
   <div class="section-sep"><span>Diagnose &amp; Hilfe</span></div>

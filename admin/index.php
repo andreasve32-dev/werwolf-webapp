@@ -123,6 +123,15 @@ require TEMPLATE_PATH . '/base.php';
         <span class="admin-link-card__arrow">→</span>
       </a>
 
+      <a href="<?= APP_URL ?>/admin/update.php" class="admin-link-card">
+        <span class="admin-link-card__icon">⬆️</span>
+        <div class="admin-link-card__text">
+          <div class="admin-link-card__title">Update-Center</div>
+          <div class="admin-link-card__sub">Signierte Update-Pakete einspielen (ab v1.0)</div>
+        </div>
+        <span class="admin-link-card__arrow">→</span>
+      </a>
+
       <a href="<?= APP_URL ?>/admin/setup.php" class="admin-link-card">
         <span class="admin-link-card__icon">🔧</span>
         <div class="admin-link-card__text">

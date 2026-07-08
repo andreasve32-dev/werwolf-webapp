@@ -1,0 +1,9 @@
+# Update-Pakete (.wwupd) und Backups — niemals per HTTP erreichbar.
+# Zugriff/Anwendung läuft ausschließlich über admin/update.php (Admin + Signaturprüfung).
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+</IfModule>
