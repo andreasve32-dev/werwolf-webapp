@@ -21,6 +21,39 @@ header_remove('X-Powered-By');
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/themes.php';
 
+// 1a. HTTPS erzwingen (App-Ebene, Defense-in-Depth zusätzlich zu Apache-Redirect/HSTS).
+//     Grund: die App ist ohne HTTPS unsicher UND mehrere Kernfunktionen brauchen einen
+//     sicheren Kontext (Push, Sprachaufnahme via MediaRecorder, Service Worker). Wird die
+//     App auf einem fremden Server nur über HTTP betrieben, blockiert sie hier bewusst.
+//     Ausnahme: CLI (Skripte/Tests) und localhost (lokale Entwicklung).
+if (PHP_SAPI !== 'cli') {
+    $__fwd  = strtolower($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''); // hinter Reverse-Proxy
+    $__https = (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
+            || (($_SERVER['SERVER_PORT'] ?? '') == 443)
+            || $__fwd === 'https';
+    $__host = strtolower(preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST'] ?? ''));
+    $__local = in_array($__host, ['localhost', '127.0.0.1', '::1', '[::1]'], true);
+    if (!$__https && !$__local) {
+        http_response_code(403);
+        header('Content-Type: text/html; charset=utf-8');
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+        $__h = htmlspecialchars($_SERVER['HTTP_HOST'] ?? '', ENT_QUOTES, 'UTF-8');
+        $__u = htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/', ENT_QUOTES, 'UTF-8');
+        echo '<!doctype html><html lang="de"><meta charset="utf-8">'
+           . '<meta name="viewport" content="width=device-width,initial-scale=1">'
+           . '<title>HTTPS erforderlich</title>'
+           . '<div style="font-family:system-ui,sans-serif;max-width:34rem;margin:12vh auto;padding:0 1.2rem;text-align:center">'
+           . '<div style="font-size:3rem">🔒</div>'
+           . '<h1 style="font-size:1.3rem;margin:.4rem 0">HTTPS erforderlich</h1>'
+           . '<p style="color:#555;line-height:1.6">Diese App kann aus Sicherheitsgründen nur über eine '
+           . 'verschlüsselte <strong>HTTPS</strong>-Verbindung genutzt werden. Login, Sprachaufnahme und '
+           . 'Push-Benachrichtigungen funktionieren über HTTP nicht.</p>'
+           . ($__h !== '' ? '<p><a href="https://' . $__h . $__u . '" style="color:#2563eb">→ Zur sicheren HTTPS-Version</a></p>' : '')
+           . '</div></html>';
+        exit;
+    }
+}
+
 // 1b. Anwendungs-Log: alle error_log()-Aufrufe in eine Datei unter logs/
 //     umleiten, damit sie in der Admin-Log-Ansicht (admin/logs.php)
 //     durchsuchbar sind statt im Docker-stderr zu verschwinden. Der Ordner ist
