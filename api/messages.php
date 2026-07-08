@@ -261,7 +261,15 @@ switch ($action) {
             @unlink(ROOT_PATH . '/' . $vrow['voice_path']);
         }
         Database::execute("DELETE FROM messages WHERE id = ?", [$mid]);
+        // Sicherheitsnetz: falls durch parallele Vorgänge etwas verwaist ist, mit aufräumen
+        cleanupOrphanedVoiceFiles();
         jsonOk('Gelöscht.');
+
+    case 'cleanup_voice':
+        // Manuelle Aufräumfunktion: alle verwaisten Sprachaufnahmen entfernen.
+        if (!$player['is_admin']) jsonError('Kein Zugriff.', 403);
+        $n = cleanupOrphanedVoiceFiles();
+        jsonOk($n > 0 ? "🧹 {$n} verwaiste Aufnahme(n) gelöscht." : 'Keine verwaisten Aufnahmen gefunden.', ['deleted' => $n]);
 
     default:
         jsonError('Unbekannte Aktion.', 400);

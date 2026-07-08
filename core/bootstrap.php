@@ -118,5 +118,28 @@ if (APP_DEBUG) {
 require_once __DIR__ . '/Auth.php';
 require_once __DIR__ . '/helpers.php';
 
+// 5b. Globaler Exception-Handler: JEDE nicht abgefangene Ausnahme (z.B. DB-Fehler
+//     in irgendeiner Funktion) landet automatisch als ERROR im System-Log
+//     (Admin → Debug → System-Log) und der Nutzer bekommt eine saubere Antwort —
+//     ohne dass jede Funktion einzeln ein try/catch braucht.
+set_exception_handler(function (\Throwable $e): void {
+    logEvent('ERROR', 'Unbehandelte Ausnahme: ' . get_class($e) . ': ' . $e->getMessage()
+        . ' in ' . $e->getFile() . ':' . $e->getLine());
+    if (!headers_sent()) http_response_code(500);
+    $isApi = str_contains($_SERVER['REQUEST_URI'] ?? '', '/api/')
+          || (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest');
+    if ($isApi) {
+        if (!headers_sent()) header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['error' => APP_DEBUG ? $e->getMessage() : 'Ein interner Fehler ist aufgetreten (protokolliert).']);
+    } else {
+        echo '<!doctype html><meta charset="utf-8"><div style="font-family:system-ui,sans-serif;max-width:34rem;margin:12vh auto;padding:0 1.2rem;text-align:center">'
+           . '<div style="font-size:2.5rem">⚠️</div><h1 style="font-size:1.2rem">Ein Fehler ist aufgetreten</h1>'
+           . '<p style="color:#555">Der Fehler wurde protokolliert und kann im Admin-Bereich eingesehen werden.</p>'
+           . (APP_DEBUG ? '<pre style="text-align:left;white-space:pre-wrap;color:#b00">' . htmlspecialchars($e->getMessage()) . '</pre>' : '')
+           . '</div>';
+    }
+    exit;
+});
+
 // 6. Session starten
 Auth::start();

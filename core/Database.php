@@ -27,6 +27,9 @@ class Database {
                     PDO::ATTR_EMULATE_PREPARES   => false,
                 ]);
             } catch (PDOException $e) {
+                // Ins System-Log (error_log statt logEvent, da helpers.php ggf. noch
+                // nicht geladen ist; der [ERROR]-Tag wird vom Log-Parser klassifiziert).
+                error_log('[ERROR] DB-Verbindung fehlgeschlagen: ' . $e->getMessage());
                 if (defined('APP_DEBUG') && APP_DEBUG) {
                     http_response_code(500);
                     die('<pre style="color:red">DB-Fehler: ' . htmlspecialchars($e->getMessage()) . '</pre>');

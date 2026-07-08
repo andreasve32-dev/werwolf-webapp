@@ -51,6 +51,9 @@ if (($_GET['action'] ?? '') === 'delete') {
         echo json_encode(['ok' => false, 'error' => 'Du kannst dich nicht selbst löschen.']); exit;
     }
     Database::execute('DELETE FROM players WHERE id = ?', [$pid]);
+    // Kaskaden-Löschung entfernt evtl. Nachrichten des Spielers — deren Sprachdateien
+    // hängen außerhalb der DB und würden sonst verwaisen. Direkt mit aufräumen.
+    cleanupOrphanedVoiceFiles();
     echo json_encode(['ok' => true]); exit;
 }
 

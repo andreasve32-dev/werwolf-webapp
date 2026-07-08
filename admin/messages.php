@@ -29,6 +29,13 @@ require TEMPLATE_PATH . '/base.php';
     </p>
   </div>
 
+  <div class="flex" style="justify-content:flex-end;margin-bottom:.6rem">
+    <button class="btn btn--ghost btn--sm" onclick="cleanupVoices(this)"
+            title="Sprachaufnahmen löschen, die zu keiner Nachricht mehr gehören">
+      🧹 Verwaiste Aufnahmen aufräumen
+    </button>
+  </div>
+
   <div class="card card--glow animate-in">
     <div id="msg-list" style="display:flex;flex-direction:column;gap:.75rem">
       <?php if (empty($messages)): ?>
@@ -181,6 +188,15 @@ async function deleteMsg(id) {
   } else {
     showToast(r.error || 'Fehler', 'error');
   }
+}
+
+async function cleanupVoices(btn) {
+  const original = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳ Räume auf …';
+  const r = await apiFetch(MSG_API, {action:'cleanup_voice'});
+  if (r.error === 'session_expired') return;
+  showToast(r.ok ? (r.message || 'Aufgeräumt.') : (r.error || 'Fehler'), r.ok ? 'success' : 'error');
+  btn.disabled = false; btn.textContent = original;
 }
 
 // ── Live-Update: neue Spielerfragen ohne Reload nachladen ─────

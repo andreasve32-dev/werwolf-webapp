@@ -525,6 +525,30 @@ function cooldownRemainingSecs(int $cooldownMins, int|string|null $elapsedSecs):
     return max(0, min($total, $total - (int)$elapsedSecs));
 }
 
+/**
+ * Räumt verwaiste Sprachaufnahmen unter uploads/voice/ auf — also Dateien, die
+ * von KEINER Nachricht (messages.voice_path) mehr referenziert werden. Fängt
+ * Orphans ab, die auf jedem Weg entstehen können: Kaskaden-Löschung (Spieler
+ * gelöscht → seine Nachrichten weg), direkte DB-Eingriffe, abgebrochene Uploads.
+ * So kann dauerhaft keine verwaiste Datei liegen bleiben. Gibt die Anzahl
+ * gelöschter Dateien zurück.
+ */
+function cleanupOrphanedVoiceFiles(): int {
+    $dir = ROOT_PATH . '/uploads/voice';
+    if (!is_dir($dir)) return 0;
+    $refs = array_flip(array_column(
+        Database::query("SELECT voice_path FROM messages WHERE voice_path IS NOT NULL"),
+        'voice_path'
+    ));
+    $deleted = 0;
+    foreach (glob($dir . '/*') ?: [] as $f) {
+        if (!is_file($f)) continue;
+        if (!isset($refs['uploads/voice/' . basename($f)]) && @unlink($f)) $deleted++;
+    }
+    if ($deleted > 0) logEvent('INFO', "Verwaiste Sprachaufnahmen aufgeräumt: {$deleted} Datei(en).");
+    return $deleted;
+}
+
 /** Asset-Version in DB erhöhen — nach jedem Bild-Upload aufrufen. */
 function bumpAssetVersion(): void {
     $current = (int)(Database::queryOne('SELECT value FROM settings WHERE `key` = ?', ['asset_version'])['value'] ?? 0);

@@ -5,6 +5,42 @@ lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
 
 ---
 
+## [v0.32] — 2026-07-08
+
+### Sicherheit
+- **HTTPS verpflichtend** — HTTP ist für die ganze App tot:
+  - **HSTS** (`.htaccess`): Browser sprechen die Domain 1 Jahr nur noch über HTTPS an.
+  - **App-Ebene** (`bootstrap.php`): Nicht-HTTPS-Zugriffe (außer CLI + localhost) werden mit
+    einer eigenständigen „🔒 HTTPS erforderlich"-Hinweisseite blockiert — greift auch, wenn
+    die App auf einem fremden Nur-HTTP-Server läuft. Reverse-Proxy-tauglich (`X-Forwarded-Proto`).
+  - (Der Port-80→443-Redirect bestand bereits.)
+
+### Fehler-Logging (im Admin-Bereich abrufbar)
+- **Globaler Exception-Handler**: jede nicht abgefangene Ausnahme (z.B. DB-Fehler in
+  irgendeiner Funktion) landet automatisch als `[ERROR]` im System-Log und der Nutzer bekommt
+  eine saubere Meldung — ohne dass jede Funktion ein eigenes try/catch braucht.
+- **DB-Verbindungsfehler** werden ebenfalls ins Log geschrieben.
+- Zusammen mit dem bestehenden Fatal-Handler landen so praktisch alle unerwarteten Fehler im
+  **Admin → Debug → System-Log**.
+
+### Wartung
+- **Aufräumfunktion für verwaiste Sprachaufnahmen** (`cleanupOrphanedVoiceFiles()`): löscht
+  `.webm`-Dateien in `uploads/voice/`, die zu keiner Nachricht mehr gehören. Läuft automatisch
+  beim Löschen einer Nachricht **und eines Spielers** (Kaskaden-Orphans) und ist als
+  manueller Button „🧹 Verwaiste Aufnahmen aufräumen" in der Nachrichten-Verwaltung verfügbar.
+  So können dauerhaft keine verwaisten Aufnahmen zurückbleiben.
+
+### Infrastruktur (nur Server, nicht im Repo)
+- **DNS-Fix** in `docker-compose.yml` (`dns: [1.1.1.1, 8.8.8.8]` beim Web-Service): nach dem
+  Subnetz-Umzug zeigte der DNS noch auf den toten `192.168.178.1` — der Container erreichte
+  kein Internet. Dadurch liefen **OpenAI-Transkription und Web-Push** ins Leere; jetzt behoben
+  und die Sprachnachricht-Transkription end-to-end verifiziert.
+
+### DB-Änderungen
+- Nur `app_version` → `0.32` (Setting). Keine Schema-Änderungen.
+
+---
+
 ## [v0.31] — 2026-07-08
 
 ### Hinzugefügt
