@@ -3,6 +3,7 @@
 require_once dirname(__DIR__) . '/core/bootstrap.php';
 header('Content-Type: application/json; charset=utf-8');
 Auth::requireAdmin();
+requireSameOrigin();
 
 // Admin noch in der Datenbank vorhanden? (z.B. nach Löschung durch anderen Admin)
 $_adminId=Auth::player()['id'];
@@ -346,7 +347,11 @@ switch($action){
     ]);break;
 
   case 'add_player':
+    $g=Database::queryOne("SELECT status FROM games WHERE id=?",[$gameId]);
+    if(!$g||$g['status']!=='lobby') err('Nur in der Lobby möglich');
     $pid=(int)($input['player_id']??0);
+    if(!$pid) err('Kein Spieler gewählt');
+    if(!Database::queryOne("SELECT id FROM players WHERE id=?",[$pid])) err('Spieler nicht gefunden');
     Database::execute("INSERT IGNORE INTO game_players (game_id,player_id) VALUES (?,?)",[$gameId,$pid]);
     ok('Hinzugefügt');break;
 

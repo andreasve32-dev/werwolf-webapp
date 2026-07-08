@@ -72,7 +72,7 @@ class WebPush {
                 self::dispatch($s['endpoint'], $pub, $priv, $payload);
             }
         } catch (Throwable $e) {
-            error_log('[WebPush] sendToPlayer error: ' . $e->getMessage());
+            logEvent('ERROR', '[WebPush] sendToPlayer error: ' . $e->getMessage());
         }
     }
 
@@ -100,7 +100,7 @@ class WebPush {
                 self::dispatch($s['endpoint'], $pub, $priv, $payload);
             }
         } catch (Throwable $e) {
-            error_log('[WebPush] sendToGame error: ' . $e->getMessage());
+            logEvent('ERROR', '[WebPush] sendToGame error: ' . $e->getMessage());
         }
     }
 
@@ -174,7 +174,7 @@ class WebPush {
                 );
             }
         } catch (Throwable $e) {
-            error_log('[WebPush] dispatch error: ' . $e->getMessage());
+            logEvent('ERROR', '[WebPush] dispatch error: ' . $e->getMessage());
         }
     }
 

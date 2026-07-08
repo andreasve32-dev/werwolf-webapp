@@ -218,7 +218,7 @@ $player      = Auth::player();
         <?php else: ?>
           🐺
         <?php endif; ?>
-        <span><?= APP_NAME ?></span>
+        <span><?= e(APP_NAME) ?></span>
       </a>
       <span class="nav__poll-countdown" id="poll-countdown"></span>
       <div class="flex gap-xs" style="align-items:center">

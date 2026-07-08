@@ -118,6 +118,35 @@ require TEMPLATE_PATH . '/base.php';
   <!-- Testspieler — unabhängig vom Spielstatus immer verfügbar (Debug-Modus reicht) -->
   <?= admin_render_testplayers() ?>
 
+  <!-- System-Log ansehen -->
+  <?php
+    $__logEntries = logParse(LOG_PATH);
+    $__logMeta    = logLevelMeta();
+    $__logCrit    = 0; $__logErr = 0;
+    foreach ($__logEntries as $__le) {
+        if ($__le['level'] === 'CRITICAL') $__logCrit++;
+        elseif ($__le['level'] === 'ERROR') $__logErr++;
+    }
+    $__logTotal = count($__logEntries);
+  ?>
+  <div class="card card--glow animate-in mt-2" style="border-color:rgba(148,163,184,.35)">
+    <div class="section-title">📜 System-Log</div>
+    <p class="text-dim text-xs mb-2">
+      Aufgezeichnete Fehler &amp; Ereignisse durchsuchen — nach Schweregrad geordnet
+      (kritisch → Info). Aktuell <strong><?= $__logTotal ?></strong> Einträge<?php
+        if ($__logCrit > 0 || $__logErr > 0): ?>, davon
+        <?php if ($__logCrit > 0): ?><span style="color:<?= $__logMeta['CRITICAL']['color'] ?>">⛔ <?= $__logCrit ?> kritisch</span><?php endif; ?>
+        <?php if ($__logCrit > 0 && $__logErr > 0): ?> · <?php endif; ?>
+        <?php if ($__logErr > 0): ?><span style="color:<?= $__logMeta['ERROR']['color'] ?>">❌ <?= $__logErr ?> Fehler</span><?php endif; ?>
+      <?php endif; ?>.
+    </p>
+    <a href="<?= APP_URL ?>/admin/logs.php" class="btn btn--primary btn--sm">📜 Log öffnen</a>
+    <?php if ($__logCrit > 0): ?>
+    <a href="<?= APP_URL ?>/admin/logs.php?level=CRITICAL&sort=severity" class="btn btn--ghost btn--sm"
+       style="color:<?= $__logMeta['CRITICAL']['color'] ?>">⛔ Nur kritische</a>
+    <?php endif; ?>
+  </div>
+
   <?php endif; ?>
 
 </div>

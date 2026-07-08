@@ -1,0 +1,9 @@
+# Anwendungs-Logs — niemals per HTTP erreichbar (enthalten Fehlermeldungen,
+# ggf. mit internen Pfaden/DB-Details). Zugriff läuft nur über admin/logs.php.
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+</IfModule>

@@ -167,6 +167,10 @@ class Auth {
             return true;
         } catch (Throwable $e) {
             // DB vorübergehend nicht erreichbar — Session vertrauen statt aussperren
+            // (Verfügbarkeit vor Härte: ein kurzer DB-Aussetzer soll niemanden
+            // ausloggen). Bewusst fail-open, aber im Log sichtbar, damit ein
+            // echter Ausfall nicht stumm bleibt.
+            logEvent('WARNING', 'Auth::validateInDb — DB-Prüfung fehlgeschlagen, Session vertraut: ' . $e->getMessage());
             return true;
         }
     }

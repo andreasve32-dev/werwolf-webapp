@@ -4,6 +4,7 @@
 // Veröffentlichte Antworten landen im öffentlichen FAQ (app/faq.php).
 require_once dirname(__DIR__) . '/core/bootstrap.php';
 Auth::requireLogin();
+requireSameOrigin();
 
 // Session-Lock freigeben: kein Endpunkt hier schreibt $_SESSION, aber ohne
 // write_close serialisiert PHP alle parallelen Poll-Requests desselben Nutzers.
@@ -73,7 +74,7 @@ function transcribeVoiceFile(string $absPath, string $ext, string $apiKey): stri
     curl_close($ch);
 
     if ($err !== '' || $code !== 200) {
-        error_log('[OpenAI Transcribe] HTTP ' . $code . ' ' . $err . ' — ' . substr((string)$res, 0, 300));
+        logEvent('ERROR', '[OpenAI Transcribe] HTTP ' . $code . ' ' . $err . ' — ' . substr((string)$res, 0, 300));
         return false;
     }
     $text = trim(json_decode($res, true)['text'] ?? '');

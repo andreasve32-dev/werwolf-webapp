@@ -18,6 +18,10 @@ uploads/
 # ── Lokale Notizen (Bugs/Ideen), nie ins Repo ────────────────
 info.txt
 
+# ── Anwendungs-Logs (nur die Schutz-.htaccess ins Repo) ──────
+logs/*
+!logs/.htaccess
+
 # ── PDFs / lokale Dokumente ──────────────────────────────────
 *.pdf
 

@@ -5,6 +5,47 @@ lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
 
 ---
 
+## [v0.29] — 2026-07-08
+
+### Hinzugefügt
+- **📜 System-Log im Debug-Menü** (`admin/logs.php`, nur bei `app_debug`): zeigt
+  aufgezeichnete Server-Fehler & Ereignisse, klassifiziert nach Schweregrad
+  (⛔ Kritisch, ❌ Fehler, ⚠️ Warnung, ℹ️ Hinweis, 💬 Info) — mit Filter-Chips
+  je Stufe, Sortierung „Neueste zuerst"/„Nach Schweregrad" und Leeren-Funktion
+  (protokolliert sich selbst). Einstieg über eine neue Karte im Debug-Menü mit
+  Kurzübersicht der kritischen/Fehler-Einträge.
+- **Log-Infrastruktur:** Alle `error_log()`-Aufrufe laufen jetzt in `logs/app.log`
+  (vorher: verschwanden in Docker-`stderr`), gesetzt per `ini_set` in
+  `bootstrap.php`; bestehende Aufrufe auf klassifizierte `logEvent(LEVEL, …)`
+  umgestellt. **Fatale Fehler** werden per `register_shutdown_function`
+  automatisch als CRITICAL erfasst. Der `logs/`-Ordner ist per `.htaccess` gegen
+  HTTP-Zugriff gesperrt (Root-Regel + eigene `logs/.htaccess`).
+
+### Sicherheit (Code-Review, Punkte 4–8)
+- **DB-Fehler-Leak behoben** (`api/game.php`, `update_death_info`): die rohe
+  PDO-Fehlermeldung ging bisher unabhängig von `APP_DEBUG` an den Client — jetzt
+  nur im Debug-Modus, sonst generische Meldung; Detail landet via `logEvent` im Log.
+- **CSRF-Härtung** (Defense-in-Depth zusätzlich zu SameSite=Lax): neue Funktion
+  `requireSameOrigin()` in `core/helpers.php`, eingebunden in alle
+  zustandsändernden Endpunkte (`api/game.php`, `api/admin.php`, `api/push.php`,
+  `api/messages.php`, die drei Upload-Endpunkte, `admin/players.php`,
+  `admin/testplayers.php`, `admin/settings.php`). Greift nur bei Nicht-GET und
+  blockt nur nachweislich fremde Herkunft (403), lässt Anfragen ohne
+  Origin/Referer durch.
+- **Logik-Härtung:** `add_player` (`api/admin.php`) prüft jetzt Lobby-Status +
+  Spielerexistenz (analog `add_all_players`); `vote` (`api/game.php`) validiert,
+  dass das Ziel ein lebender Mitspieler dieses Spiels ist.
+- **Auth-Fail-open sichtbar gemacht:** `Auth::validateInDb()` bleibt bewusst
+  fail-open (kurzer DB-Aussetzer sperrt niemanden aus), loggt den Fall aber jetzt
+  als WARNING statt still.
+- Hinweis: Das schwache `SETUP_PASSWORD` (#1) bleibt in der Beta absichtlich,
+  wird vor dem Livegang gehärtet.
+
+### DB-Änderungen
+- Nur `app_version` → `0.29` (Setting; siehe unten). Keine Schema-Änderungen.
+
+---
+
 ## [v0.28] — 2026-07-07
 
 ### Geändert

@@ -11,7 +11,7 @@
 #                   Login nötig — aus rechtlichen Gründen jederzeit erreichbar)
 #  NUR ADMIN     → admin/*                             (PHP: Auth::requireAdmin)
 #  NUR AJAX      → api/*                               (PHP: Auth::requireLogin + DB-Check)
-#  GESPERRT (403)→ config/, core/, templates/, db/
+#  GESPERRT (403)→ config/, core/, templates/, db/, logs/
 #  GESPERRT (403)→ *.sql, *.md, *.log, *.bak, .htaccess, .env
 # ══════════════════════════════════════════════════════════════
 
@@ -25,7 +25,7 @@ DirectoryIndex index.php
 # Diese Ordner enthalten PHP-Klassen, SQL-Schemata, Konfiguration
 # und Templates — niemals per HTTP erreichbar.
 <IfModule mod_alias.c>
-  RedirectMatch 403 ^/(config|core|templates|db|uploads)(/|$)
+  RedirectMatch 403 ^/(config|core|templates|db|uploads|logs)(/|$)
 </IfModule>
 
 # ── Alte Root-URLs auf app/ umleiten (Umzug 2026-07-04) ───────

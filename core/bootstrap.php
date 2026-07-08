@@ -21,6 +21,25 @@ header_remove('X-Powered-By');
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/themes.php';
 
+// 1b. Anwendungs-Log: alle error_log()-Aufrufe in eine Datei unter logs/
+//     umleiten, damit sie in der Admin-Log-Ansicht (admin/logs.php)
+//     durchsuchbar sind statt im Docker-stderr zu verschwinden. Der Ordner ist
+//     per .htaccess gegen HTTP-Zugriff gesperrt (nur PHP liest/schreibt ihn).
+define('LOG_PATH', ROOT_PATH . '/logs/app.log');
+if (!is_dir(dirname(LOG_PATH))) @mkdir(dirname(LOG_PATH), 0775, true);
+ini_set('error_log', LOG_PATH);
+ini_set('log_errors', '1');
+
+// Fatale Fehler (die die Ausführung abbrechen) als CRITICAL festhalten — sie
+// werden sonst je nach error_reporting nicht automatisch geloggt. error_log()
+// funktioniert unabhängig von display_errors/error_reporting.
+register_shutdown_function(static function (): void {
+    $e = error_get_last();
+    if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true)) {
+        error_log('[CRITICAL] ' . $e['message'] . ' in ' . $e['file'] . ':' . $e['line']);
+    }
+});
+
 // 2. Database-Klasse laden
 require_once __DIR__ . '/Database.php';
 

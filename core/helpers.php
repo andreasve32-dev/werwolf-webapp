@@ -67,6 +67,115 @@ function get(string $key, mixed $default = ''): mixed {
     return $_GET[$key] ?? $default;
 }
 
+/**
+ * CSRF-Härtung (Defense-in-Depth zusätzlich zu SameSite=Lax): bei zustands-
+ * ändernden Anfragen (nicht GET/HEAD) muss die Herkunft — sofern der Browser
+ * sie mitschickt — zum eigenen Host passen. Fehlt Origin UND Referer komplett
+ * (Nicht-Browser-Clients, manche Datenschutz-Setups), wird NICHT blockiert:
+ * SameSite=Lax deckt den klassischen Cross-Site-POST bereits ab, dieser Check
+ * fängt zusätzlich die Restfälle. Bei Fehlschlag: 403 als JSON + exit.
+ */
+function requireSameOrigin(): void {
+    $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+    if ($method === 'GET' || $method === 'HEAD') return;
+
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    if ($origin === '') $origin = $_SERVER['HTTP_REFERER'] ?? '';
+    if ($origin === '') return; // keine Herkunftsinfo vorhanden — nicht blockieren
+
+    $originHost = parse_url($origin, PHP_URL_HOST);
+    if ($originHost === null || $originHost === false) return; // nicht parsebar — nicht blockieren
+
+    $expectedHost = preg_replace('/:\d+$/', '', $_SERVER['HTTP_HOST'] ?? '');
+    if (strcasecmp($originHost, $expectedHost) !== 0) {
+        jsonError('Ungültige Anfrage-Herkunft.', 403);
+    }
+}
+
+// ============================================================
+//  Anwendungs-Log (siehe LOG_PATH in bootstrap.php)
+//  logEvent() schreibt strukturierte Zeilen mit Schweregrad;
+//  logParse()/logLevelMeta() werten sie für admin/logs.php aus.
+// ============================================================
+
+/**
+ * Schreibt einen klassifizierten Log-Eintrag nach logs/app.log.
+ * $level: CRITICAL | ERROR | WARNING | NOTICE | INFO. PHP stellt der Zeile
+ * automatisch einen Zeitstempel voran; wir ergänzen nur den [LEVEL]-Tag,
+ * den der Parser wieder ausliest.
+ */
+function logEvent(string $level, string $msg): void {
+    $level = strtoupper($level);
+    if (!isset(logLevelMeta()[$level])) $level = 'INFO';
+    error_log('[' . $level . '] ' . $msg);
+}
+
+/** Schweregrad-Metadaten: Rang (0 = kritischster), Label, Emoji, Farbe. */
+function logLevelMeta(): array {
+    static $meta = [
+        'CRITICAL' => ['rank' => 0, 'label' => 'Kritisch', 'emoji' => '⛔', 'color' => '#ef4444'],
+        'ERROR'    => ['rank' => 1, 'label' => 'Fehler',   'emoji' => '❌', 'color' => '#f97316'],
+        'WARNING'  => ['rank' => 2, 'label' => 'Warnung',  'emoji' => '⚠️', 'color' => '#eab308'],
+        'NOTICE'   => ['rank' => 3, 'label' => 'Hinweis',  'emoji' => 'ℹ️', 'color' => '#3b82f6'],
+        'INFO'     => ['rank' => 4, 'label' => 'Info',     'emoji' => '💬', 'color' => '#22c55e'],
+    ];
+    return $meta;
+}
+
+/** Schweregrad einer Log-Zeile bestimmen (eigener [LEVEL]-Tag oder PHP-Fehlertext). */
+function logClassify(string $msg): string {
+    if (preg_match('/^\[(CRITICAL|ERROR|WARNING|NOTICE|INFO)\]/', $msg, $m)) return $m[1];
+    if (preg_match('/PHP (Fatal error|Parse error|Core error|Compile error)|Uncaught/i', $msg)) return 'CRITICAL';
+    if (preg_match('/PHP Recoverable/i', $msg)) return 'ERROR';
+    if (preg_match('/PHP (Warning|Deprecated)/i', $msg))  return 'WARNING';
+    if (preg_match('/PHP (Notice|Strict)/i', $msg))       return 'NOTICE';
+    return 'INFO';
+}
+
+/**
+ * Liest die letzten Bytes der Logdatei (Tail, damit große Dateien nicht komplett
+ * in den Speicher wandern) und zerlegt sie in Einträge. Fortsetzungszeilen
+ * (z. B. Stacktraces ohne eigenen Zeitstempel) werden an den vorigen Eintrag
+ * angehängt. Rückgabe je Eintrag: ['ts','level','msg','rank'].
+ */
+function logParse(string $path, int $maxBytes = 262144): array {
+    if (!is_file($path)) return [];
+    $fh = @fopen($path, 'rb');
+    if (!$fh) return [];
+    $size = filesize($path);
+    if ($size > $maxBytes) fseek($fh, -$maxBytes, SEEK_END);
+    $raw = stream_get_contents($fh);
+    fclose($fh);
+    if ($raw === '' || $raw === false) return [];
+
+    $reTs  = '/^\[(\d{1,2}-[A-Za-z]{3}-\d{4} \d{2}:\d{2}:\d{2}(?:\s+[^\]]+)?)\]\s?(.*)$/';
+    $lines = preg_split('/\r\n|\n|\r/', $raw);
+    $entries = [];
+    $cur = null;
+    foreach ($lines as $ln) {
+        if (preg_match($reTs, $ln, $m)) {
+            if ($cur) $entries[] = $cur;
+            $cur = ['ts' => $m[1], 'msg' => $m[2]];
+        } elseif ($cur !== null) {
+            $cur['msg'] .= "\n" . $ln;
+        } elseif (trim($ln) !== '') {
+            $cur = ['ts' => '', 'msg' => $ln]; // angeschnittener erster Eintrag
+        }
+    }
+    if ($cur) $entries[] = $cur;
+
+    $meta = logLevelMeta();
+    foreach ($entries as &$e) {
+        $level = logClassify($e['msg']);
+        $e['level'] = $level;
+        $e['rank']  = $meta[$level]['rank'];
+        // Eigenen [LEVEL]-Tag aus der angezeigten Nachricht entfernen
+        $e['msg']   = preg_replace('/^\[(CRITICAL|ERROR|WARNING|NOTICE|INFO)\]\s?/', '', $e['msg']);
+    }
+    unset($e);
+    return $entries;
+}
+
 /** JSON-Body aus php://input lesen (für API-Endpoints) */
 function jsonBody(): array {
     static $body = null;
@@ -223,7 +332,7 @@ function ensurePlayerSettingsColumn(): void {
         // abstürzen, aber der Fehler muss im Server-Log auffindbar sein:
         // ohne ALTER-Rechte manuell ausführen: ALTER TABLE players ADD COLUMN settings TEXT NULL;
         if (stripos($e->getMessage(), 'Duplicate column') === false) {
-            error_log('players.settings konnte nicht angelegt werden: ' . $e->getMessage());
+            logEvent('ERROR', 'players.settings konnte nicht angelegt werden: ' . $e->getMessage());
         }
     }
 }

@@ -3,6 +3,7 @@
 require_once dirname(__DIR__) . '/core/bootstrap.php';
 header('Content-Type: application/json; charset=utf-8');
 Auth::requireLogin();
+requireSameOrigin();
 
 $playerId=Auth::player()['id'];
 
@@ -136,6 +137,10 @@ switch($action){
       [$gameId, time()]
     );
     if(!$assemblyRunning){http_response_code(400);echo json_encode(['error'=>'Anklagen sind nur während einer laufenden Versammlung möglich.']);exit;}
+    // Ziel muss ein lebender Mitspieler dieses Spiels sein — sonst könnten per
+    // manipuliertem target_id Stimmen auf Fremde/Tote/Nicht-Teilnehmer gesetzt werden.
+    $targetOk=Database::queryOne("SELECT 1 FROM game_players WHERE game_id=? AND player_id=? AND is_alive=1",[$gameId,$tid]);
+    if(!$targetOk){http_response_code(400);echo json_encode(['error'=>'Ungültiges Ziel — nur lebende Mitspieler können angeklagt werden.']);exit;}
     Database::execute("INSERT INTO votes (game_id,round,voter_id,target_id) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE target_id=VALUES(target_id)",[$gameId,$g['round'],$playerId,$tid]);
     echo json_encode(['ok'=>true]);break;
 
@@ -228,7 +233,10 @@ switch($action){
         );
     } catch (\Throwable $ex) {
         http_response_code(500);
-        echo json_encode(['error' => 'DB-Fehler: ' . $ex->getMessage() . ' — Migration db/migration_zeit.sql ausführen?']);
+        // Rohe DB-Fehlermeldung (Tabellen-/Spaltennamen) nie an den Client — nur im Debug-Modus.
+        logEvent('ERROR', 'update_death_info fehlgeschlagen: ' . $ex->getMessage());
+        $detail = APP_DEBUG ? ' (' . $ex->getMessage() . ')' : '';
+        echo json_encode(['error' => 'Konnte nicht gespeichert werden.' . $detail]);
         exit;
     }
     echo json_encode(['ok'=>true]); break;
@@ -428,7 +436,7 @@ switch($action){
                 [$key, $val, $playerId]
             );
         } catch (\Throwable $e2) {
-            error_log('save_setting fehlgeschlagen: ' . $e2->getMessage());
+            logEvent('ERROR', 'save_setting fehlgeschlagen: ' . $e2->getMessage());
             jsonError('Einstellung konnte nicht gespeichert werden (DB-Update nötig?)', 500);
         }
     }

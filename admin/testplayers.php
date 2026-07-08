@@ -5,6 +5,7 @@
 require_once dirname(__DIR__) . '/core/bootstrap.php';
 require_once TEMPLATE_PATH . '/testplayers_blocks.php';
 Auth::requireAdmin();
+requireSameOrigin();
 
 // ── AJAX: Testspieler anlegen ─────────────────────────────────
 if (($_GET['action'] ?? '') === 'create') {

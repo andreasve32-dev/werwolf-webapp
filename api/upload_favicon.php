@@ -5,6 +5,7 @@
 require_once dirname(__DIR__) . '/core/bootstrap.php';
 header('Content-Type: application/json; charset=utf-8');
 Auth::requireAdmin();
+requireSameOrigin();
 
 const MAX_FAVICON_BYTES = 512 * 1024;
 const FAVICON_DIR_REL   = 'assets/icons/logo';

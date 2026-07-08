@@ -50,7 +50,7 @@ require TEMPLATE_PATH . '/base.php';
     <?php else: ?>
       <span class="auth-logo__icon pulse">🐺</span>
     <?php endif; ?>
-    <div class="auth-logo__title"><?= APP_NAME ?></div>
+    <div class="auth-logo__title"><?= e(APP_NAME) ?></div>
     <div class="auth-logo__sub"><?= e(LOGIN_SUBTITLE) ?></div>
   </div>
 

@@ -480,8 +480,9 @@ require TEMPLATE_PATH . '/base.php';
     <div class="section-title">🐛 Debug-Menü</div>
     <p class="text-dim text-sm" style="line-height:1.6;margin-bottom:.75rem">
       Unter <a href="<?= APP_URL ?>/admin/debug.php" style="color:var(--accent)">Admin → Debug-Menü</a>
-      findest du drei Werkzeuge zum Testen — alle nur sichtbar, wenn <em>Debug-Modus</em>
-      (Einstellungen → System) aktiv ist, und nur während ein Spiel <strong>läuft</strong>.
+      findest du mehrere Werkzeuge zum Testen — alle nur sichtbar, wenn <em>Debug-Modus</em>
+      (Einstellungen → System) aktiv ist. Die spielbezogenen Werkzeuge greifen nur, während
+      ein Spiel <strong>läuft</strong>; Testspieler-Verwaltung und System-Log gehen jederzeit.
       Sie ignorieren bewusst die normalen Sichtbarkeits- und Spielregeln — im echten
       Betrieb solltest du den Debug-Modus danach wieder ausschalten.
     </p>
@@ -500,11 +501,21 @@ require TEMPLATE_PATH . '/base.php';
           seinen Todeslisten-Eintrag — z.B. um einen Testtod rückgängig zu machen.
         </td>
       </tr>
-      <tr>
+      <tr style="border-bottom:1px solid var(--border)">
         <td style="padding:.5rem .25rem;color:var(--text);font-weight:600">🃏 Spielkarte ansehen</td>
         <td style="padding:.5rem .5rem;color:var(--text-dim)">
           Zeigt die komplette Rollenkarte eines beliebigen Spielers (Icon, Beschreibung,
           Regeln, Cooldown) — auch von Toten, deren Rolle sonst verborgen bleibt.
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:.5rem .25rem;color:var(--text);font-weight:600">📜 System-Log</td>
+        <td style="padding:.5rem .5rem;color:var(--text-dim)">
+          Zeigt aufgezeichnete Fehler &amp; Ereignisse des Servers, klassifiziert nach
+          Schweregrad (⛔ Kritisch, ❌ Fehler, ⚠️ Warnung, ℹ️ Hinweis, 💬 Info). Du kannst
+          nach Stufe filtern, nach Schweregrad sortieren („kritischste zuerst") und das Log
+          leeren. Erster Anlaufpunkt, wenn etwas nicht funktioniert — landet sonst nirgends
+          sichtbar. Geht unabhängig von einem laufenden Spiel.
         </td>
       </tr>
     </table>

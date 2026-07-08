@@ -5,6 +5,7 @@
 require_once dirname(__DIR__) . '/core/bootstrap.php';
 require_once CORE_PATH . '/WebPush.php';
 Auth::requireLogin();
+requireSameOrigin();
 
 $body   = jsonBody();
 $action = $body['action'] ?? '';

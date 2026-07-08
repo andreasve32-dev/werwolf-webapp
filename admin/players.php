@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Andreas Vetter
 require_once dirname(__DIR__) . '/core/bootstrap.php';
 Auth::requireAdmin();
+requireSameOrigin();
 
 $myId = Auth::player()['id'];
 
