@@ -364,6 +364,8 @@ require TEMPLATE_PATH . '/base.php';
       Eingabefeld — deine Frage geht direkt an den Admin, ohne dass andere Spieler sie sehen.
       Unter <strong>„Posteingang"</strong> siehst du alle deine bisherigen Fragen und die
       Antworten des Admins. Neue Antworten werden dir per Badge und Toast-Meldung signalisiert.
+      Der Spielleiter kann auch <strong>per Sprachnachricht antworten</strong> — dann findest
+      du im Posteingang einen Audio-Player (und, falls transkribiert, den Text dazu).
     </p>
     <p class="text-dim text-sm">
       ⚠️ Beantwortete Fragen kann der Admin anonym in die öffentliche FAQ übernehmen —

@@ -451,12 +451,17 @@ require TEMPLATE_PATH . '/base.php';
       <strong>🎙️ Sprachnachrichten:</strong> Ist der Schalter unter
       <em>Einstellungen → Sprachnachrichten</em> aktiv, können Spieler ihre Frage auch
       einsprechen (max. 1 Minute). In der Nachrichten-Verwaltung erscheint dann ein
-      Audio-Player statt des Fragetexts. Du antwortest wie gewohnt per Text.
+      Audio-Player statt des Fragetexts. Du antwortest wie gewohnt per Text —
+      <strong>oder per Sprachnachricht</strong>: über den Button
+      <em>🎙️ Per Sprache antworten</em> im Antwort-Bereich nimmst du deine Antwort
+      auf (max. 1 Minute, mit Vorschau vor dem Senden). Der Spieler hört deine
+      Sprachantwort dann in seinem Posteingang.
       Die Aufnahme selbst wird <strong>nie</strong> veröffentlicht (die Stimme würde
       den Absender verraten) — willst du den Inhalt in die FAQ übernehmen, schreibe
       über <em>✏️ FAQ-Text</em> erst eine anonymisierte Textfassung; erst danach lässt
       sich die Frage veröffentlichen. Beim Löschen einer Nachricht wird die Aufnahme
-      mit gelöscht.
+      mit gelöscht; verwaiste Aufnahmen kannst du zusätzlich über
+      <em>🧹 Verwaiste Aufnahmen aufräumen</em> (oben in der Nachrichten-Verwaltung) entfernen.
     </p>
     <div class="tip-box" style="margin-top:.75rem">
       <strong>🎙️→📝 Automatische Transkription:</strong> Aktivierst du zusätzlich
@@ -467,7 +472,9 @@ require TEMPLATE_PATH . '/base.php';
       automatisch) — lies ihn gegen, entferne alles Identifizierende und
       veröffentliche wie gewohnt über <em>📢 FAQ freigeben</em>. Ohne API-Key oder
       bei ausgeschaltetem Schalter bleibt der Button unsichtbar bzw. meldet einen
-      Fehler.
+      Fehler. <strong>Deine eigenen Sprachantworten</strong> werden bei aktiver
+      Transkription <strong>automatisch</strong> in Text umgewandelt und als
+      Antworttext gespeichert (der Spieler sieht Audio + Text).
     </div>
   </div>
 
