@@ -479,6 +479,41 @@ require TEMPLATE_PATH . '/base.php';
   </div>
 
   <!-- ═══════════════════════════════════════════
+       10b. Feedback verwalten
+  ═══════════════════════════════════════════ -->
+  <div class="section-sep"><span>Feedback</span></div>
+
+  <div class="step-card animate-in" style="animation-delay:.215s">
+    <div class="step-num">📣</div>
+    <h3>Feedback, Bugs &amp; Wünsche verwalten</h3>
+    <p>
+      Spieler können über die <strong>Feedback-Seite</strong> (⚙️ Optionen → 📣 Mithelfen)
+      Bugs melden, Wünsche äußern und Feedback geben. Die Einträge landen in derselben
+      Verwaltung wie die Spielerfragen
+      (<a href="<?= APP_URL ?>/admin/messages.php" style="color:var(--accent)">💬 Nachrichten</a>) —
+      über die <strong>Filter-Buttons</strong> oben (✉️ Fragen / 🐛 Bugs / 💡 Wünsche / 💬 Feedback)
+      blendest du gezielt einen Typ ein.
+    </p>
+    <p>
+      Jeder Feedback-Eintrag hat einen <strong>Bearbeitungsstatus</strong>, den du direkt
+      in der Kopfzeile umstellst: <strong>🔴 Offen → 🟡 In Arbeit → 🟢 Erledigt</strong>.
+      Der Spieler sieht den Status live auf seiner Feedback-Seite. Antworten kannst du
+      wie bei Fragen (Text oder Sprachnachricht) — bei Feedback ist das optional, der
+      Status genügt. Feedback-Einträge lassen sich <strong>nicht</strong> im FAQ
+      veröffentlichen (das gibt es nur für Spielerfragen).
+    </p>
+    <div class="tip-box" style="margin-top:.75rem">
+      <strong>🔌 Feedback-API (für KI-Assistenten):</strong> Unten in der
+      Nachrichten-Verwaltung findest du die <em>Feedback-API</em>. Generierst du dort ein
+      <strong>Token</strong>, können externe Werkzeuge (z.B. ein KI-Assistent beim
+      Entwickeln) die Feedback-Einträge über HTTPS auslesen und den Status setzen —
+      Spielerfragen und Audiodateien werden dabei <strong>nie</strong> ausgeliefert.
+      Das Token wird nur einmal angezeigt: direkt kopieren. Ohne Token ist die API
+      komplett deaktiviert; über <em>🗑 Token entfernen</em> schaltest du sie jederzeit ab.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
        10. Debug-Werkzeuge
   ═══════════════════════════════════════════ -->
   <div class="section-sep"><span>Debug-Werkzeuge</span></div>

@@ -144,6 +144,10 @@ CREATE TABLE IF NOT EXISTS messages (
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS faq_question TEXT NULL AFTER message;
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS voice_path VARCHAR(255) NULL AFTER faq_question;
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS reply_voice_path VARCHAR(255) NULL AFTER reply;
+-- Feedback-System (v0.34): question = Spielerfrage, bug/wish/feedback = Feedback-Einträge.
+-- status gilt nur für Feedback-Typen (open/in_progress/done).
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS type   VARCHAR(16) NOT NULL DEFAULT 'question' AFTER player_id;
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS status VARCHAR(16) NOT NULL DEFAULT 'open' AFTER type;
 
 CREATE TABLE IF NOT EXISTS slogans (
   id         INT AUTO_INCREMENT PRIMARY KEY,
@@ -423,4 +427,5 @@ INSERT IGNORE INTO settings (`key`, value, type, label, description, sort_order)
 ('voice_transcription_enabled', '0',                                     'bool',   'Sprachnachrichten-Transkription', 'Erlaubt dem Spielleiter, Sprachnachrichten per OpenAI-API automatisch in Text umzuwandeln (Grundlage für die FAQ-Übernahme).', 28),
 ('openai_api_key',      '',                                              'string', 'OpenAI API-Key',                'Wird nur für die Sprachnachrichten-Transkription verwendet. Wert wird in der Oberfläche nie im Klartext angezeigt.', 29),
 ('clear_messages_on_start', '0',                                         'bool',   'Nachrichten bei Spielstart löschen', 'Beim Start eines neuen Spiels: alle Sprachnachrichten (immer) sowie alle Text-Fragen ohne FAQ-Veröffentlichung werden gelöscht.', 22),
-('push_last_sent',     '0',                                             'int',    'Push: letzter Versand (intern)','Unix-Timestamp des letzten gesendeten Pushes (intern).',              999);
+('push_last_sent',     '0',                                             'int',    'Push: letzter Versand (intern)','Unix-Timestamp des letzten gesendeten Pushes (intern).',              999),
+('feedback_api_token', '',                                              'string', 'Feedback-API-Token',            'Zugriffs-Token für die externe Feedback-API (leer = API deaktiviert). Verwaltung über Admin → Spielerfragen & Feedback.', 998);

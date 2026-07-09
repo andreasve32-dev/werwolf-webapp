@@ -6,10 +6,19 @@
 
 if (!function_exists('render_message_row')) {
 function render_message_row(array $msg): string {
-    $isNew = ($msg['reply'] === null);
+    // Feedback-Einträge (bug/wish/feedback) teilen sich das Markup mit den
+    // Spielerfragen: statt Beantwortet-Logik zählt bei ihnen der Status.
+    $type       = $msg['type']   ?? 'question';
+    $status     = $msg['status'] ?? 'open';
+    $isFeedback = ($type !== 'question');
+    $typeMeta   = feedbackTypeMeta()[$type]     ?? feedbackTypeMeta()['question'];
+    $statusMeta = feedbackStatusMeta()[$status] ?? feedbackStatusMeta()['open'];
+    $hasReply   = ($msg['reply'] !== null);
+    // "Neu"/aufgeklappt: Fragen ohne Antwort — bzw. Feedback, das noch offen ist
+    $isNew = $isFeedback ? ($status === 'open') : !$hasReply;
     ob_start();
     ?>
-    <div class="panel msg-panel" id="msg-<?= (int)$msg['id'] ?>"
+    <div class="panel msg-panel" id="msg-<?= (int)$msg['id'] ?>" data-type="<?= e($type) ?>"
          style="padding:.9rem 1rem<?= $isNew ? ';border-left:3px solid var(--accent)' : ';opacity:.75' ?>">
 
       <!-- Kopfzeile: Name + Zeit + Badge + Aktionen + Chevron -->
@@ -22,7 +31,10 @@ function render_message_row(array $msg): string {
           <span class="text-dim text-xs">
             <?= e(date('d.m.Y H:i', strtotime($msg['created_at']))) ?>
           </span>
-          <?php if ($isNew): ?>
+          <?php if ($isFeedback): ?>
+            <span class="tag tag--night" style="font-size:.65rem"><?= $typeMeta['icon'] ?> <?= e($typeMeta['label']) ?></span>
+            <span class="tag" style="font-size:.65rem;background:var(--panel-bg);color:var(--text-dim)"><?= $statusMeta['icon'] ?> <?= e($statusMeta['label']) ?></span>
+          <?php elseif ($isNew): ?>
             <span class="tag tag--running" style="font-size:.65rem">Neu</span>
           <?php else: ?>
             <span class="tag" style="font-size:.65rem;background:var(--panel-bg);color:var(--text-dim)">✓ Beantwortet</span>
@@ -44,7 +56,15 @@ function render_message_row(array $msg): string {
           <?php endif; ?>
         </div>
         <div class="flex gap-xs" onclick="event.stopPropagation()">
-          <?php if (!$isNew): ?>
+          <?php if ($isFeedback): ?>
+          <select class="form-input" style="width:auto;font-size:.75rem;padding:.2rem .4rem"
+                  title="Bearbeitungsstatus setzen"
+                  onchange="setStatus(<?= (int)$msg['id'] ?>, this.value)">
+            <?php foreach (feedbackStatusMeta() as $sKey => $sMeta): ?>
+            <option value="<?= e($sKey) ?>" <?= $sKey === $status ? 'selected' : '' ?>><?= $sMeta['icon'] ?> <?= e($sMeta['label']) ?></option>
+            <?php endforeach; ?>
+          </select>
+          <?php elseif (!$isNew): ?>
           <button class="btn btn--ghost btn--sm" id="pub-btn-<?= (int)$msg['id'] ?>"
                   title="<?= $msg['published'] ? 'Aus FAQ entfernen' : (!empty($msg['voice_path']) && empty($msg['faq_question']) ? 'Vor Veröffentlichung erst FAQ-Text hinterlegen' : 'Als FAQ veröffentlichen') ?>"
                   onclick="togglePublish(<?= (int)$msg['id'] ?>)">
@@ -93,7 +113,7 @@ function render_message_row(array $msg): string {
              Bei Sprachnachrichten ist das die EINZIGE Möglichkeit, Inhalte zu veröffentlichen —
              die Audiodatei selbst wird nie öffentlich, nur diese vom Spielleiter
              geschriebene Textfassung. -->
-        <?php if (!$isNew): ?>
+        <?php if (!$isNew && !$isFeedback): ?>
         <div id="faq-edit-<?= (int)$msg['id'] ?>" style="display:none;margin-bottom:.6rem">
           <label class="text-dim text-xs" style="display:block;margin-bottom:.25rem">
             Text für die öffentliche FAQ (Namen/persönliche Angaben hier entfernen):
@@ -109,9 +129,10 @@ function render_message_row(array $msg): string {
         </div>
         <?php endif; ?>
 
-        <!-- Antwort-Bereich -->
+        <!-- Antwort-Bereich (Anzeige wenn Antwort existiert, sonst Formular —
+             bei Feedback ist eine Antwort optional, der Status zählt) -->
         <div id="reply-display-<?= (int)$msg['id'] ?>"
-             style="<?= $isNew ? 'display:none' : '' ?>">
+             style="<?= !$hasReply ? 'display:none' : '' ?>">
           <?php if ($msg['reply']): ?>
           <div style="background:var(--input-bg,var(--card-bg));border-left:3px solid var(--accent-border);
                       border-radius:0 8px 8px 0;padding:.6rem .85rem;font-size:.88rem;line-height:1.5">
@@ -134,7 +155,7 @@ function render_message_row(array $msg): string {
         </div>
 
         <div id="reply-form-<?= (int)$msg['id'] ?>"
-             style="<?= $isNew ? '' : 'display:none' ?>">
+             style="<?= !$hasReply ? '' : 'display:none' ?>">
           <textarea class="form-input"
                     id="reply-text-<?= (int)$msg['id'] ?>"
                     placeholder="Antwort eingeben …" rows="2"
@@ -143,7 +164,7 @@ function render_message_row(array $msg): string {
           <div class="flex gap-xs">
             <button class="btn btn--primary btn--sm"
                     onclick="sendReply(<?= (int)$msg['id'] ?>)">✓ Antworten</button>
-            <?php if (!$isNew): ?>
+            <?php if ($hasReply): ?>
             <button class="btn btn--ghost btn--sm"
                     onclick="cancelEdit(<?= (int)$msg['id'] ?>)">Abbrechen</button>
             <?php endif; ?>

@@ -5,16 +5,22 @@ require_once TEMPLATE_PATH . '/messages_blocks.php';
 Auth::requireAdmin();
 
 $messages = Database::query(
-    "SELECT m.id, m.message, m.faq_question, m.voice_path, m.reply, m.created_at, m.replied_at, m.read_by_player, m.published,
+    "SELECT m.id, m.type, m.status, m.message, m.faq_question, m.voice_path, m.reply, m.created_at, m.replied_at, m.read_by_player, m.published,
             p.display_name, p.username
      FROM messages m
      JOIN players p ON p.id = m.player_id
-     ORDER BY (m.reply IS NULL) DESC, m.created_at DESC"
+     ORDER BY (CASE WHEN m.type = 'question' THEN (m.reply IS NULL) ELSE (m.status = 'open') END) DESC,
+              m.created_at DESC"
 );
-$pending  = count(array_filter($messages, fn($m) => $m['reply'] === null));
+$pending      = count(array_filter($messages, fn($m) => ($m['type'] ?? 'question') === 'question' && $m['reply'] === null));
+$feedbackOpen = count(array_filter($messages, fn($m) => ($m['type'] ?? 'question') !== 'question' && $m['status'] === 'open'));
 $maxMsgId = $messages ? max(array_column($messages, 'id')) : 0;
 
-$page = ['title' => 'Spielerfragen'];
+// Feedback-API-Token: nur ob eines gesetzt ist — der Wert selbst wird nach dem
+// Generieren einmalig angezeigt, danach nie wieder ausgelesen.
+$hasApiToken = trim(Database::queryOne("SELECT value FROM settings WHERE `key`='feedback_api_token'")['value'] ?? '') !== '';
+
+$page = ['title' => 'Spielerfragen & Feedback'];
 require TEMPLATE_PATH . '/base.php';
 ?>
 
@@ -22,14 +28,23 @@ require TEMPLATE_PATH . '/base.php';
 
   <div class="page-header">
     <span class="page-header__icon">✉️</span>
-    <h1>Spielerfragen</h1>
+    <h1>Spielerfragen &amp; Feedback</h1>
     <p class="page-header__sub">
       <span id="pending-badge"><?php if ($pending > 0): ?><span class="tag tag--running"><?= $pending ?> unbeantwortet</span> &middot; <?php endif; ?></span>
+      <span id="feedback-badge"><?php if ($feedbackOpen > 0): ?><span class="tag tag--night"><?= $feedbackOpen ?> offenes Feedback</span> &middot; <?php endif; ?></span>
       <a href="<?= APP_URL ?>/admin/">← zurück zur Spielleitung</a>
     </p>
   </div>
 
-  <div class="flex" style="justify-content:flex-end;margin-bottom:.6rem">
+  <div class="flex-between" style="flex-wrap:wrap;gap:.5rem;margin-bottom:.6rem">
+    <!-- Typ-Filter (rein client-seitig über data-type) -->
+    <div class="flex gap-xs" style="flex-wrap:wrap" id="type-filter">
+      <button class="btn btn--primary btn--sm" data-filter="all"      onclick="filterType('all', this)">Alle</button>
+      <button class="btn btn--ghost btn--sm"   data-filter="question" onclick="filterType('question', this)">✉️ Fragen</button>
+      <button class="btn btn--ghost btn--sm"   data-filter="bug"      onclick="filterType('bug', this)">🐛 Bugs</button>
+      <button class="btn btn--ghost btn--sm"   data-filter="wish"     onclick="filterType('wish', this)">💡 Wünsche</button>
+      <button class="btn btn--ghost btn--sm"   data-filter="feedback" onclick="filterType('feedback', this)">💬 Feedback</button>
+    </div>
     <button class="btn btn--ghost btn--sm" onclick="cleanupVoices(this)"
             title="Sprachaufnahmen löschen, die zu keiner Nachricht mehr gehören">
       🧹 Verwaiste Aufnahmen aufräumen
@@ -48,6 +63,50 @@ require TEMPLATE_PATH . '/base.php';
       <?php endforeach; ?>
       <?php endif; ?>
     </div>
+  </div>
+
+  <!-- ── Feedback-API (externer Lesezugriff, z. B. für KI-Assistenten) ── -->
+  <div class="card animate-in" style="margin-top:1rem">
+    <details>
+      <summary style="cursor:pointer;font-family:var(--font-display);color:var(--text-bright)">
+        🔌 Feedback-API (externer Zugriff)
+      </summary>
+      <div style="margin-top:.75rem;font-size:.88rem;line-height:1.6">
+        <p class="text-dim" style="margin:0 0 .6rem">
+          Token-gesicherte Schnittstelle, über die Feedback-Einträge (Bugs, Wünsche, Feedback —
+          <strong>nie Spielerfragen</strong>) von außen ausgelesen und deren Status gesetzt werden kann,
+          z.&nbsp;B. durch einen KI-Assistenten. Ohne Token ist die API komplett deaktiviert.
+        </p>
+        <p style="margin:0 0 .6rem">
+          Status: <span id="api-token-state" class="tag <?= $hasApiToken ? 'tag--alive' : '' ?>"
+                        <?= $hasApiToken ? '' : 'style="background:var(--panel-bg);color:var(--text-dim)"' ?>>
+            <?= $hasApiToken ? '🟢 Aktiv (Token gesetzt)' : '⚪ Deaktiviert (kein Token)' ?>
+          </span>
+        </p>
+        <div class="flex gap-xs" style="flex-wrap:wrap">
+          <button class="btn btn--primary btn--sm" onclick="generateApiToken(this)">
+            <?= $hasApiToken ? '🔄 Token neu generieren' : '🔑 Token generieren' ?>
+          </button>
+          <?php if ($hasApiToken): ?>
+          <button class="btn btn--ghost btn--sm" id="api-token-clear" onclick="clearApiToken(this)">🗑 Token entfernen (API deaktivieren)</button>
+          <?php endif; ?>
+        </div>
+        <div id="api-token-box" style="display:none;margin-top:.6rem">
+          <div class="alert alert--success" style="font-size:.82rem">
+            Neues Token — <strong>jetzt kopieren</strong>, es wird nur dieses eine Mal angezeigt:
+          </div>
+          <code id="api-token-value" style="display:block;word-break:break-all;background:var(--panel-bg);
+                border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem;margin-top:.4rem;font-size:.78rem"></code>
+          <button class="btn btn--ghost btn--sm mt-1" onclick="copyApiToken(this)">📋 Kopieren</button>
+        </div>
+        <div class="text-dim text-xs" style="margin-top:.6rem;line-height:1.6">
+          Nutzung (HTTPS Pflicht, Token als Bearer-Header):<br>
+          <code>GET <?= e(API_URL) ?>/feedback.php?action=list</code> — Einträge als JSON<br>
+          <code>POST <?= e(API_URL) ?>/feedback.php</code> mit <code>{"action":"set_status","id":…,"status":"open|in_progress|done"}</code><br>
+          Header: <code>Authorization: Bearer &lt;Token&gt;</code>
+        </div>
+      </div>
+    </details>
   </div>
 
 </div>
@@ -190,6 +249,73 @@ async function deleteMsg(id) {
   }
 }
 
+// ── Feedback: Bearbeitungsstatus setzen ──────────────────────
+async function setStatus(id, status) {
+  const r = await apiFetch(MSG_API, {action:'set_status', id, status});
+  if (r.error === 'session_expired') return;
+  if (r.ok) {
+    showToast(r.message || 'Status gespeichert.', 'success');
+    if (r.html) { replaceMsgRow(id, r.html); _applyTypeFilter(); }
+  } else {
+    showToast(r.error || 'Fehler', 'error');
+  }
+}
+
+// ── Typ-Filter (client-seitig über data-type) ────────────────
+let _typeFilter = 'all';
+function filterType(type, btn) {
+  _typeFilter = type;
+  document.querySelectorAll('#type-filter button').forEach(b => {
+    b.classList.toggle('btn--primary', b === btn);
+    b.classList.toggle('btn--ghost',   b !== btn);
+  });
+  _applyTypeFilter();
+}
+function _applyTypeFilter() {
+  document.querySelectorAll('#msg-list .msg-panel').forEach(p => {
+    p.style.display = (_typeFilter === 'all' || p.dataset.type === _typeFilter) ? '' : 'none';
+  });
+}
+
+// ── Feedback-API-Token verwalten ─────────────────────────────
+async function generateApiToken(btn) {
+  if (!confirm('Token generieren? Ein eventuell vorhandenes altes Token wird dadurch ungültig.')) return;
+  btn.disabled = true;
+  const r = await apiFetch(MSG_API, {action:'feedback_token_generate'});
+  btn.disabled = false;
+  if (r.error === 'session_expired') return;
+  if (!r.ok) { showToast(r.error || 'Fehler', 'error'); return; }
+  const box = document.getElementById('api-token-box');
+  const val = document.getElementById('api-token-value');
+  if (box && val) { val.textContent = r.token; box.style.display = ''; }
+  const state = document.getElementById('api-token-state');
+  if (state) { state.textContent = '🟢 Aktiv (Token gesetzt)'; state.className = 'tag tag--alive'; state.removeAttribute('style'); }
+  btn.textContent = '🔄 Token neu generieren';
+  showToast(r.message || 'Token generiert.', 'success');
+}
+
+async function clearApiToken(btn) {
+  if (!confirm('Token wirklich entfernen? Die Feedback-API ist danach deaktiviert.')) return;
+  const r = await apiFetch(MSG_API, {action:'feedback_token_clear'});
+  if (r.error === 'session_expired') return;
+  if (!r.ok) { showToast(r.error || 'Fehler', 'error'); return; }
+  const state = document.getElementById('api-token-state');
+  if (state) { state.textContent = '⚪ Deaktiviert (kein Token)'; state.className = 'tag'; state.style.background='var(--panel-bg)'; state.style.color='var(--text-dim)'; }
+  const box = document.getElementById('api-token-box');
+  if (box) box.style.display = 'none';
+  btn.remove();
+  showToast(r.message || 'Token entfernt.', 'success');
+}
+
+function copyApiToken(btn) {
+  const val = document.getElementById('api-token-value');
+  if (!val) return;
+  navigator.clipboard?.writeText(val.textContent).then(
+    () => showToast('Token kopiert.', 'success'),
+    () => showToast('Kopieren fehlgeschlagen — bitte manuell markieren.', 'error')
+  );
+}
+
 async function cleanupVoices(btn) {
   const original = btn.textContent;
   btn.disabled = true; btn.textContent = '⏳ Räume auf …';
@@ -288,11 +414,18 @@ const msgPoll = liveBlocks({
         list.insertAdjacentHTML('afterbegin', row.html);
         if (row.id > _maxMsgId) _maxMsgId = row.id;
       });
+      _applyTypeFilter(); // aktiver Filter gilt auch für frisch nachgeladene Zeilen
     }
     if (typeof r.pending === 'number') {
       const badge = document.getElementById('pending-badge');
       if (badge) badge.innerHTML = r.pending > 0
         ? '<span class="tag tag--running">' + r.pending + ' unbeantwortet</span> &middot; '
+        : '';
+    }
+    if (typeof r.feedback_open === 'number') {
+      const fb = document.getElementById('feedback-badge');
+      if (fb) fb.innerHTML = r.feedback_open > 0
+        ? '<span class="tag tag--night">' + r.feedback_open + ' offenes Feedback</span> &middot; '
         : '';
     }
   },

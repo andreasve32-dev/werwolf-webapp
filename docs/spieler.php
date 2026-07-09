@@ -386,6 +386,35 @@ require TEMPLATE_PATH . '/base.php';
   </div>
 
   <!-- ═══════════════════════════════════════════
+       7b. Feedback & Wünsche
+  ═══════════════════════════════════════════ -->
+  <div class="section-sep"><span>Feedback</span></div>
+
+  <div class="step-card animate-in" style="animation-delay:.21s">
+    <div class="step-num">📣</div>
+    <h3>Bugs melden, Wünsche äußern, Feedback geben</h3>
+    <p>
+      Über <strong>⚙️ Optionen → 📣 Mithelfen → Feedback &amp; Wünsche</strong> (oder den
+      Link unten im „Frage stellen"-Fenster) erreichst du die <strong>Feedback-Seite</strong>.
+      Dort wählst du einen Typ — <strong>🐛 Bug</strong> (etwas funktioniert nicht),
+      <strong>💡 Wunsch</strong> (Idee für ein Feature) oder <strong>💬 Feedback</strong>
+      (Lob &amp; Kritik) — und beschreibst dein Anliegen. Es geht direkt an den Spielleiter,
+      andere Spieler sehen es nicht.
+    </p>
+    <p>
+      Unter <strong>„Deine Einträge"</strong> siehst du jederzeit den
+      <strong>Bearbeitungsstatus</strong> (🔴 Offen → 🟡 In Arbeit → 🟢 Erledigt) und
+      eventuelle Antworten des Spielleiters — Antworten erscheinen zusätzlich in deinem
+      normalen Posteingang.
+    </p>
+    <div class="tip-box" style="margin-top:.75rem">
+      <strong>🐛 Bug melden — so hilfst du am meisten:</strong> Schreibe dazu, <em>was</em> du
+      gemacht hast, <em>was</em> passiert ist und <em>was</em> du stattdessen erwartet hättest.
+      Gerät und Browser (z.B. „iPhone, Safari") sind oft Gold wert.
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
        8. Optionen
   ═══════════════════════════════════════════ -->
   <div class="section-sep"><span>Optionen</span></div>

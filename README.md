@@ -23,6 +23,7 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 │   ├── roles.php           ← Öffentliche Rollenübersicht (Auth::requireLogin)
 │   ├── stats.php           ← Spielstatistiken (Auth::requireLogin)
 │   ├── faq.php             ← FAQ (Auth::requireLogin)
+│   ├── feedback.php        ← Feedback & Wünsche: Bug/Wunsch/Feedback + eigene Einträge mit Status (Auth::requireLogin)
 │   ├── logout.php          ← Logout (Auth::requireLogin)
 │   ├── datenschutz.php     ← Datenschutzerklärung (öffentlich, kein Login nötig)
 │   ├── impressum.php       ← Impressum (öffentlich, kein Login nötig)
@@ -33,7 +34,7 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 │   ├── index.php       ← Spielleitung (Phasenwechsel, Rollen verteilen, Spieler töten)
 │   ├── roles.php       ← Rollen verwalten (CRUD + Icon-Upload)
 │   ├── players.php     ← Spielerverwaltung (Übersicht, löschen, Passwort ändern)
-│   ├── messages.php    ← Spielerfragen beantworten
+│   ├── messages.php    ← Spielerfragen & Feedback verwalten (Antworten, Status, Feedback-API-Token)
 │   ├── slogans.php     ← Dorf-Sprüche verwalten (Tag/Nacht, bis zu 20 pro Phase)
 │   ├── settings.php    ← Server-Einstellungen (DB-konfigurierbar)
 │   ├── setup.php       ← 5-Schritt-Wizard: DB einrichten + Admin-Konto wählen (kein Login nötig)
@@ -43,7 +44,8 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 ├── api/                ← JSON-Endpunkte, vom JS aufgerufen
 │   ├── game.php            ← join, get_players, vote, self_report_death, update_death_info, get_log
 │   ├── admin.php           ← Spielsteuerung + Rollen-CRUD
-│   ├── messages.php        ← Spieler-Fragen senden/empfangen + Admin-Antworten
+│   ├── messages.php        ← Spieler-Fragen senden/empfangen + Admin-Antworten + Feedback-Aktionen
+│   ├── feedback.php        ← Externe Feedback-API (Token-Auth, list/set_status — für KI-Assistenten)
 │   ├── push.php            ← Web-Push-Abonnement verwalten + Benachrichtigungen senden
 │   ├── upload_role_icon.php    ← Rollen-Icon-Upload (PNG/JPG, max. 2 MB)
 │   ├── upload_logo.php         ← Login-Logo hochladen

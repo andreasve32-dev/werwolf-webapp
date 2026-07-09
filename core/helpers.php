@@ -552,6 +552,37 @@ function cleanupOrphanedVoiceFiles(): int {
     return $deleted;
 }
 
+// ============================================================
+//  Feedback-System (Bug / Wunsch / Feedback) — Aufsatz auf die
+//  messages-Tabelle (Spalten type + status). Genutzt von
+//  app/feedback.php, api/messages.php, api/feedback.php und
+//  templates/messages_blocks.php.
+// ============================================================
+
+/**
+ * Nachrichten-Typen: Icon + Label. 'question' ist die klassische Spielerfrage
+ * (bestehendes Verhalten), die übrigen sind Feedback-Einträge von app/feedback.php.
+ */
+function feedbackTypeMeta(): array {
+    static $meta = [
+        'question' => ['icon' => '✉️', 'label' => 'Frage'],
+        'bug'      => ['icon' => '🐛', 'label' => 'Bug'],
+        'wish'     => ['icon' => '💡', 'label' => 'Wunsch'],
+        'feedback' => ['icon' => '💬', 'label' => 'Feedback'],
+    ];
+    return $meta;
+}
+
+/** Bearbeitungsstatus für Feedback-Einträge (bei Typ 'question' ungenutzt). */
+function feedbackStatusMeta(): array {
+    static $meta = [
+        'open'        => ['icon' => '🔴', 'label' => 'Offen'],
+        'in_progress' => ['icon' => '🟡', 'label' => 'In Arbeit'],
+        'done'        => ['icon' => '🟢', 'label' => 'Erledigt'],
+    ];
+    return $meta;
+}
+
 /** Asset-Version in DB erhöhen — nach jedem Bild-Upload aufrufen. */
 function bumpAssetVersion(): void {
     $current = (int)(Database::queryOne('SELECT value FROM settings WHERE `key` = ?', ['asset_version'])['value'] ?? 0);

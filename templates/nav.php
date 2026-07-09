@@ -56,6 +56,20 @@ $player      = Auth::player();
     </div>
     <div id="push-hint" class="text-dim text-xs" style="display:none;padding:.4rem 0 0;line-height:1.5"></div>
   </div>
+
+  <!-- Feedback -->
+  <div class="settings-section">
+    <div class="settings-label">📣 Mithelfen</div>
+    <div class="settings-row">
+      <div>
+        <span class="settings-row__name">Feedback &amp; Wünsche</span>
+        <div class="text-dim text-xs" style="margin-top:.15rem">Bug melden, Wunsch äußern oder Feedback geben — geht direkt an den Spielleiter</div>
+      </div>
+      <div class="settings-row__ctrl">
+        <a class="btn btn--ghost btn--sm" href="<?= APP_URL ?>/app/feedback.php">Öffnen →</a>
+      </div>
+    </div>
+  </div>
   <?php endif; ?>
 
   <!-- Aktualisierung -->

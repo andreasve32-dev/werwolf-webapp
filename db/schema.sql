@@ -156,11 +156,15 @@ CREATE TABLE votes (
   UNIQUE KEY uq_vote (game_id, round, voter_id)
 ) ENGINE=InnoDB;
 
--- ── 9. Spieler-Nachrichten an den Spielleiter ────────────────
+-- ── 9. Spieler-Nachrichten an den Spielleiter + Feedback ─────
+--      type: question = Spielerfrage, bug/wish/feedback = Feedback-Einträge (app/feedback.php)
+--      status: Bearbeitungsstatus für Feedback-Typen (open/in_progress/done), bei Fragen ungenutzt
 CREATE TABLE messages (
   id             INT AUTO_INCREMENT PRIMARY KEY,
   game_id        INT NULL,
   player_id      INT NOT NULL,
+  type           VARCHAR(16) NOT NULL DEFAULT 'question',
+  status         VARCHAR(16) NOT NULL DEFAULT 'open',
   message        TEXT NOT NULL,
   faq_question   TEXT NULL,        -- anonymisierte/bearbeitete Frage für die FAQ (NULL = message wird 1:1 verwendet)
   voice_path     VARCHAR(255) NULL, -- Sprachnachricht-Datei unter uploads/voice/ (NULL = Textnachricht). Auslieferung nur über api/messages.php (Auth), nie direkt
@@ -392,7 +396,8 @@ INSERT INTO settings (`key`, value, type, label, description, sort_order) VALUES
 ('voice_transcription_enabled', '0',                       'bool',   'Sprachnachrichten-Transkription', 'Erlaubt dem Spielleiter, Sprachnachrichten per OpenAI-API automatisch in Text umzuwandeln (Grundlage für die FAQ-Übernahme).', 28),
 ('openai_api_key',      '',                                'string', 'OpenAI API-Key',          'Wird nur für die Sprachnachrichten-Transkription verwendet. Wert wird in der Oberfläche nie im Klartext angezeigt.', 29),
 ('clear_messages_on_start', '0',                           'bool',   'Nachrichten bei Spielstart löschen', 'Beim Start eines neuen Spiels: alle Sprachnachrichten (immer) sowie alle Text-Fragen ohne FAQ-Veröffentlichung werden gelöscht.', 22),
-('push_last_sent',     '0',                               'int',    'Push: letzter Versand (intern)', 'Unix-Timestamp des letzten gesendeten Pushes (intern).', 999);
+('push_last_sent',     '0',                               'int',    'Push: letzter Versand (intern)', 'Unix-Timestamp des letzten gesendeten Pushes (intern).', 999),
+('feedback_api_token', '',                                'string', 'Feedback-API-Token',      'Zugriffs-Token für die externe Feedback-API (leer = API deaktiviert). Verwaltung über Admin → Spielerfragen & Feedback.', 998);
 
 -- ── 12. Erstes Spiel anlegen ──────────────────────────────────────
 INSERT INTO games (id, status) VALUES (1, 'lobby');

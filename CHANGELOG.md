@@ -5,6 +5,48 @@ lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
 
 ---
 
+## [v0.34] — 2026-07-09
+
+### Hinzugefügt
+- **📣 Feedback-System:** Spieler können Bugs melden, Wünsche äußern und Feedback geben —
+  neue Seite `app/feedback.php` (erreichbar über ⚙️ Optionen → 📣 Mithelfen sowie einen
+  Link im „Frage stellen"-Fenster). Aufsatz auf das bestehende Nachrichtensystem
+  (messages-Tabelle, neue Spalten `type` + `status`), kein separates Modul.
+  - **Typ-Auswahl** beim Eintragen: 🐛 Bug / 💡 Wunsch / 💬 Feedback (max. 1000 Zeichen).
+  - **Bearbeitungsstatus** pro Eintrag: 🔴 Offen → 🟡 In Arbeit → 🟢 Erledigt — der Admin
+    stellt ihn in der Nachrichten-Verwaltung um, der Spieler sieht ihn live auf der
+    Feedback-Seite („Deine Einträge", Live-Update über `liveBlocks()`).
+  - **Admin:** `admin/messages.php` heißt jetzt „Spielerfragen & Feedback" — mit
+    Typ-Filter-Buttons (Alle / Fragen / Bugs / Wünsche / Feedback), Status-Dropdown je
+    Eintrag und eigenem Badge „X offenes Feedback". Antworten (Text/Sprache) funktionieren
+    wie bei Fragen; Feedback ist von der FAQ-Veröffentlichung ausgeschlossen.
+  - „Unbeantwortet"-Zähler (Admin-Hinweis im Spielfenster) zählt jetzt nur noch echte
+    Spielerfragen — offenes Feedback läuft über den eigenen Status-Badge.
+- **🔌 Feedback-API** (`api/feedback.php`): token-gesicherte HTTPS-Schnittstelle für
+  externe Clients (z.B. KI-Assistent beim Entwickeln — auch von einem anderen Server aus):
+  - `list` (Einträge als JSON, Filter: type/status/since_id/limit) und `set_status`.
+  - Auth per `Authorization: Bearer <Token>`; Token-Verwaltung im neuen Panel
+    „Feedback-API" unten in der Nachrichten-Verwaltung (generieren/entfernen, Anzeige
+    nur einmalig direkt nach dem Generieren). Leeres Token = API komplett deaktiviert.
+  - Sicherheit: `hash_equals`-Vergleich, Rate-Limit pro IP (60/min, Fehlversuche 10/min),
+    Logging ungültiger Zugriffe, **nie** Spielerfragen oder Audiodateien in der Ausgabe.
+
+### DB-Änderungen
+- Neue Spalten **`messages.type`** (question/bug/wish/feedback) und **`messages.status`**
+  (open/in_progress/done):
+  ```sql
+  ALTER TABLE messages ADD COLUMN IF NOT EXISTS type   VARCHAR(16) NOT NULL DEFAULT 'question' AFTER player_id;
+  ALTER TABLE messages ADD COLUMN IF NOT EXISTS status VARCHAR(16) NOT NULL DEFAULT 'open' AFTER type;
+  ```
+- Neuer Settings-Eintrag **`feedback_api_token`** (leer = API deaktiviert):
+  ```sql
+  INSERT IGNORE INTO settings (`key`, value, type, label, description, sort_order) VALUES
+  ('feedback_api_token', '', 'string', 'Feedback-API-Token', 'Zugriffs-Token für die externe Feedback-API (leer = API deaktiviert). Verwaltung über Admin → Spielerfragen & Feedback.', 998);
+  ```
+- `app_version` → `0.34`.
+
+---
+
 ## [v0.33] — 2026-07-08
 
 ### Hinzugefügt

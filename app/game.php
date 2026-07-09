@@ -497,6 +497,11 @@ require TEMPLATE_PATH . '/base.php';
     <?php endif; ?>
 
     <div id="ask-result" style="margin-top:.6rem"></div>
+
+    <p class="text-dim text-xs" style="margin:.75rem 0 0;text-align:center">
+      🐛 Bug gefunden oder einen Wunsch zur App?
+      <a href="<?= APP_URL ?>/app/feedback.php" style="color:var(--accent)">→ Zur Feedback-Seite</a>
+    </p>
   </div>
 </div>
 
@@ -1241,8 +1246,10 @@ async function loadInbox() {
                 onerror="this.style.display='none';this.nextElementSibling.style.display=''"></audio>
          <span class="text-dim text-xs" style="display:none">⚠️ Aufnahme nicht mehr abspielbar.</span>`
       : `<div style="font-size:.9rem;line-height:1.5">${escHtml(m.message)}</div>`;
+    // Feedback-Einträge (Bug/Wunsch/Feedback von der Feedback-Seite) kennzeichnen
+    const typeLabel = {bug:' · 🐛 Bug', wish:' · 💡 Wunsch', feedback:' · 💬 Feedback'}[m.type] || '';
     return `<div style="padding:.7rem 0;border-bottom:1px solid var(--border)">
-      <div class="text-dim text-xs mb-1">${escHtml(date)}${m.voice_path ? ' · 🎙️ Sprachnachricht' : ''}</div>
+      <div class="text-dim text-xs mb-1">${escHtml(date)}${typeLabel}${m.voice_path ? ' · 🎙️ Sprachnachricht' : ''}</div>
       ${bodyHtml}
       ${replyHtml}
     </div>`;

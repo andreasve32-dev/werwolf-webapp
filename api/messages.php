@@ -19,7 +19,7 @@ $player = Auth::player();
 /** Lädt eine Nachricht inkl. Spielername für render_message_row(). */
 function fetchMessageRow(int $id): array {
     return Database::queryOne(
-        "SELECT m.id, m.message, m.faq_question, m.voice_path, m.reply, m.reply_voice_path, m.created_at, m.replied_at,
+        "SELECT m.id, m.type, m.status, m.message, m.faq_question, m.voice_path, m.reply, m.reply_voice_path, m.created_at, m.replied_at,
                 m.read_by_player, m.published, p.display_name, p.username
          FROM messages m JOIN players p ON p.id = m.player_id
          WHERE m.id = ?",
@@ -94,6 +94,73 @@ switch ($action) {
         );
         jsonOk('Nachricht gesendet.', ['id' => $id]);
 
+    case 'send_feedback':
+        // Feedback-Eintrag (Bug / Wunsch / Feedback) von app/feedback.php —
+        // landet in derselben messages-Tabelle, nur mit anderem Typ + Status.
+        $type = $body['type'] ?? '';
+        if (!in_array($type, ['bug', 'wish', 'feedback'], true)) jsonError('Ungültiger Typ.');
+        $msg = trim($body['message'] ?? '');
+        if (mb_strlen($msg) < 3)    jsonError('Beschreibung zu kurz (min. 3 Zeichen).');
+        if (mb_strlen($msg) > 1000) jsonError('Beschreibung zu lang (max. 1000 Zeichen).');
+        $game = currentGame();
+        $id = Database::execute(
+            "INSERT INTO messages (game_id, player_id, type, status, message) VALUES (?, ?, ?, 'open', ?)",
+            [$game['id'] ?? null, $player['id'], $type, $msg]
+        );
+        jsonOk('Danke — dein Eintrag wurde gespeichert!', ['id' => $id]);
+
+    case 'get_my_feedback':
+        // Eigene Feedback-Einträge für app/feedback.php (inkl. Status + Admin-Antwort).
+        $rows = Database::query(
+            "SELECT id, type, status, message, reply, reply_voice_path, created_at, replied_at
+             FROM messages WHERE player_id = ? AND type != 'question'
+             ORDER BY created_at DESC",
+            [$player['id']]
+        );
+        // Beantwortete Feedback-Einträge gelten mit dem Ansehen als gelesen
+        Database::execute(
+            "UPDATE messages SET read_by_player = 1
+             WHERE player_id = ? AND type != 'question' AND reply IS NOT NULL AND read_by_player = 0",
+            [$player['id']]
+        );
+        jsonResponse(['entries' => $rows]);
+
+    case 'set_status':
+        // Admin setzt den Bearbeitungsstatus eines Feedback-Eintrags.
+        if (!$player['is_admin']) jsonError('Kein Zugriff.', 403);
+        $mid    = (int)($body['id'] ?? 0);
+        $status = $body['status'] ?? '';
+        if (!$mid) jsonError('Ungültige ID.');
+        if (!isset(feedbackStatusMeta()[$status])) jsonError('Ungültiger Status.');
+        $row = Database::queryOne("SELECT id, type FROM messages WHERE id = ?", [$mid]);
+        if (!$row)                      jsonError('Eintrag nicht gefunden.', 404);
+        if ($row['type'] === 'question') jsonError('Status gibt es nur für Feedback-Einträge.');
+        Database::execute("UPDATE messages SET status = ? WHERE id = ?", [$status, $mid]);
+        require_once TEMPLATE_PATH . '/messages_blocks.php';
+        jsonOk('Status: ' . feedbackStatusMeta()[$status]['label'],
+            ['status' => $status, 'html' => render_message_row(fetchMessageRow($mid))]);
+
+    case 'feedback_token_generate':
+        // Admin (neu) generiert das Token für die externe Feedback-API (api/feedback.php).
+        if (!$player['is_admin']) jsonError('Kein Zugriff.', 403);
+        $token = bin2hex(random_bytes(32));
+        Database::execute(
+            "INSERT INTO settings (`key`, value, type, label, description, sort_order)
+             VALUES ('feedback_api_token', ?, 'string', 'Feedback-API-Token',
+                     'Zugriffs-Token für die externe Feedback-API (leer = API deaktiviert).', 998)
+             ON DUPLICATE KEY UPDATE value = VALUES(value)",
+            [$token]
+        );
+        logEvent('NOTICE', 'Feedback-API-Token neu generiert (Admin: ' . $player['username'] . ').');
+        jsonOk('Token generiert — jetzt kopieren, er wird nur einmal angezeigt.', ['token' => $token]);
+
+    case 'feedback_token_clear':
+        // Admin deaktiviert die externe Feedback-API (Token leeren).
+        if (!$player['is_admin']) jsonError('Kein Zugriff.', 403);
+        Database::execute("UPDATE settings SET value = '' WHERE `key` = 'feedback_api_token'");
+        logEvent('NOTICE', 'Feedback-API-Token entfernt — externe API deaktiviert (Admin: ' . $player['username'] . ').');
+        jsonOk('Token entfernt — die Feedback-API ist deaktiviert.');
+
     case 'send_voice':
         // Multipart-POST: action + Audio-Blob im Feld "voice"
         if (!VOICE_MESSAGES) jsonError('Sprachnachrichten sind deaktiviert.');
@@ -161,7 +228,7 @@ switch ($action) {
 
     case 'get_my':
         $msgs = Database::query(
-            "SELECT id, message, voice_path, reply, reply_voice_path, created_at, replied_at, read_by_player
+            "SELECT id, type, message, voice_path, reply, reply_voice_path, created_at, replied_at, read_by_player
              FROM messages WHERE player_id = ? ORDER BY created_at DESC",
             [$player['id']]
         );
@@ -251,8 +318,9 @@ switch ($action) {
         if (!$player['is_admin']) jsonError('Kein Zugriff.', 403);
         $mid = (int)($body['id'] ?? 0);
         if (!$mid) jsonError('Ungültige ID.');
-        $row = Database::queryOne("SELECT id, published, reply, voice_path, faq_question FROM messages WHERE id = ?", [$mid]);
+        $row = Database::queryOne("SELECT id, type, published, reply, voice_path, faq_question FROM messages WHERE id = ?", [$mid]);
         if (!$row)          jsonError('Nachricht nicht gefunden.', 404);
+        if ($row['type'] !== 'question') jsonError('Nur Spielerfragen können im FAQ veröffentlicht werden.');
         if (!$row['reply']) jsonError('Nur beantwortete Nachrichten können veröffentlicht werden.');
         // Die Audiodatei selbst wird nie öffentlich — bei Sprachnachrichten muss vorher
         // über "FAQ-Text" eine vom Spielleiter geschriebene, anonymisierte Textfassung
@@ -284,21 +352,25 @@ switch ($action) {
         require_once TEMPLATE_PATH . '/messages_blocks.php';
         $afterId = (int)($body['after_id'] ?? 0);
         $newMsgs = Database::query(
-            "SELECT m.id, m.message, m.faq_question, m.voice_path, m.reply, m.created_at, m.replied_at, m.read_by_player, m.published,
+            "SELECT m.id, m.type, m.status, m.message, m.faq_question, m.voice_path, m.reply, m.created_at, m.replied_at, m.read_by_player, m.published,
                     p.display_name, p.username
              FROM messages m JOIN players p ON p.id = m.player_id
              WHERE m.id > ? ORDER BY m.created_at ASC",
             [$afterId]
         );
-        $pendingRow = Database::queryOne("SELECT COUNT(*) AS cnt FROM messages WHERE reply IS NULL");
+        // "Unbeantwortet" zählt nur echte Spielerfragen — Feedback-Einträge laufen
+        // über ihren eigenen Status (feedback_open) und brauchen keine Antwortpflicht.
+        $pendingRow  = Database::queryOne("SELECT COUNT(*) AS cnt FROM messages WHERE reply IS NULL AND type = 'question'");
+        $feedbackRow = Database::queryOne("SELECT COUNT(*) AS cnt FROM messages WHERE type != 'question' AND status = 'open'");
         jsonResponse([
-            'rows'    => array_map(fn($m) => ['id' => (int)$m['id'], 'html' => render_message_row($m)], $newMsgs),
-            'pending' => (int)($pendingRow['cnt'] ?? 0),
+            'rows'          => array_map(fn($m) => ['id' => (int)$m['id'], 'html' => render_message_row($m)], $newMsgs),
+            'pending'       => (int)($pendingRow['cnt'] ?? 0),
+            'feedback_open' => (int)($feedbackRow['cnt'] ?? 0),
         ]);
 
     case 'pending_count':
         if (!$player['is_admin']) jsonError('Kein Zugriff.', 403);
-        $row = Database::queryOne("SELECT COUNT(*) AS cnt FROM messages WHERE reply IS NULL");
+        $row = Database::queryOne("SELECT COUNT(*) AS cnt FROM messages WHERE reply IS NULL AND type = 'question'");
         jsonResponse(['pending' => (int)($row['cnt'] ?? 0)]);
 
     case 'delete':
