@@ -573,12 +573,18 @@ function feedbackTypeMeta(): array {
     return $meta;
 }
 
-/** Bearbeitungsstatus für Feedback-Einträge (bei Typ 'question' ungenutzt). */
+/**
+ * Bearbeitungsstatus für Feedback-Einträge (bei Typ 'question' ungenutzt).
+ * Der Spieler sieht den Status live auf seiner Feedback-Seite — daran erkennt
+ * er, ob sein Eintrag angenommen/abgelehnt wurde und wie weit er ist.
+ */
 function feedbackStatusMeta(): array {
     static $meta = [
         'open'        => ['icon' => '🔴', 'label' => 'Offen'],
+        'accepted'    => ['icon' => '👍', 'label' => 'Angenommen'],
         'in_progress' => ['icon' => '🟡', 'label' => 'In Arbeit'],
         'done'        => ['icon' => '🟢', 'label' => 'Erledigt'],
+        'rejected'    => ['icon' => '🚫', 'label' => 'Abgelehnt'],
     ];
     return $meta;
 }

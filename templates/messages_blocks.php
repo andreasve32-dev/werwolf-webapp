@@ -64,6 +64,10 @@ function render_message_row(array $msg): string {
             <option value="<?= e($sKey) ?>" <?= $sKey === $status ? 'selected' : '' ?>><?= $sMeta['icon'] ?> <?= e($sMeta['label']) ?></option>
             <?php endforeach; ?>
           </select>
+          <?php if (!empty($msg['voice_path']) && VOICE_TRANSCRIPTION): ?>
+          <button class="btn btn--ghost btn--sm" title="Sprachnachricht automatisch transkribieren (OpenAI)"
+                  onclick="transcribeVoice(<?= (int)$msg['id'] ?>, this)">🎙️→📝 Transkribieren</button>
+          <?php endif; ?>
           <?php elseif (!$isNew): ?>
           <button class="btn btn--ghost btn--sm" id="pub-btn-<?= (int)$msg['id'] ?>"
                   title="<?= $msg['published'] ? 'Aus FAQ entfernen' : (!empty($msg['voice_path']) && empty($msg['faq_question']) ? 'Vor Veröffentlichung erst FAQ-Text hinterlegen' : 'Als FAQ veröffentlichen') ?>"
@@ -103,6 +107,11 @@ function render_message_row(array $msg): string {
               <span class="text-dim text-sm" style="display:none">⚠️ Aufnahme kann nicht abgespielt werden (Datei beschädigt oder Format nicht unterstützt).</span>
             <?php else: ?>
               <span class="text-dim text-sm">⚠️ Aufnahme-Datei fehlt auf dem Server.</span>
+            <?php endif; ?>
+            <?php // Bei Sprach-Feedback: Transkript direkt unter dem Player zeigen
+                  // (faq_question dient hier als Transkript-Feld — FAQ gibt es für Feedback nicht) ?>
+            <?php if ($isFeedback && !empty($msg['faq_question'])): ?>
+              <p class="text-dim text-sm" style="margin:.5rem 0 0;line-height:1.5">📝 <?= e($msg['faq_question']) ?></p>
             <?php endif; ?>
           <?php else: ?>
             <?= e($msg['message']) ?>

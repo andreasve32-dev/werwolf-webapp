@@ -402,10 +402,16 @@ require TEMPLATE_PATH . '/base.php';
       andere Spieler sehen es nicht.
     </p>
     <p>
-      Unter <strong>„Deine Einträge"</strong> siehst du jederzeit den
-      <strong>Bearbeitungsstatus</strong> (🔴 Offen → 🟡 In Arbeit → 🟢 Erledigt) und
-      eventuelle Antworten des Spielleiters — Antworten erscheinen zusätzlich in deinem
-      normalen Posteingang.
+      Statt zu tippen kannst du dein Anliegen auch als <strong>🎙️ Sprachnachricht</strong>
+      einsprechen (max. 1 Minute, sofern der Spielleiter Sprachnachrichten aktiviert hat).
+    </p>
+    <p>
+      Unter <strong>„Deine Einträge"</strong> funktioniert alles wie ein kleines
+      <strong>Ticketsystem</strong>: Du siehst, ob dein Eintrag schon
+      <strong>👁 gelesen</strong> wurde (bzw. 🕐 noch ungelesen ist), den
+      <strong>Bearbeitungsstatus</strong> (🔴 Offen → 👍 Angenommen → 🟡 In Arbeit →
+      🟢 Erledigt, oder 🚫 Abgelehnt) und eventuelle Antworten des Spielleiters —
+      Antworten erscheinen zusätzlich in deinem normalen Posteingang.
     </p>
     <div class="tip-box" style="margin-top:.75rem">
       <strong>🐛 Bug melden — so hilfst du am meisten:</strong> Schreibe dazu, <em>was</em> du

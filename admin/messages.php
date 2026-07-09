@@ -12,6 +12,10 @@ $messages = Database::query(
      ORDER BY (CASE WHEN m.type = 'question' THEN (m.reply IS NULL) ELSE (m.status = 'open') END) DESC,
               m.created_at DESC"
 );
+
+// Gelesen-Marker: Mit dem Öffnen dieser Seite hat der Admin alle Einträge gesehen —
+// der Spieler sieht dadurch auf seiner Feedback-Seite „👁 Gelesen".
+Database::execute("UPDATE messages SET read_by_admin = 1 WHERE read_by_admin = 0");
 $pending      = count(array_filter($messages, fn($m) => ($m['type'] ?? 'question') === 'question' && $m['reply'] === null));
 $feedbackOpen = count(array_filter($messages, fn($m) => ($m['type'] ?? 'question') !== 'question' && $m['status'] === 'open'));
 $maxMsgId = $messages ? max(array_column($messages, 'id')) : 0;

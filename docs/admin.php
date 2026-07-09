@@ -114,7 +114,10 @@ require TEMPLATE_PATH . '/base.php';
       Unter <strong>Admin → Rollen</strong> stellst du ein, welche Rollen ins Spiel kommen
       und wie viele Exemplare davon. Die Anzahl der aktiven Rollen muss zur Spieleranzahl passen.
       Der <em>Bürger</em> ist die Auffüll-Rolle — er wird automatisch vergeben, bis alle Plätze
-      besetzt sind. Pro Rolle gibt es Eigenschafts-Häkchen (Flags), die das Spielverhalten steuern:
+      besetzt sind. Pro Rolle gibt es Eigenschafts-Flags, die das Spielverhalten steuern —
+      im Formular als <strong>waagerechte Tabs</strong>: Tab antippen öffnet Erklärung und
+      Schalter des Flags (nochmal antippen klappt wieder zu), gesetzte Flags zeigen ein ✓ im Tab.
+      Übersicht aller Flags:
     </p>
     <table style="width:100%;border-collapse:collapse;font-size:.87rem;margin-top:.5rem">
       <tr style="border-bottom:1px solid var(--border)">
@@ -496,11 +499,17 @@ require TEMPLATE_PATH . '/base.php';
     </p>
     <p>
       Jeder Feedback-Eintrag hat einen <strong>Bearbeitungsstatus</strong>, den du direkt
-      in der Kopfzeile umstellst: <strong>🔴 Offen → 🟡 In Arbeit → 🟢 Erledigt</strong>.
-      Der Spieler sieht den Status live auf seiner Feedback-Seite. Antworten kannst du
+      in der Kopfzeile umstellst: <strong>🔴 Offen → 👍 Angenommen → 🟡 In Arbeit →
+      🟢 Erledigt</strong>, alternativ <strong>🚫 Abgelehnt</strong>. Der Spieler sieht den
+      Status live auf seiner Feedback-Seite — wie in einem kleinen Ticketsystem. Sobald du
+      die Nachrichten-Verwaltung öffnest, gelten alle Einträge automatisch als
+      <strong>👁 gelesen</strong> (auch das sieht der Spieler). Antworten kannst du
       wie bei Fragen (Text oder Sprachnachricht) — bei Feedback ist das optional, der
       Status genügt. Feedback-Einträge lassen sich <strong>nicht</strong> im FAQ
-      veröffentlichen (das gibt es nur für Spielerfragen).
+      veröffentlichen (das gibt es nur für Spielerfragen). Spieler können Feedback auch
+      als <strong>🎙️ Sprachnachricht</strong> einsprechen — mit aktivierter Transkription
+      wandelst du sie per <em>🎙️→📝 Transkribieren</em> in Text um (erscheint unter dem
+      Audio-Player und in der Feedback-API als <code>transcript</code>).
     </p>
     <div class="tip-box" style="margin-top:.75rem">
       <strong>🔌 Feedback-API (für KI-Assistenten):</strong> Unten in der

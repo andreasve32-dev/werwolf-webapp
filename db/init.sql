@@ -145,9 +145,11 @@ ALTER TABLE messages ADD COLUMN IF NOT EXISTS faq_question TEXT NULL AFTER messa
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS voice_path VARCHAR(255) NULL AFTER faq_question;
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS reply_voice_path VARCHAR(255) NULL AFTER reply;
 -- Feedback-System (v0.34): question = Spielerfrage, bug/wish/feedback = Feedback-Einträge.
--- status gilt nur für Feedback-Typen (open/in_progress/done).
+-- status gilt nur für Feedback-Typen (open/accepted/in_progress/done/rejected).
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS type   VARCHAR(16) NOT NULL DEFAULT 'question' AFTER player_id;
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS status VARCHAR(16) NOT NULL DEFAULT 'open' AFTER type;
+-- v0.36: Gelesen-Marker — wird gesetzt, sobald der Admin die Nachrichten-Verwaltung öffnet
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS read_by_admin TINYINT(1) NOT NULL DEFAULT 0 AFTER read_by_player;
 
 CREATE TABLE IF NOT EXISTS slogans (
   id         INT AUTO_INCREMENT PRIMARY KEY,

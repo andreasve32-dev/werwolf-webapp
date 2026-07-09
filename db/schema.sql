@@ -173,6 +173,7 @@ CREATE TABLE messages (
   created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   replied_at     TIMESTAMP NULL,
   read_by_player TINYINT(1) NOT NULL DEFAULT 0,
+  read_by_admin  TINYINT(1) NOT NULL DEFAULT 0,
   published      TINYINT(1) NOT NULL DEFAULT 0,
   FOREIGN KEY (game_id)   REFERENCES games(id)   ON DELETE SET NULL,
   FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE

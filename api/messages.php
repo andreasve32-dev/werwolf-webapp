@@ -109,10 +109,38 @@ switch ($action) {
         );
         jsonOk('Danke — dein Eintrag wurde gespeichert!', ['id' => $id]);
 
+    case 'send_feedback_voice':
+        // Feedback als Sprachnachricht (Multipart-POST: action + type + Audio im Feld "voice") —
+        // gleiche Validierung wie send_voice, nur mit Feedback-Typ + Status.
+        if (!VOICE_MESSAGES) jsonError('Sprachnachrichten sind deaktiviert.');
+        $type = $_POST['type'] ?? '';
+        if (!in_array($type, ['bug', 'wish', 'feedback'], true)) jsonError('Ungültiger Typ.');
+        if (empty($_FILES['voice']) || $_FILES['voice']['error'] !== UPLOAD_ERR_OK) {
+            jsonError('Keine Aufnahme empfangen — bitte erneut versuchen.');
+        }
+        $file = $_FILES['voice'];
+        if ($file['size'] > VOICE_MAX_BYTES) jsonError('Aufnahme zu groß (max. 3 MB).');
+        if ($file['size'] < 200)             jsonError('Aufnahme ist leer.');
+        $mime = detectMimeType($file['tmp_name']);
+        if (!isset($voiceMimeToExt[$mime])) jsonError('Ungültiges Audioformat (' . $mime . ').');
+        $ext = $voiceMimeToExt[$mime];
+        $dirAbs = ensureUploadDir('uploads/voice');
+        if (!$dirAbs) jsonError('Upload-Verzeichnis konnte nicht angelegt werden.');
+        $name = 'fb_' . date('Ymd_His') . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        if (!move_uploaded_file($file['tmp_name'], $dirAbs . '/' . $name)) {
+            jsonError('Speichern der Aufnahme fehlgeschlagen.');
+        }
+        $game = currentGame();
+        $id = Database::execute(
+            "INSERT INTO messages (game_id, player_id, type, status, message, voice_path) VALUES (?, ?, ?, 'open', ?, ?)",
+            [$game['id'] ?? null, $player['id'], $type, '🎙️ Sprachnachricht', 'uploads/voice/' . $name]
+        );
+        jsonOk('Danke — deine Sprachnachricht wurde gespeichert!', ['id' => $id]);
+
     case 'get_my_feedback':
         // Eigene Feedback-Einträge für app/feedback.php (inkl. Status + Admin-Antwort).
         $rows = Database::query(
-            "SELECT id, type, status, message, reply, reply_voice_path, created_at, replied_at
+            "SELECT id, type, status, message, voice_path, reply, reply_voice_path, created_at, replied_at, read_by_admin
              FROM messages WHERE player_id = ? AND type != 'question'
              ORDER BY created_at DESC",
             [$player['id']]
@@ -358,6 +386,13 @@ switch ($action) {
              WHERE m.id > ? ORDER BY m.created_at ASC",
             [$afterId]
         );
+        // Live nachgeladene Einträge gelten als vom Admin gesehen (er hat die Seite offen)
+        if ($newMsgs) {
+            $ids = array_map(fn($m) => (int)$m['id'], $newMsgs);
+            Database::execute(
+                "UPDATE messages SET read_by_admin = 1 WHERE read_by_admin = 0 AND id IN (" . implode(',', $ids) . ")"
+            );
+        }
         // "Unbeantwortet" zählt nur echte Spielerfragen — Feedback-Einträge laufen
         // über ihren eigenen Status (feedback_open) und brauchen keine Antwortpflicht.
         $pendingRow  = Database::queryOne("SELECT COUNT(*) AS cnt FROM messages WHERE reply IS NULL AND type = 'question'");

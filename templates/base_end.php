@@ -22,6 +22,10 @@
     <a href="<?= APP_URL ?>/app/datenschutz.php">Datenschutz</a>
     <span class="legal-footer__sep">·</span>
     <a href="<?= APP_URL ?>/app/nutzungsbedingungen.php">Nutzungsbedingungen</a>
+    <?php if (Auth::check()): ?>
+    <span class="legal-footer__sep">·</span>
+    <a href="<?= APP_URL ?>/app/feedback.php">📣 Feedback</a>
+    <?php endif; ?>
   </div>
   <div class="legal-footer__copy">KI-generierte Charakterbilder, inspiriert von FINAL FANTASY XIV © SQUARE ENIX</div>
 </footer>

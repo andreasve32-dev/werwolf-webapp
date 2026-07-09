@@ -89,70 +89,82 @@ $v       = fn(string $key, $default = '') => $isEdit ? ($editRole[$key] ?? $defa
 
 </div>
 
-<div class="grid-2" style="margin-bottom:.5rem">
-  <div class="form-group flex gap-sm" style="align-items:center">
-    <input type="checkbox" id="<?= $prefix ?>active" <?= $v('active', 1) ? 'checked' : '' ?>
-           style="width:18px;height:18px;accent-color:var(--accent)">
-    <label class="form-label" for="<?= $prefix ?>active" style="margin:0">Aktiv</label>
+<?php
+// ── Rollen-Flags als waagerechte Tabs ─────────────────────────
+// Ein Tab pro Flag: Klick öffnet den Tab-Inhalt mit Checkbox + ausführlicher
+// Erklärung direkt beim Flag (nochmal klicken klappt wieder zu). Gesetzte
+// Flags zeigen ein ✓ im Tab, so bleibt der Zustand ohne Durchklicken sichtbar.
+// NEUE FLAGS: hier einen Array-Eintrag ergänzen (Key = Spaltenname, siehe
+// Checkliste in CLAUDE.md) — Tab, Panel und ✓-Anzeige entstehen automatisch.
+// collectFormData() in admin/roles.php liest weiterhin {prefix}{key}.
+$roleFlags = [
+    'active' => [
+        'icon' => '✅', 'label' => 'Aktiv', 'accent' => 'var(--accent)', 'default' => 1,
+        'desc' => 'Nur aktive Rollen werden bei der Rollenverteilung berücksichtigt. Deaktivierte Rollen bleiben gespeichert, kommen aber in kein Spiel.',
+    ],
+    'fill' => [
+        'icon' => '👥', 'label' => 'Auffüll-Rolle', 'accent' => 'var(--accent)', 'default' => 0,
+        'desc' => 'Spieler ohne Sonderrolle bekommen diese Rolle (z.B. Bürger). Das Feld „Anzahl im Spiel" wird dabei ignoriert — aufgefüllt wird, so viele Spieler übrig sind.',
+        'onchange' => "onFillToggle('{$prefix}', this.checked);",
+    ],
+    'sichtbar' => [
+        'icon' => '🤝', 'label' => 'Sichtbar untereinander', 'accent' => 'var(--accent)', 'default' => 0,
+        'desc' => 'Spieler mit dieser Rolle erkennen sich beim Spielstart gegenseitig in der Spielerliste (z.B. Mörder).',
+    ],
+    'killer_sichtbar' => [
+        'icon' => '🔪👁', 'label' => 'Mit Killern sichtbar', 'accent' => '#f87171', 'default' => 0,
+        'desc' => 'Gegenseitig sichtbar mit allen Killer-Rollen (z.B. Dodo): Diese Rolle sieht alle Killer — und die Killer sehen sie.',
+    ],
+    'befragen' => [
+        'icon' => '⚰️', 'label' => 'Darf Tote befragen', 'accent' => 'var(--accent)', 'default' => 0,
+        'desc' => 'Diese Rolle sieht Ort &amp; Zeit der Todesfälle in der Todesliste (z.B. Nekromant).',
+    ],
+    'auto_eintrag' => [
+        'icon' => '⭐', 'label' => 'Star', 'accent' => 'var(--accent)', 'default' => 0,
+        'desc' => 'Ort &amp; Zeit werden beim Sterben sofort automatisch in die Todesliste eingetragen — der Tod dieses Spielers ist für alle sichtbar dokumentiert.',
+    ],
+    'is_killer' => [
+        'icon' => '🔪', 'label' => 'Killer-Team', 'accent' => '#f87171', 'default' => 0,
+        'desc' => 'Zählt zur Killer-Seite. Die Killer gewinnen, wenn sie die Bürger zahlenmäßig erreichen — Grundlage für Siegprüfung und Kill-Hinweise.',
+    ],
+    'linked_death' => [
+        'icon' => '💔', 'label' => 'Gemeinsamer Tod', 'accent' => 'var(--accent)', 'default' => 0,
+        'desc' => 'Stirbt ein Spieler dieser Rolle, sterben automatisch alle anderen lebenden Spieler derselben Rolle mit („Vor Kummer gestorben") — z.B. Das Paar. Der Ort bleibt bis zur Befragung verborgen wie bei jedem anderen Tod.',
+    ],
+    'rollensicht' => [
+        'icon' => '🔮', 'label' => 'Rollensicht', 'accent' => 'var(--accent)', 'default' => 0,
+        'desc' => 'Der Fähigkeit-Button fragt nach einem Untersuchungs-Ziel; dessen Rolle bleibt für diesen Spieler dauerhaft in der Spielerliste sichtbar (z.B. Hellseherin). Braucht einen Cooldown-Wert &gt; 0 — der Button erscheint nur mit Cooldown.',
+    ],
+    'kill_hinweis' => [
+        'icon' => '🕵️', 'label' => 'Kill-Hinweise', 'accent' => 'var(--accent)', 'default' => 0,
+        'desc' => 'Vollautomatisch: Immer wenn so viele Morde geschehen sind, wie es Killer gibt, erfährt der Spieler einen zufälligen Nicht-Killer („✅ Kein Killer" in der Spielerliste, mit Push) — z.B. Detektiv.',
+    ],
+];
+?>
+<div class="form-group">
+  <label class="form-label">Rollen-Flags <small class="text-dim text-xs">(Tab antippen für Erklärung &amp; Schalter — ✓ = gesetzt)</small></label>
+  <div class="flex gap-xs" style="flex-wrap:wrap" id="<?= $prefix ?>flag-tabs">
+    <?php foreach ($roleFlags as $key => $f): $checked = (bool)$v($key, $f['default']); ?>
+    <button type="button" class="btn btn--ghost btn--sm" id="<?= $prefix ?>flagtab-<?= $key ?>"
+            onclick="flagTabToggle('<?= $prefix ?>', '<?= $key ?>')">
+      <?= $f['icon'] ?> <?= e($f['label']) ?><span id="<?= $prefix ?>flagmark-<?= $key ?>"
+            style="color:#4ade80;font-weight:700;<?= $checked ? '' : 'display:none' ?>"> ✓</span>
+    </button>
+    <?php endforeach; ?>
   </div>
-  <div class="form-group flex gap-sm" style="align-items:center">
-    <input type="checkbox" id="<?= $prefix ?>fill" <?= $v('fill', 0) ? 'checked' : '' ?>
-           style="width:18px;height:18px;accent-color:var(--accent)"
-           onchange="onFillToggle('<?= $prefix ?>', this.checked)">
-    <label class="form-label" for="<?= $prefix ?>fill" style="margin:0">Auffüll-Rolle</label>
+  <?php foreach ($roleFlags as $key => $f): $checked = (bool)$v($key, $f['default']); ?>
+  <div id="<?= $prefix ?>flagpanel-<?= $key ?>" data-flag-panel
+       style="display:none;margin-top:.5rem;background:var(--panel-bg);border:1px solid var(--border);
+              border-radius:8px;padding:.7rem .85rem">
+    <div class="flex gap-sm" style="align-items:center">
+      <input type="checkbox" id="<?= $prefix ?><?= $key ?>" <?= $checked ? 'checked' : '' ?>
+             style="width:18px;height:18px;flex-shrink:0;accent-color:<?= $f['accent'] ?>"
+             onchange="<?= $f['onchange'] ?? '' ?>flagMarkUpdate('<?= $prefix ?>', '<?= $key ?>', this.checked)">
+      <label class="form-label" for="<?= $prefix ?><?= $key ?>" style="margin:0;cursor:pointer">
+        <?= $f['icon'] ?> <?= e($f['label']) ?>
+      </label>
+    </div>
+    <p class="text-dim text-xs" style="margin:.45rem 0 0;line-height:1.55"><?= $f['desc'] ?></p>
   </div>
-  <div class="form-group flex gap-sm" style="align-items:center">
-    <input type="checkbox" id="<?= $prefix ?>sichtbar" <?= $v('sichtbar', 0) ? 'checked' : '' ?>
-           style="width:18px;height:18px;accent-color:var(--accent)">
-    <label class="form-label" for="<?= $prefix ?>sichtbar" style="margin:0">Sichtbar untereinander</label>
-  </div>
-  <div class="form-group flex gap-sm" style="align-items:center">
-    <input type="checkbox" id="<?= $prefix ?>killer_sichtbar" <?= $v('killer_sichtbar', 0) ? 'checked' : '' ?>
-           style="width:18px;height:18px;accent-color:#f87171">
-    <label class="form-label" for="<?= $prefix ?>killer_sichtbar" style="margin:0">🔪👁 Gegenseitig sichtbar mit Killern (z.B. Dodo)</label>
-  </div>
-  <div class="form-group flex gap-sm" style="align-items:center">
-    <input type="checkbox" id="<?= $prefix ?>befragen" <?= $v('befragen', 0) ? 'checked' : '' ?>
-           style="width:18px;height:18px;accent-color:var(--accent)">
-    <label class="form-label" for="<?= $prefix ?>befragen" style="margin:0">Darf Tote befragen</label>
-  </div>
-  <div class="form-group flex gap-sm" style="align-items:center">
-    <input type="checkbox" id="<?= $prefix ?>auto_eintrag" <?= $v('auto_eintrag', 0) ? 'checked' : '' ?>
-           style="width:18px;height:18px;accent-color:var(--accent)">
-    <label class="form-label" for="<?= $prefix ?>auto_eintrag" style="margin:0">⭐ Star — Ort &amp; Zeit automatisch eintragen</label>
-  </div>
-  <div class="form-group flex gap-sm" style="align-items:center">
-    <input type="checkbox" id="<?= $prefix ?>is_killer" <?= $v('is_killer', 0) ? 'checked' : '' ?>
-           style="width:18px;height:18px;accent-color:#f87171">
-    <label class="form-label" for="<?= $prefix ?>is_killer" style="margin:0">🔪 Killer-Team</label>
-  </div>
-  <div class="form-group flex gap-sm" style="align-items:center">
-    <input type="checkbox" id="<?= $prefix ?>linked_death" <?= $v('linked_death', 0) ? 'checked' : '' ?>
-           style="width:18px;height:18px;accent-color:var(--accent)">
-    <label class="form-label" for="<?= $prefix ?>linked_death" style="margin:0">💔 Gemeinsamer Tod (z.B. Das Paar)</label>
-  </div>
-  <div class="form-group flex gap-sm" style="align-items:center">
-    <input type="checkbox" id="<?= $prefix ?>rollensicht" <?= $v('rollensicht', 0) ? 'checked' : '' ?>
-           style="width:18px;height:18px;accent-color:var(--accent)">
-    <label class="form-label" for="<?= $prefix ?>rollensicht" style="margin:0">🔮 Rollensicht — untersuchte Spieler dauerhaft sehen (z.B. Hellseherin)</label>
-  </div>
-  <div class="form-group flex gap-sm" style="align-items:center">
-    <input type="checkbox" id="<?= $prefix ?>kill_hinweis" <?= $v('kill_hinweis', 0) ? 'checked' : '' ?>
-           style="width:18px;height:18px;accent-color:var(--accent)">
-    <label class="form-label" for="<?= $prefix ?>kill_hinweis" style="margin:0">🕵️ Kill-Hinweise — erfährt automatisch Nicht-Killer (z.B. Detektiv)</label>
-  </div>
+  <?php endforeach; ?>
 </div>
-<p class="text-dim text-xs mt-1" style="margin-top:-.5rem">
-  <strong>Auffüll-Rolle</strong>: Spieler ohne Sonderrolle bekommen diese Rolle (z.B. Bürger). &nbsp;|&nbsp;
-  <strong>Sichtbar untereinander</strong>: Spieler mit dieser Rolle erkennen sich beim Start gegenseitig (z.B. Mörder). &nbsp;|&nbsp;
-  <strong>Darf Tote befragen</strong>: Diese Rolle sieht Ort &amp; Zeit in der Todesliste. &nbsp;|&nbsp;
-  <strong>Star</strong>: Ort &amp; Zeit werden beim Sterben sofort automatisch eingetragen. &nbsp;|&nbsp;
-  <strong>Killer-Team</strong>: Zählt zur Killer-Seite — Killer gewinnen wenn sie die Bürger zahlenmäßig erreichen. &nbsp;|&nbsp;
-  <strong>Gemeinsamer Tod</strong>: Stirbt ein Spieler dieser Rolle, sterben automatisch alle anderen lebenden
-  Spieler derselben Rolle mit ("Vor Kummer gestorben") — Ort bleibt bis zur Befragung verborgen wie bei jedem anderen Tod. &nbsp;|&nbsp;
-  <strong>Rollensicht</strong>: Der Fähigkeit-Button fragt nach dem Untersuchungs-Ziel; dessen Rolle bleibt
-  für diesen Spieler dauerhaft in der Spielerliste sichtbar. Braucht einen Cooldown-Wert &gt; 0 (der Button
-  erscheint nur mit Cooldown). &nbsp;|&nbsp;
-  <strong>Kill-Hinweise</strong>: Vollautomatisch — immer wenn so viele Morde geschehen sind, wie es Killer
-  gibt, erfährt der Spieler einen zufälligen Nicht-Killer („✅ Kein Killer" in der Spielerliste, mit Push).
-</p>

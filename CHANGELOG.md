@@ -5,6 +5,53 @@ lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
 
 ---
 
+## [v0.36] — 2026-07-09
+
+### Hinzugefügt
+- **🎫 Feedback als Mini-Ticketsystem:** Die Feedback-Seite (`app/feedback.php`) zeigt bei
+  jedem eigenen Eintrag jetzt zusätzlich, **ob der Spielleiter ihn schon gesehen hat**
+  (👁 Gelesen / 🕐 Noch ungelesen — nur solange der Status „Offen" ist) und einen
+  erweiterten Bearbeitungsstatus: 🔴 Offen → **👍 Angenommen** → 🟡 In Arbeit →
+  🟢 Erledigt, alternativ **🚫 Abgelehnt**. Öffnet der Admin die Nachrichten-Verwaltung
+  (`admin/messages.php`), gelten alle Einträge automatisch als gelesen — auch beim
+  Live-Nachladen neuer Einträge während die Seite offen ist.
+- **🎙️ Feedback per Sprachnachricht:** Wie bei Spielerfragen kann jetzt auch ein
+  Feedback-Eintrag eingesprochen werden (Umschalter Text/Sprache, max. 1 Minute).
+  Neue API-Aktion `send_feedback_voice`. In der Admin-Verwaltung steht bei
+  Sprach-Feedback ebenfalls der Button „🎙️→📝 Transkribieren" zur Verfügung; das
+  Transkript erscheint direkt unter dem Audio-Player und wird über die externe
+  Feedback-API als Feld `transcript` mit ausgeliefert (macht Sprach-Feedback für
+  externe Auswertung nutzbar, ohne die Audiodatei selbst preiszugeben).
+
+### DB-Änderungen
+- Neue Spalte **`messages.read_by_admin`**:
+  ```sql
+  ALTER TABLE messages ADD COLUMN IF NOT EXISTS read_by_admin TINYINT(1) NOT NULL DEFAULT 0 AFTER read_by_player;
+  ```
+- `app_version` → `0.36`.
+
+---
+
+## [v0.35] — 2026-07-09
+
+### Geändert
+- **🏳️ Rollen-Flags als waagerechte Tabs** (`templates/role_form_fields.php`): Die bisher
+  10 Checkboxen im Raster + ein langer Sammel-Erklärtext darunter sind jetzt **Tabs** —
+  ein Tab pro Flag. Tab antippen öffnet ein Panel mit Schalter und der **Erklärung direkt
+  beim jeweiligen Flag** (nochmal antippen klappt zu, pro Formular ist max. ein Panel offen).
+  Gesetzte Flags zeigen dauerhaft ein **✓ im Tab**, der Zustand bleibt also ohne
+  Durchklicken sichtbar. Neue Flags brauchen nur noch einen Eintrag im `$roleFlags`-Array
+  (Tab, Panel und ✓ entstehen automatisch). Feld-IDs unverändert — `collectFormData()`
+  und die Rollen-Flag-Checkliste (CLAUDE.md) gelten weiter.
+- **📣 Feedback-Link in der Fußzeile**: neben Impressum/Datenschutz/Nutzungsbedingungen
+  (nur für eingeloggte Nutzer sichtbar) — die Feedback-Seite ist damit von jeder Seite
+  aus erreichbar, nicht nur über das Optionen-Sheet.
+
+### DB-Änderungen
+- Nur `app_version` → `0.35` (Setting). Keine Schema-Änderungen.
+
+---
+
 ## [v0.34] — 2026-07-09
 
 ### Hinzugefügt

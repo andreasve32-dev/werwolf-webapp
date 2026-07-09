@@ -128,6 +128,31 @@ function onFillToggle(prefix, checked) {
   if(amountInput) { amountInput.disabled = checked; amountInput.style.opacity = checked ? '.4' : '1'; }
 }
 
+// ── Rollen-Flags als Tabs (templates/role_form_fields.php) ────
+// Tab öffnet das Erklär-Panel des Flags (nochmal klicken = zuklappen),
+// pro Formular ist maximal ein Panel offen (Tabs sind prefix-scoped).
+function flagTabToggle(prefix, key) {
+  const panel  = document.getElementById(prefix+'flagpanel-'+key);
+  const btn    = document.getElementById(prefix+'flagtab-'+key);
+  if (!panel || !btn) return;
+  const isOpen = panel.style.display !== 'none';
+  // Alle Panels + Tab-Hervorhebungen dieses Formulars zurücksetzen
+  document.querySelectorAll('[id^="'+prefix+'flagpanel-"]').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('#'+CSS.escape(prefix+'flag-tabs')+' button').forEach(b => {
+    b.classList.remove('btn--primary'); b.classList.add('btn--ghost');
+  });
+  if (!isOpen) {
+    panel.style.display = '';
+    btn.classList.remove('btn--ghost'); btn.classList.add('btn--primary');
+  }
+}
+
+// ✓-Anzeige im Tab aktualisieren, wenn die Checkbox umgeschaltet wird
+function flagMarkUpdate(prefix, key, checked) {
+  const mark = document.getElementById(prefix+'flagmark-'+key);
+  if (mark) mark.style.display = checked ? '' : 'none';
+}
+
 function onIconFileSelected(prefix){
   const input = document.getElementById(prefix+'icon_file');
   const file = input.files[0];

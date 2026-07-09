@@ -102,7 +102,7 @@ switch ($action) {
         $limit = max(1, min(200, $limit));
 
         $rows = Database::query(
-            "SELECT m.id, m.type, m.status, m.message, m.reply, m.created_at, m.replied_at,
+            "SELECT m.id, m.type, m.status, m.message, m.faq_question, m.reply, m.created_at, m.replied_at,
                     (m.voice_path IS NOT NULL) AS has_voice, p.display_name AS player
              FROM messages m JOIN players p ON p.id = m.player_id
              WHERE " . implode(' AND ', $where) . "
@@ -115,6 +115,8 @@ switch ($action) {
             'type'       => $r['type'],
             'status'     => $r['status'],
             'message'    => $r['message'],
+            // Bei Sprach-Feedback: vom Admin erzeugtes Transkript (macht Audio auswertbar)
+            'transcript' => $r['faq_question'],
             'reply'      => $r['reply'],
             'player'     => $r['player'],
             'created_at' => $r['created_at'],
