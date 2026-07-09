@@ -28,6 +28,9 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 │   ├── datenschutz.php     ← Datenschutzerklärung (öffentlich, kein Login nötig)
 │   ├── impressum.php       ← Impressum (öffentlich, kein Login nötig)
 │   ├── nutzungsbedingungen.php ← Nutzungsbedingungen (öffentlich, kein Login nötig)
+│   └── werbung/
+│       └── index.php       ← Promo-Seite "Was ist <App-Name>?" (öffentlich, kein Login nötig,
+│                              eigenständige Kino-Trailer-Optik ohne templates/base.php)
 │       Alte Root-URLs (z. B. /game.php) leiten per 301 auf /app/… um (.htaccess).
 │
 ├── admin/              ← Admin-Bereich (nur für eingeloggte Admins zugänglich)

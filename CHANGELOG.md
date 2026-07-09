@@ -5,6 +5,27 @@ lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
 
 ---
 
+## [v0.37] — 2026-07-09
+
+### Hinzugefügt
+- **📣 Promo-Seite „Was ist {App-Name}?"** (`app/werbung/index.php`, öffentlich, kein
+  Login nötig): eigenständige, animierte Kino-Trailer-Seite — 5 Szenen laufen
+  automatisch durch (Wortmarke, Rollen, Live-Updates, Themes, Mitmach-CTA), mit
+  Play/Pause, Kapitel-Punkten und Fortschrittsbalken wie ein Videoplayer. Bewusst
+  ohne `templates/base.php` (eigene volle-Viewporthöhe-Optik, keine normale
+  Nav/Tab-Bar). Nutzt echte In-App-Effekte nach: Button-Ripple, Phasen-Überblendung
+  („Die Nacht bricht herein …" / „Der Morgen graut …"), Mondlicht/Nebel/Glühwürmchen.
+  Wortmarke und Seitentitel sind dynamisch über `APP_NAME` (nicht hartcodiert
+  „Werwolf" — funktioniert also auch nach einer Umbenennung im Admin-Bereich).
+  Der Abschluss-Button verlinkt direkt zur Login-Seite.
+- **Login-Seite** (`index.php`): neuer dezenter Link „Was ist {App-Name}?" unter dem
+  Logo, führt zur neuen Promo-Seite.
+
+### DB-Änderungen
+- Nur `app_version` → `0.37` (Setting). Keine Schema-Änderungen.
+
+---
+
 ## [v0.36] — 2026-07-09
 
 ### Hinzugefügt

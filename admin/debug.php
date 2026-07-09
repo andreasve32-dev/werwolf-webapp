@@ -198,7 +198,7 @@ require TEMPLATE_PATH . '/base.php';
         <div class="panel flex-between" style="padding:.5rem .8rem" id="debug-dead-row-<?= (int)$gp['player_id'] ?>">
           <span style="font-family:var(--font-display);font-size:.88rem"><?= e($gp['display_name']) ?></span>
           <button class="btn btn--ghost btn--sm"
-                  onclick="revivePlayer(<?= (int)$gp['player_id'] ?>,'<?= e($gp['username']) ?>')">🔮 Wiederbeleben</button>
+                  onclick="revivePlayer(<?= (int)$gp['player_id'] ?>,'<?= e($gp['display_name']) ?>')">🔮 Wiederbeleben</button>
         </div>
         <?php endforeach; ?>
       </div>

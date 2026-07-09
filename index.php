@@ -52,6 +52,11 @@ require TEMPLATE_PATH . '/base.php';
     <?php endif; ?>
     <div class="auth-logo__title"><?= e(APP_NAME) ?></div>
     <div class="auth-logo__sub"><?= e(LOGIN_SUBTITLE) ?></div>
+    <p class="text-dim text-xs mt-1">
+      <a href="<?= APP_URL ?>/app/werbung/" style="color:var(--text-dim);text-decoration:underline">
+        <?= e('Was ist ' . APP_NAME . '?') ?>
+      </a>
+    </p>
   </div>
 
   <!-- Card -->

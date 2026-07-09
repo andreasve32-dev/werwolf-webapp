@@ -7,8 +7,8 @@
 #  APP/          → game.php, deaths.php, roles.php, stats.php, faq.php,
 #                   logout.php (alle: Auth::requireLogin
 #                   bzw. requireAdmin); register.php, datenschutz.php,
-#                   impressum.php, nutzungsbedingungen.php (öffentlich, kein
-#                   Login nötig — aus rechtlichen Gründen jederzeit erreichbar)
+#                   impressum.php, nutzungsbedingungen.php, werbung/ (öffentlich,
+#                   kein Login nötig)
 #  NUR ADMIN     → admin/*                             (PHP: Auth::requireAdmin)
 #  NUR AJAX      → api/*                               (PHP: Auth::requireLogin + DB-Check)
 #  GESPERRT (403)→ config/, core/, templates/, db/, logs/
