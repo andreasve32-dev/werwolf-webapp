@@ -5,6 +5,33 @@ lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
 
 ---
 
+## [v0.40] — 2026-07-12
+
+### Geändert
+- **💔 „Das Paar" stirbt nicht mehr automatisch mit:** Das Rollen-Flag
+  `linked_death` löst bei Tod eines Rollenpartners keinen Automatik-Tod
+  („Vor Kummer gestorben") mehr aus. Stattdessen bekommen die verbleibenden
+  Rollenpartner eine **neutrale Push-Benachrichtigung** (`🔔 Neuigkeit im
+  Spiel — Öffne das Spielfenster für Details.` — bewusst ohne Namen/Rollen-
+  bezug, da auch auf einem gesperrten Bildschirm sichtbar) und im Spielfenster
+  einen Hinweis-Banner über dem „☠️ Meinen Tod melden"-Button. Sie können
+  sich danach wie jeder andere Spieler **selbst** und **jederzeit** als tot
+  melden (bestehende `self_report_death`-Funktion) — kein erzwungener
+  Zeitpunkt, keine erzwungene Todesursache mehr.
+  Betroffen: `core/helpers.php` (`recordDeath()`), `templates/game_blocks.php`
+  (`render_my_status_actions()`), Rollentext „Das Paar", Admin-Formular-Text
+  und Doku (`templates/role_form_fields.php`, `templates/role_card.php`,
+  `docs/admin.php`, `docs/spieler.php`, `README.md`). Das Flag selbst bleibt
+  unverändert in der DB (kein Rename, keine Schema-Änderung) — nur seine
+  Bedeutung und Beschriftung („Partner-Benachrichtigung" statt „Gemeinsamer
+  Tod") ändern sich. Design-Doku: `docs/superpowers/specs/2026-07-12-paar-partner-benachrichtigung-design.md`.
+
+### DB-Änderungen
+- Keine Schema-Änderung. `roles.rules` für „Das Paar" inhaltlich angepasst,
+  `app_version` → `0.40` (beide Settings/Daten, kein `ALTER TABLE`).
+
+---
+
 ## [v0.39] — 2026-07-12
 
 ### Geändert

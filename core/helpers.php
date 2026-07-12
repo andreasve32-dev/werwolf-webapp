@@ -400,17 +400,22 @@ function recordDeath(int $gameId, int $playerId, int $round, string $phase, ?str
         [$gameId, $playerId]
     );
 
-    // Rollen mit linked_death=1 (z.B. Das Paar): stirbt ein Partner, sterben alle
-    // anderen lebenden Spieler derselben Rolle automatisch mit — Ort bewusst fest
-    // "Vor Kummer gestorben" statt leer, aber rolle_aufgedeckt bleibt wie bei jedem
-    // anderen Tod auf 0 (nur Nekromant/Selbstauskunft macht es sichtbar).
+    // Rollen mit linked_death=1 (z.B. Das Paar): stirbt ein Spieler, sterben die
+    // anderen lebenden Spieler derselben Rolle NICHT automatisch mit — sie werden
+    // nur benachrichtigt (Push, bewusst ohne Namen/Rollenbezug, da auch auf einem
+    // gesperrten Bildschirm sichtbar) und können sich wie jeder andere Spieler
+    // jederzeit selbst über "☠️ Meinen Tod melden" (self_report_death) eintragen.
+    // Der Hinweis im Spielfenster kommt aus render_my_status_actions().
     if (!empty($gp['linked_death']) && !empty($gp['role_id'])) {
         $partners = Database::query(
             "SELECT player_id FROM game_players WHERE game_id = ? AND role_id = ? AND is_alive = 1 AND player_id != ?",
             [$gameId, $gp['role_id'], $playerId]
         );
-        foreach ($partners as $partner) {
-            recordDeath($gameId, (int)$partner['player_id'], $round, $phase, 'Vor Kummer gestorben');
+        if ($partners) {
+            require_once CORE_PATH . '/WebPush.php';
+            foreach ($partners as $partner) {
+                WebPush::sendToPlayer((int)$partner['player_id'], '🔔 Neuigkeit im Spiel', 'Öffne das Spielfenster für Details.');
+            }
         }
     }
 

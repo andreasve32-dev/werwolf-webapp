@@ -22,7 +22,7 @@ function render_role_card(array $r): string {
               <?php if (!empty($r['befragen'])): ?><span class="tag tag--night">🔍 Darf Tote befragen</span><?php endif; ?>
               <?php if (!empty($r['auto_eintrag'])): ?><span class="tag tag--running">⭐ Star</span><?php endif; ?>
               <?php if (!empty($r['is_killer'])): ?><span class="tag tag--dead">🔪 Killer</span><?php endif; ?>
-              <?php if (!empty($r['linked_death'])): ?><span class="tag tag--night">💔 Gemeinsamer Tod</span><?php endif; ?>
+              <?php if (!empty($r['linked_death'])): ?><span class="tag tag--night">💔 Partner-Benachrichtigung</span><?php endif; ?>
               <?php if (!empty($r['rollensicht'])): ?><span class="tag tag--night">🔮 Rollensicht</span><?php endif; ?>
               <?php if (!empty($r['kill_hinweis'])): ?><span class="tag tag--night">🕵️ Kill-Hinweise</span><?php endif; ?>
             </div>

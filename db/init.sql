@@ -351,7 +351,7 @@ VALUES
 
 (6,  'Das Paar',  0,
   '2 Spieler bilden ein Paar und kennen sich von Beginn an.',
-  'Ihr kennt euren Partner. Stirbt dein Partner, nimmst du dir das Leben sobald du seinen Tod bemerkst.',
+  'Ihr kennt euren Partner. Stirbt dein Partner, wirst du benachrichtigt (Push + Hinweis im Spielfenster) — du kannst dich danach jederzeit selbst als tot melden, wenn du bereit dazu bist.',
   1, 0, 2, 'assets/icons/roles/das-paar.png', 1, 0, 0, 0, 0, 1, 0, 0, 60),
 
 (7,  'Dodo',      0,

@@ -128,8 +128,8 @@ $roleFlags = [
         'desc' => 'Zählt zur Killer-Seite. Die Killer gewinnen, wenn sie die Bürger zahlenmäßig erreichen — Grundlage für Siegprüfung und Kill-Hinweise.',
     ],
     'linked_death' => [
-        'icon' => '💔', 'label' => 'Gemeinsamer Tod', 'accent' => 'var(--accent)', 'default' => 0,
-        'desc' => 'Stirbt ein Spieler dieser Rolle, sterben automatisch alle anderen lebenden Spieler derselben Rolle mit („Vor Kummer gestorben") — z.B. Das Paar. Der Ort bleibt bis zur Befragung verborgen wie bei jedem anderen Tod.',
+        'icon' => '💔', 'label' => 'Partner-Benachrichtigung', 'accent' => 'var(--accent)', 'default' => 0,
+        'desc' => 'Stirbt ein Spieler dieser Rolle, werden alle anderen lebenden Spieler derselben Rolle per Push benachrichtigt (z.B. Das Paar) — sie sterben nicht automatisch mit, sondern können sich jederzeit selbst als tot melden.',
     ],
     'rollensicht' => [
         'icon' => '🔮', 'label' => 'Rollensicht', 'accent' => 'var(--accent)', 'default' => 0,

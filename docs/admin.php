@@ -149,8 +149,8 @@ require TEMPLATE_PATH . '/base.php';
         <td style="padding:.5rem .25rem;color:var(--text-dim)">Zählt zur Killer-Seite. Die Killer gewinnen, sobald sie zahlenmäßig die verbliebenen Nicht-Killer erreichen; die Bürger gewinnen, wenn alle Killer tot sind.</td>
       </tr>
       <tr style="border-bottom:1px solid var(--border)">
-        <td style="padding:.5rem .25rem;color:var(--text);font-weight:600;white-space:nowrap">💔 Gemeinsamer Tod</td>
-        <td style="padding:.5rem .25rem;color:var(--text-dim)">Stirbt ein Spieler dieser Rolle, sterben automatisch alle anderen lebenden Spieler derselben Rolle mit („Vor Kummer gestorben", z.&nbsp;B. Das Paar).</td>
+        <td style="padding:.5rem .25rem;color:var(--text);font-weight:600;white-space:nowrap">💔 Partner-Benachrichtigung</td>
+        <td style="padding:.5rem .25rem;color:var(--text-dim)">Stirbt ein Spieler dieser Rolle, werden alle anderen lebenden Spieler derselben Rolle per Push benachrichtigt (z.&nbsp;B. Das Paar) — sie sterben nicht automatisch mit, sondern können sich jederzeit selbst als tot melden.</td>
       </tr>
       <tr style="border-bottom:1px solid var(--border)">
         <td style="padding:.5rem .25rem;color:var(--text);font-weight:600;white-space:nowrap">🔮 Rollensicht</td>

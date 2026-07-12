@@ -337,7 +337,8 @@ require TEMPLATE_PATH . '/base.php';
         <div style="font-size:1.4rem;margin-bottom:.35rem">💜 Das Paar</div>
         <div class="text-sm" style="color:var(--text-dim)">
           Beide überleben bis zum Ende, egal ob Bürger oder Mörder siegen.
-          Stirbt einer der beiden, stirbt der andere automatisch mit ("vor Kummer gestorben").
+          Stirbt einer der beiden, wird der andere benachrichtigt und kann sich
+          danach jederzeit selbst als tot melden.
         </div>
       </div>
 
