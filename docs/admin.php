@@ -90,7 +90,6 @@ require TEMPLATE_PATH . '/base.php';
       <div class="nav-card"><span class="nav-icon">🎮</span>Spiele</div>
       <div class="nav-card"><span class="nav-icon">👥</span>Spieler</div>
       <div class="nav-card"><span class="nav-icon">🎭</span>Rollen</div>
-      <div class="nav-card"><span class="nav-icon">💬</span>Sprüche</div>
       <div class="nav-card"><span class="nav-icon">⚙️</span>Einstellungen</div>
       <div class="nav-card"><span class="nav-icon">🔔</span>Push</div>
     </div>
@@ -400,13 +399,6 @@ require TEMPLATE_PATH . '/base.php';
         <td style="padding:.5rem .25rem;color:var(--text);font-weight:600">Zeitzone</td>
         <td style="padding:.5rem .5rem;color:var(--text-dim)">
           PHP-Zeitzone des Servers (z.B. Europe/Berlin). Beeinflusst Bürgerversammlungs-Uhrzeit.
-        </td>
-      </tr>
-      <tr style="border-bottom:1px solid var(--border)">
-        <td style="padding:.5rem .25rem;color:var(--text);font-weight:600">Dorf-Sprüche</td>
-        <td style="padding:.5rem .5rem;color:var(--text-dim)">
-          Über <a href="<?= APP_URL ?>/admin/slogans.php" style="color:var(--accent)">Sprüche verwalten</a>
-          — bis zu 20 Tag- und 20 Nacht-Sprüche, rotieren alle 2 Minuten im Spieler-Banner.
         </td>
       </tr>
       <tr>

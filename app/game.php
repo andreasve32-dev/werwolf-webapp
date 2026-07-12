@@ -31,15 +31,6 @@ $myCooldownRemaining = ($myGP && $myRole)
 // nie kurz das Spielfenster (mit ggf. sensiblen Infos für andere) aufblitzt.
 $autoShowRoleCard = (playerSettings($player['id'])['ww_auto_rolecard'] ?? '0') === '1';
 
-// Sprüche aus DB laden (Tag + Nacht, zufällige Reihenfolge, max. 20)
-try {
-    $daySlogans   = array_column(Database::query("SELECT text FROM slogans WHERE phase='day'   AND active=1 ORDER BY RAND() LIMIT 20"), 'text');
-    $nightSlogans = array_column(Database::query("SELECT text FROM slogans WHERE phase='night' AND active=1 ORDER BY RAND() LIMIT 20"), 'text');
-} catch (\Throwable $e) {
-    $daySlogans   = [];
-    $nightSlogans = [];
-}
-
 // Aktuelle Versammlungsanfrage laden
 $currentAssembly = null;
 if ($gameId && ($game['status'] ?? '') === 'running') {
@@ -65,13 +56,11 @@ if ($gameId && ($game['status'] ?? '') === 'running') {
 $page = [
     'title'    => 'Spielfeld',
     'inline_js' => sprintf(
-        'const GAME_ID=%s,PLAYER_ID=%s,API_BASE=%s,DAY_SLOGANS=%s,NIGHT_SLOGANS=%s,MY_COOLDOWN_MINS=%s,MY_COOLDOWN_REMAINING=%s,ASSEMBLY_DATA=%s,MY_IS_ADMIN=%s,MY_ROLLENSICHT=%s;'
+        'const GAME_ID=%s,PLAYER_ID=%s,API_BASE=%s,MY_COOLDOWN_MINS=%s,MY_COOLDOWN_REMAINING=%s,ASSEMBLY_DATA=%s,MY_IS_ADMIN=%s,MY_ROLLENSICHT=%s;'
         . 'let MY_ALIVE=%s,GAME_STATUS=%s,GAME_PHASE=%s,MY_IN_GAME=%s;',
         json_encode($gameId),
         json_encode($player['id']),
         json_encode(API_URL),
-        json_encode($daySlogans),
-        json_encode($nightSlogans),
         json_encode($myRole ? (int)$myRole['cooldown'] : 0),
         json_encode($myCooldownRemaining),
         json_encode($currentAssembly),
@@ -522,10 +511,6 @@ async function joinGame() {
 
 let _lastBannerKey = GAME_STATUS + ':' + GAME_PHASE;
 function _updatePhaseBanner(status, phase) {
-  // Textinhalt bleibt der Sprüche-Rotation (_startSloganRotation/_setBannerText)
-  // überlassen — hier nur die Hintergrundfarbe/Klasse synchron halten und,
-  // falls das Spiel bei offenem Tab von Lobby auf Running wechselt, die
-  // Rotation nachträglich anstoßen (beim ersten Laden war sie noch aus).
   const key = status + ':' + phase;
   if (key === _lastBannerKey) return; // unverändert — kein Flackern bei jedem Poll
   _lastBannerKey = key;
@@ -534,8 +519,8 @@ function _updatePhaseBanner(status, phase) {
   banner.className = 'phase-banner phase-banner--' + (status === 'running' ? phase : 'lobby');
   if (status !== 'running') {
     _setBannerText('🏰 Warte auf Spielstart');
-  } else if (!_sloganTimer && !_bannerBeraet) {
-    _startSloganRotation();
+  } else {
+    _setBannerText(phase === 'night' ? '🌕 Nacht — Die Wölfe erwachen' : '☀️ Tag — Das Dorf berät');
   }
 }
 
@@ -635,40 +620,13 @@ function renderGameState(r) {
   }
 }
 
-// ── Banner-Slogan-Rotation ───────────────────────────────────
-let _bannerBeraet = false;
-let _sloganTimer  = null;
-
+// ── Phasen-Banner-Text ────────────────────────────────────────
 function _setBannerText(txt) {
   const el = document.getElementById('phase-banner-text');
   if (!el) return;
   el.style.transition = 'opacity .35s';
   el.style.opacity = '0';
   setTimeout(() => { el.textContent = txt; el.style.opacity = '1'; }, 350);
-}
-
-function _nextSlogan() {
-  if (_bannerBeraet) return;
-  const arr  = GAME_PHASE === 'night' ? NIGHT_SLOGANS : DAY_SLOGANS;
-  if (!arr.length) return;
-  const icon = GAME_PHASE === 'night' ? '🌕' : '☀️';
-  _setBannerText(icon + ' ' + arr[Math.floor(Math.random() * arr.length)]);
-}
-
-function _startSloganRotation() {
-  if (GAME_STATUS !== 'running') return;
-  _nextSlogan();
-  _sloganTimer = setInterval(_nextSlogan, 120000); // alle 2 Minuten
-}
-
-function _bannerSetBeraet() {
-  _bannerBeraet = true;
-  clearInterval(_sloganTimer);
-  _setBannerText('☀️ Tag — Das Dorf berät');
-}
-
-if (GAME_STATUS === 'running') {
-  document.addEventListener('DOMContentLoaded', _startSloganRotation);
 }
 
 function selectTarget(id, name) {
@@ -684,9 +642,6 @@ function selectTarget(id, name) {
 
   const btn = document.getElementById('vote-btn');
   if (btn) btn.disabled = false;
-
-  // Banner auf "Das Dorf berät" umschalten
-  _bannerSetBeraet();
 }
 
 async function castVote() {

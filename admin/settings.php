@@ -475,14 +475,6 @@ function settingsAccHead(string $icon, string $title): void {
                min="2" max="200" style="width:90px">
       </div>
 
-      <div class="settings-row" style="padding:.6rem 0">
-        <div>
-          <span class="settings-row__name">Dorf-Sprüche</span>
-          <div class="text-dim text-xs mt-1">Tag- und Nacht-Sprüche werden in der Sprüche-Verwaltung gepflegt.</div>
-        </div>
-        <a href="<?= APP_URL ?>/admin/slogans.php" class="btn btn--ghost btn--sm">Sprüche verwalten →</a>
-      </div>
-
       <div class="settings-row" style="padding:.6rem 0;border-top:1px solid var(--border)">
         <div>
           <span class="settings-row__name"><?= e($cfg['clear_messages_on_start']['label'] ?? 'Nachrichten bei Spielstart löschen') ?></span>

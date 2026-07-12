@@ -38,7 +38,6 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 │   ├── roles.php       ← Rollen verwalten (CRUD + Icon-Upload)
 │   ├── players.php     ← Spielerverwaltung (Übersicht, löschen, Passwort ändern)
 │   ├── messages.php    ← Spielerfragen & Feedback verwalten (Antworten, Status, Feedback-API-Token)
-│   ├── slogans.php     ← Dorf-Sprüche verwalten (Tag/Nacht, bis zu 20 pro Phase)
 │   ├── settings.php    ← Server-Einstellungen (DB-konfigurierbar)
 │   ├── setup.php       ← 5-Schritt-Wizard: DB einrichten + Admin-Konto wählen (kein Login nötig)
 │   ├── testplayers.php ← Testdaten: Spieler schnell anlegen
@@ -70,7 +69,7 @@ Responsiv für Desktop und Handy. Direkt unter der Domain erreichbar (kein Unter
 │   ├── base_end.php        ← schließt </body>, lädt JS
 │   ├── nav.php             ← Navigation (Top-Bar + Tab-Bar + Einstellungs-Sheet, alle Seiten)
 │   ├── role_form_fields.php ← wiederverwendbares Rollen-Formular (Erstellen + Bearbeiten)
-│   └── *_blocks.php / role_card.php / slogan_row.php
+│   └── *_blocks.php / role_card.php
 │                           ← Render-Funktionen für die Live-Updates: Seite und
 │                             API-Endpunkt teilen sich dasselbe Markup (blocksResponse)
 │
@@ -569,17 +568,6 @@ Lebende Spieler können über das Spielfenster eine **Bürgerversammlung einberu
 
 ---
 
-## 💬 Dorf-Sprüche
-
-Im Spielfenster-Banner rotieren während eines laufenden Spiels zufällige Dorf-Sprüche alle **2 Minuten**. Tagsüber laufen Tag-Sprüche, nachts Nacht-Sprüche.
-
-- **Verwalten:** `admin/slogans.php` — bis zu **20 Sprüche pro Phase** (Tag / Nacht)
-- **DB-Tabelle:** `slogans` — `text`, `phase` (day/night), `active`
-- **Aktionen:** Hinzufügen, Aktivieren/Deaktivieren (✓/○), Löschen
-- Deaktivierte Sprüche werden nicht angezeigt, bleiben aber in der DB erhalten
-
----
-
 ## 📖 Hilfe & Anleitungen
 
 Unter `docs/` liegt eine integrierte Anleitung für Spieler und Admin:
@@ -627,7 +615,6 @@ Die Docs-Seiten sind über den **📖 Hilfe**-Tab in der Navigation erreichbar.
   Heredocs (`<<<IDENTIFIER` ohne Quotes) oder separate `sprintf()`-Aufrufe verwenden.
 - **Inline-JS-Konstanten** für PHP-Werte immer über den `sprintf()`-Block am Seitenanfang
   definieren, nie inline per `<?= ?>` in Heredocs/Nowdocs.
-- **Sprüche:** `slogans`-Tabelle (phase=day/night, active). Kein `DAY_SLOGANS`-Constant mehr.
 - **Docs:** `docs/`-Verzeichnis enthält Spieler- und Admin-Anleitungen. Login erforderlich.
 
 Beim Debuggen zuerst prüfen: `config/config.php` (DB/Settings korrekt?),

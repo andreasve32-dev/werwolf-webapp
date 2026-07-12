@@ -60,8 +60,8 @@ Vanilla-JS, mobile-first. Struktur siehe README.md.
   Für JSON-Payloads ohne HTML-Blocks den `onData`-only-Modus nutzen.
 - **Keine festen Poll-Intervalle.** Alle Server-Polls folgen der
   Spieler-Einstellung — `config.interval` bei `liveBlocks()` nicht setzen.
-  Reine Anzeige-Ticker ohne Serverkontakt (1s-Countdowns, Slogan-Rotation)
-  sind davon ausgenommen.
+  Reine Anzeige-Ticker ohne Serverkontakt (1s-Countdowns) sind davon
+  ausgenommen.
 - **Blöcke nur bei Änderung übertragen:** Block-Endpunkte antworten über
   `blocksResponse($blocks, $input['blocks_hash'] ?? null)`
   (`core/helpers.php`) und der Client-Fetcher reicht den Hash durch:

@@ -188,57 +188,6 @@ CREATE TABLE push_subscriptions (
   FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ── 9b. Dorf-Sprüche ────────────────────────────────────────────
-CREATE TABLE slogans (
-  id         INT AUTO_INCREMENT PRIMARY KEY,
-  text       VARCHAR(255) NOT NULL UNIQUE,
-  phase      ENUM('day','night') NOT NULL DEFAULT 'day',
-  active     TINYINT(1) NOT NULL DEFAULT 1,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
-
-INSERT INTO slogans (text, phase) VALUES
-('Die Kuh von Bauer Franz schaut mich heute komisch an','day'),
-('30 Grad im Schatten und der Dorfbrunnen riecht wieder komisch','day'),
-('Irgendjemand hat die Scheunentür schon wieder offengelassen','day'),
-('Der Schmied hat sich heute schon dreimal auf den Daumen gehauen','day'),
-('Die alte Marie hat mal wieder komisch geschaut','day'),
-('Das Bier im Wirtshaus ist schon alle — um zehn Uhr morgens','day'),
-('Jemand hat die letzte Wurst vom Markt geklaut','day'),
-('Die Gänse vom Müller sind nervöser als üblich','day'),
-('Pfarrer Klemens hat die Predigt heute auf drei Stunden ausgedehnt','day'),
-('Die Milch vom Huber-Hof ist heute besonders sauer','day'),
-('Seltsame Fußspuren im Morast hinter der Mühle','day'),
-('Die Katze des Pfarrers ist seit Dienstag weg','day'),
-('Das Kalb vom Bauern Huber muht nur noch rückwärts','day'),
-('Drei Krähen kreisen seit dem Morgengrauen über dem Kirchturm','day'),
-('Die Hühner legen seit einer Woche keine Eier mehr','day'),
-('Im Dorf herrscht eine trügerische Stille','day'),
-('Der Bürgermeister schläft schon wieder im Rathaus','day'),
-('Heute gibt es Rübensuppe beim Wirt — schon das vierte Mal diese Woche','day'),
-('Die Wetterfahne zeigt seit gestern in keine Richtung mehr','day'),
-('Der Hund vom Förster bellt seit gestern Nacht am Stück','day'),
-('Die Nacht hat tausend Augen — und zwei davon gehören dem Mörder','night'),
-('Schließt die Türen und löscht die Lichter','night'),
-('Irgendwo bellt ein Hund — schon seit einer Stunde','night'),
-('Der Wind trägt heute Nacht seltsame Geräusche mit sich','night'),
-('Niemand geht nachts alleine zum Brunnen','night'),
-('Das Flackern der Kerzen macht alle nervös','night'),
-('Hinter jedem Schatten könnte einer lauern','night'),
-('Die Eulen schreien heute besonders laut','night'),
-('Der Vollmond lügt nicht über verdächtige Gesichter','night'),
-('Schlaf gut — falls du kannst','night'),
-('Jemand schleicht um die Scheune herum','night'),
-('Die Nacht macht alle gleich — gleich verdächtig','night'),
-('Kein Licht im Dorf brennt mehr — außer einem','night'),
-('Selbst die Ratten sind heute stiller als sonst','night'),
-('Der Nebel kriecht vom Wald ins Dorf herein','night'),
-('Heute Nacht öffnet sich die Scheunentür von selbst','night'),
-('Wer jetzt noch draußen ist, dem ist nicht zu helfen','night'),
-('Die Uhr am Kirchturm schlägt dreizehn','night'),
-('Im Wald raschelt es — hoffentlich nur der Wind','night'),
-('Drei Stimmen im Dunkeln, aber nur zwei Schatten','night');
-
 -- ── 9c. Versammlungsanfragen ─────────────────────────────────────
 CREATE TABLE assembly_requests (
   id           INT AUTO_INCREMENT PRIMARY KEY,

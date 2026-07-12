@@ -5,6 +5,29 @@ lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
 
 ---
 
+## [v0.42] — 2026-07-12
+
+### Entfernt
+- **💬 Dorf-Sprüche (Tag-/Nacht-Banner-Rotation) komplett entfernt.** Der
+  Spielfenster-Banner zeigt wieder nur den festen Phasentext
+  ("☀️ Tag — Das Dorf berät" / "🌕 Nacht — Die Wölfe erwachen"), keine
+  rotierenden Sprüche mehr. Betroffen: `app/game.php` (Sprüche-Laden +
+  komplette Rotations-Logik `_nextSlogan`/`_startSloganRotation`/
+  `_bannerSetBeraet`/`DAY_SLOGANS`/`NIGHT_SLOGANS`), `api/admin.php`
+  (`add_slogan`/`delete_slogan`/`toggle_slogan` entfernt), Admin-Menü
+  (`admin/index.php`, `admin/settings.php` — Link/Sektion entfernt),
+  Doku (`docs/admin.php`, `README.md`, `CLAUDE.md`).
+  Gelöschte Dateien: `admin/slogans.php`, `templates/slogan_row.php`.
+  Nicht betroffen: `login_subtitle`-Einstellung ("Slogan" unter dem Logo
+  auf der Anmeldeseite) — das ist ein eigenständiges, unabhängiges Feature.
+
+### DB-Änderungen
+- Tabelle `slogans` entfernt (`DROP TABLE`), Settings-Zeile `day_slogans`
+  (Altlast vor Einführung der Tabelle) mit entfernt.
+- `app_version` → `0.42`.
+
+---
+
 ## [v0.41] — 2026-07-12
 
 ### Geändert
