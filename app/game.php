@@ -522,7 +522,6 @@ let selectedTarget    = null;
 let _knownNotKiller   = null; // zuletzt bekannte "Kein Killer"-Hinweise (Toast bei Neuzugang)
 let _lastStatusHtml   = null; // zuletzt gerendertes my-status-actions-Fragment
 let _lastPlayersHtml  = null; // zuletzt gerenderte Spielerliste
-let _knownDead        = null; // Spieler-IDs, die beim letzten Update tot waren
 
 async function joinGame() {
   if (!GAME_ID) { showToast('Kein aktives Spiel vorhanden.', 'error'); return; }
@@ -593,15 +592,6 @@ function renderGameState(r) {
     if (assemblyCard) assemblyCard.style.display = GAME_STATUS === 'running' ? '' : 'none';
     _updateAccuseCard();
   }
-
-  // Neuer Todesfall seit dem letzten Update? → roter Vignetten-Puls
-  const deadNow = new Set(r.players.filter(p => !p.is_alive).map(p => String(p.player_id)));
-  if (_knownDead !== null && GAME_STATUS === 'running') {
-    for (const id of deadNow) {
-      if (!_knownDead.has(id)) { window.FX?.deathPulse?.(); break; }
-    }
-  }
-  _knownDead = deadNow;
 
   // Neuer Kill-Hinweis (z.B. Detektiv) seit dem letzten Update? → Toast
   const notKillerNow = new Set(r.players.filter(p => p.not_killer).map(p => String(p.player_id)));

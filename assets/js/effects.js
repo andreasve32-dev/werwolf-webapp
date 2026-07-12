@@ -77,18 +77,6 @@
     }
     @keyframes fx-rays-spin { to { transform: rotate(360deg); } }
 
-    /* Todes-Puls: rote Vignette am Bildschirmrand */
-    #fx-death-pulse {
-      position: fixed; inset: 0; z-index: 9997; pointer-events: none;
-      box-shadow: inset 0 0 120px 40px rgba(190, 20, 20, .55);
-      animation: fx-death-pulse 1.4s ease-out forwards;
-    }
-    @keyframes fx-death-pulse {
-      0%   { opacity: 0; }
-      18%  { opacity: 1; }
-      100% { opacity: 0; }
-    }
-
     /* Versammlungs-Glocke */
     #fx-bell {
       position: fixed; inset: 0; z-index: 9999; pointer-events: none;
@@ -386,16 +374,6 @@
 
   // ── Ereignis-Effekte ──────────────────────────────────────────
 
-  /** Roter Vignetten-Puls, wenn ein Spieler stirbt (Live-Update). */
-  function deathPulse() {
-    if (!phaseOn) return; // an den Ereignis-/Überblendungs-Schalter gekoppelt
-    document.getElementById('fx-death-pulse')?.remove();
-    const el = document.createElement('div');
-    el.id = 'fx-death-pulse';
-    document.body.appendChild(el);
-    el.addEventListener('animationend', () => el.remove(), { once: true });
-  }
-
   /** Glocken-Einblendung, wenn die Versammlung beginnt. */
   function bellRing() {
     if (!phaseOn) return;
@@ -501,7 +479,6 @@
       applyFog();
     },
     // Ereignis-Effekte (alle über den Phasen-Überblendung-Schalter deaktivierbar)
-    deathPulse,
     bellRing,
     dodoWin,
   };
