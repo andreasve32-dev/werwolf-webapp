@@ -30,6 +30,12 @@ switch($action){
     echo json_encode(['ok'=>true,'message'=>'Beigetreten']);break;
 
   case 'get_players':
+    // Vollautomatische Rollen-Mechaniken vor dem Zusammenstellen der Antwort
+    // prüfen (wie grantKillHints in recordDeath) — läuft bei jedem Poll mit,
+    // damit ein Seitenwechsel (side_switch, z.B. Schläfer) unabhängig davon
+    // eintritt, wer gerade aktiv ist.
+    applySideSwitches($gameId);
+
     // Rollennamen und -Icons werden nur in vier Fällen herausgegeben:
     // eigene Karte, toter Spieler (Rolle aufgedeckt), gleiche sichtbare Rolle
     // oder gegenseitige Killer-Sichtbarkeit (killer_sichtbar, z.B. Dodo↔Mörder).

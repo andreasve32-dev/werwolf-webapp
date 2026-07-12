@@ -25,6 +25,7 @@ function render_role_card(array $r): string {
               <?php if (!empty($r['linked_death'])): ?><span class="tag tag--night">💔 Partner-Benachrichtigung</span><?php endif; ?>
               <?php if (!empty($r['rollensicht'])): ?><span class="tag tag--night">🔮 Rollensicht</span><?php endif; ?>
               <?php if (!empty($r['kill_hinweis'])): ?><span class="tag tag--night">🕵️ Kill-Hinweise</span><?php endif; ?>
+              <?php if (!empty($r['side_switch'])): ?><span class="tag tag--night">💤 Seitenwechsel (<?= (int)$r['side_switch_min'] ?>–<?= (int)$r['side_switch_max'] ?> Min.)</span><?php endif; ?>
             </div>
             <div class="text-dim text-sm mt-1"><?= e($r['description'] ? roleText($r['description'], $r) : 'Keine Beschreibung') ?></div>
             <div class="text-xs text-dim mt-1">

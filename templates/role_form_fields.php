@@ -139,6 +139,10 @@ $roleFlags = [
         'icon' => '🕵️', 'label' => 'Kill-Hinweise', 'accent' => 'var(--accent)', 'default' => 0,
         'desc' => 'Vollautomatisch: Immer wenn so viele Morde geschehen sind, wie es Killer gibt, erfährt der Spieler einen zufälligen Nicht-Killer („✅ Kein Killer" in der Spielerliste, mit Push) — z.B. Detektiv.',
     ],
+    'side_switch' => [
+        'icon' => '💤', 'label' => 'Seitenwechsel', 'accent' => 'var(--accent)', 'default' => 0,
+        'desc' => 'Vollautomatisch: Zu einem zufälligen Zeitpunkt innerhalb der Minuten-Spanne ab Spielstart wechselt der Spieler die Rolle zur aktiven Auffüll-Rolle (z.B. Bürger) — vorher normal spielbar (z.B. als Killer), danach dauerhaft nur noch die Auffüll-Rolle. Push + Hinweis im Spielfenster bei Ablauf. Z.B. Schläfer.',
+    ],
 ];
 ?>
 <div class="form-group">
@@ -165,6 +169,20 @@ $roleFlags = [
       </label>
     </div>
     <p class="text-dim text-xs" style="margin:.45rem 0 0;line-height:1.55"><?= $f['desc'] ?></p>
+    <?php if ($key === 'side_switch'): ?>
+    <div class="flex gap-sm mt-2">
+      <div class="form-group" style="margin:0;flex:1">
+        <label class="form-label text-xs" for="<?= $prefix ?>side_switch_min">Wechsel ab (Min.)</label>
+        <input class="form-input" type="number" min="0" id="<?= $prefix ?>side_switch_min"
+               value="<?= e($v('side_switch_min', 0)) ?>">
+      </div>
+      <div class="form-group" style="margin:0;flex:1">
+        <label class="form-label text-xs" for="<?= $prefix ?>side_switch_max">Wechsel bis (Min.)</label>
+        <input class="form-input" type="number" min="0" id="<?= $prefix ?>side_switch_max"
+               value="<?= e($v('side_switch_max', 0)) ?>">
+      </div>
+    </div>
+    <?php endif; ?>
   </div>
   <?php endforeach; ?>
 </div>

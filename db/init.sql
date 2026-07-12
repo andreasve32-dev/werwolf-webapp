@@ -41,6 +41,11 @@ CREATE TABLE IF NOT EXISTS roles (
   is_killer    TINYINT(1)   NOT NULL DEFAULT 0,
   sort_order   INT          NOT NULL DEFAULT 0,
   linked_death TINYINT(1)   NOT NULL DEFAULT 0,
+  rollensicht  TINYINT(1)   NOT NULL DEFAULT 0,
+  kill_hinweis TINYINT(1)   NOT NULL DEFAULT 0,
+  side_switch  TINYINT(1)   NOT NULL DEFAULT 0,
+  side_switch_min INT       NOT NULL DEFAULT 0,
+  side_switch_max INT       NOT NULL DEFAULT 0,
   created_at   TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
   updated_at   TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
@@ -71,9 +76,11 @@ CREATE TABLE IF NOT EXISTS games (
   winner     ENUM('killer','citizen','dodo')    NULL DEFAULT NULL,
   phase      ENUM('day','night')                NOT NULL DEFAULT 'day',
   round      INT NOT NULL DEFAULT 0,
+  started_at TIMESTAMP NULL DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
+ALTER TABLE games ADD COLUMN IF NOT EXISTS started_at TIMESTAMP NULL DEFAULT NULL AFTER round;
 
 CREATE TABLE IF NOT EXISTS game_players (
   id                  INT AUTO_INCREMENT PRIMARY KEY,
@@ -214,7 +221,10 @@ ALTER TABLE roles
   ADD COLUMN IF NOT EXISTS sort_order      INT        NOT NULL DEFAULT 0  AFTER is_killer,
   ADD COLUMN IF NOT EXISTS linked_death    TINYINT(1) NOT NULL DEFAULT 0  AFTER sort_order,
   ADD COLUMN IF NOT EXISTS rollensicht     TINYINT(1) NOT NULL DEFAULT 0  AFTER linked_death,
-  ADD COLUMN IF NOT EXISTS kill_hinweis    TINYINT(1) NOT NULL DEFAULT 0  AFTER rollensicht;
+  ADD COLUMN IF NOT EXISTS kill_hinweis    TINYINT(1) NOT NULL DEFAULT 0  AFTER rollensicht,
+  ADD COLUMN IF NOT EXISTS side_switch     TINYINT(1) NOT NULL DEFAULT 0  AFTER kill_hinweis,
+  ADD COLUMN IF NOT EXISTS side_switch_min INT        NOT NULL DEFAULT 0  AFTER side_switch,
+  ADD COLUMN IF NOT EXISTS side_switch_max INT        NOT NULL DEFAULT 0  AFTER side_switch_min;
 
 -- Rollen-Erkenntnisse: "Spieler A kennt die Rolle von Spieler B" (z.B. Hellseherin)
 CREATE TABLE IF NOT EXISTS role_insights (
@@ -274,83 +284,85 @@ PREPARE _stmt3 FROM @_sql3; EXECUTE _stmt3; DEALLOCATE PREPARE _stmt3;
 -- bestehenden Installs bleiben individuell angepasste Rollen unangetastet,
 -- nur strukturelle Flag-Migrationen laufen unten per UPDATE nach.
 INSERT IGNORE INTO roles
-  (id, name, cooldown, description, rules, active, fill, amount, icon_path, sichtbar, killer_sichtbar, befragen, auto_eintrag, is_killer, linked_death, rollensicht, kill_hinweis, sort_order)
+  (id, name, cooldown, description, rules, active, fill, amount, icon_path, sichtbar, killer_sichtbar, befragen, auto_eintrag, is_killer, linked_death, rollensicht, kill_hinweis, side_switch, side_switch_min, side_switch_max, sort_order)
 VALUES
 (1,  'Bürger',    0,
   'Einfacher Bürger ohne besondere Fähigkeiten.',
   'Finde die Mörder durch Beobachten und Abstimmen. Berufe Versammlungen ein.',
-  1, 1, 0, 'assets/icons/roles/buerger.png', 0, 0, 0, 0, 0, 0, 0, 0, 10),
+  1, 1, 0, 'assets/icons/roles/buerger.png', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10),
 
 (2,  'Mörder',    30,
   'Kann andere Spieler mit der Mörderkarte töten. Abklingzeit: {cooldown} Minuten.',
   'Zeige einem anderen Spieler deine Mörderkarte — dieser ist sofort tot und trägt sich in die Todesliste ein. Auf Morde hast du {cooldown} Minuten Abklingzeit. Arbeite mit dem anderen Mörder zusammen.',
-  1, 0, 2, 'assets/icons/roles/moerder.png', 1, 0, 0, 0, 1, 0, 0, 0, 20),
+  1, 0, 2, 'assets/icons/roles/moerder.png', 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 20),
 
 (3,  'Nekromant', 0,
   'Kann tote Spieler befragen, indem er ihnen seine Karte zeigt.',
   'Zeige einem toten Spieler deine Karte. Dieser trägt Todeszeitpunkt und -ort in die Todesliste ein und gibt so mehr Informationen preis.',
-  1, 0, 1, 'assets/icons/roles/nekromant.png', 0, 0, 1, 0, 0, 0, 0, 0, 30),
+  1, 0, 1, 'assets/icons/roles/nekromant.png', 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 30),
 
 (4,  'Hellseherin', 30,
   'Kann alle {cooldown} Minuten einen Spieler zwingen, seine Rolle aufzudecken. Untersuchte Rollen bleiben dauerhaft sichtbar.',
   'Zeige einem Spieler deine Karte — er muss dir seine Rolle zeigen. Trage die Untersuchung danach in der App ein: die Rolle bleibt für dich dauerhaft in der Spielerliste sichtbar. Abklingzeit: {cooldown} Minuten.',
-  1, 0, 1, 'assets/icons/roles/hellseherin.png', 0, 0, 0, 0, 0, 1, 0, 0, 40),
+  1, 0, 1, 'assets/icons/roles/hellseherin.png', 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 40),
 
 (5,  'Detektiv',  0,
   'Ermittelt passiv: Nach jedem Mord eines Killers erfährt er automatisch einen Spieler, der sicher kein Killer ist.',
   'Deine Fähigkeit ist passiv — du musst nichts tun. Immer wenn ein Spieler ermordet wird, zeigt dir die App automatisch einen zufälligen Spieler mit "✅ Kein Killer" in der Spielerliste an. Du bekommst dann eine Benachrichtigung.',
-  1, 0, 1, 'assets/icons/roles/detektiv.png', 0, 0, 0, 0, 0, 0, 0, 1, 50),
+  1, 0, 1, 'assets/icons/roles/detektiv.png', 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 50),
 
 (6,  'Das Paar',  0,
   '2 Spieler bilden ein Paar und kennen sich von Beginn an.',
   'Ihr kennt euren Partner. Stirbt dein Partner, wirst du benachrichtigt (Push + Hinweis im Spielfenster) — du kannst dich danach jederzeit selbst als tot melden, wenn du bereit dazu bist.',
-  1, 0, 2, 'assets/icons/roles/das-paar.png', 1, 0, 0, 0, 0, 1, 0, 0, 60),
+  1, 0, 2, 'assets/icons/roles/das-paar.png', 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 60),
 
 (7,  'Dodo',      0,
   'Gewinnt das Spiel, indem er von der Gruppe erhängt wird.',
   'Du gewinnst, wenn die Versammlung dich erhängt. Wirst du von einem Mörder getötet, hat deine Rolle keine Auswirkung.',
-  1, 0, 1, 'assets/icons/roles/dodo.png', 0, 0, 0, 0, 0, 0, 0, 0, 70),
+  1, 0, 1, 'assets/icons/roles/dodo.png', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 70),
 
 (8,  'Celebrity', 0,
   'Sein Tod fällt sofort auf — nachdem du getötet wurdest erscheinen deine Daten auf der Todesliste.',
   'Du bist allgemein bekannt — nachdem du getötet wurdest erscheinen deine Daten auf der Todesliste.',
-  1, 0, 1, 'assets/icons/roles/celebrity.png', 0, 0, 0, 1, 0, 0, 0, 0, 80),
+  1, 0, 1, 'assets/icons/roles/celebrity.png', 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 80),
 
 (9,  'Gunslinger', 0,
   'Kann beliebig oft schießen. Trifft er einen Killer, überlebt er. Trifft er einen Unschuldigen, stirbt er selbst.',
   'Du hast eine Waffe ohne Schussbegrenzung. Schießt du auf einen Killer (z. B. Mörder), lebst du weiter und kannst erneut schießen. Triffst du einen Unschuldigen, stirbst du selbst. Du stehst auf Seite der Bürger.',
-  1, 0, 1, 'assets/icons/roles/gunslinger.png', 0, 0, 0, 0, 0, 0, 0, 0, 90),
+  1, 0, 1, 'assets/icons/roles/gunslinger.png', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 90),
 
 -- Sheriff: derzeit deaktiviert (active=0) — Stand aus der Live-DB übernommen
 (10, 'Sheriff',   0,
   'Kann unbegrenzt Spieler erschießen — tötet er jedoch einen Unschuldigen, stirbt er selbst.',
   'Du kannst so viele Spieler erschießen wie du willst. Tötest du jedoch nicht den Dodo oder einen Mörder, stirbst du selbst.',
-  0, 0, 1, 'assets/icons/roles/sheriff.png', 0, 0, 0, 0, 0, 0, 0, 0, 100),
+  0, 0, 1, 'assets/icons/roles/sheriff.png', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100),
 
 (11, 'Leichenfresser', 30,
   'Killer, dessen Opfer spurlos verschwinden — sie können nicht vom Nekromanten befragt werden.',
   'Zeige einem anderen Spieler die Mordwaffe — dieser ist sofort tot. Deine Opfer hinterlassen keine Orts- und Zeitspuren und können NICHT vom Nekromanten befragt werden. Abklingzeit: {cooldown} Minuten.',
-  0, 0, 1, NULL, 0, 0, 0, 0, 1, 0, 0, 0, 110),
+  0, 0, 1, NULL, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 110),
 
 (12, 'Auftragskiller', 5,
   'Killer mit Auftrag: Er bekommt ein zufälliges Ziel — erst nach dessen Tod das nächste.',
   'Die App zeigt dir ein zufälliges Ziel. Nur dieses Ziel darfst du töten (Mordwaffe zeigen). Nach dem Kill bekommst du nach {cooldown} Minuten Abklingzeit ein neues Ziel zugewiesen.',
-  0, 0, 1, NULL, 0, 0, 0, 0, 1, 0, 0, 0, 120),
+  0, 0, 1, NULL, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 120),
 
+-- Schläfer: side_switch=1 — wechselt 30–90 Min. nach Spielstart automatisch
+-- zur aktiven Auffüll-Rolle (Bürger), siehe core/helpers.php applySideSwitches()
 (13, 'Schläfer', 0,
   'Beginnt als Killer — wechselt aber nach einiger Zeit heimlich die Seite und spielt dann für das Dorf.',
   'Du startest im Killer-Team und kennst die anderen Killer. Nach einer zufälligen Zeit wechselst du automatisch die Seite: Ab dann gewinnst du mit den Bürgern. Die anderen Killer wissen von Anfang an nur: "Einer von euch ist ein Verräter."',
-  0, 0, 1, NULL, 1, 0, 0, 0, 1, 0, 0, 0, 130),
+  0, 0, 1, NULL, 1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 90, 130),
 
 (14, 'Söldner', 0,
   'Startrolle im Zombie-Modus: Überlebe die Zombie-Plage.',
   'Alle Spieler starten als Söldner. Irgendwann in den ersten Stunden verwandelt sich einer von euch in den ersten Zombie. Findet und eliminiert die Zombies, bevor sie euch alle bekehren.',
-  0, 1, 0, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 140),
+  0, 1, 0, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 140),
 
 (15, 'Zombie', 0,
   'Bekehrt Söldner statt sie zu töten — die Plage wächst.',
   'Zeige einem Söldner deine Karte — er ist ab sofort ebenfalls Zombie und spielt für euch weiter. Ihr gewinnt, wenn alle Spieler infiziert sind. Zombies erkennen sich gegenseitig.',
-  0, 0, 1, NULL, 1, 0, 0, 0, 1, 0, 0, 0, 150);
+  0, 0, 1, NULL, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 150);
 
 -- Bekannte Rollen-Flags sicherstellen (falls INSERT IGNORE übersprungen)
 UPDATE roles SET befragen=1  WHERE name='Nekromant'  AND befragen=0;
@@ -360,6 +372,10 @@ UPDATE roles SET sichtbar=1  WHERE name IN ('Mörder','Das Paar') AND sichtbar=0
 UPDATE roles SET linked_death=1 WHERE name='Das Paar' AND linked_death=0;
 UPDATE roles SET rollensicht=1 WHERE name='Hellseherin' AND rollensicht=0;
 UPDATE roles SET kill_hinweis=1 WHERE name='Detektiv' AND kill_hinweis=0;
+-- Schläfer-Seitenwechsel nachrüsten (nur falls die Rolle schon existierte, aber
+-- noch keine Spanne gesetzt hat — ein bestehender individueller Wert bleibt unangetastet)
+UPDATE roles SET side_switch=1, side_switch_min=30, side_switch_max=90
+  WHERE name='Schläfer' AND side_switch=0 AND side_switch_min=0 AND side_switch_max=0;
 
 INSERT IGNORE INTO games (id, status) VALUES (1, 'lobby');
 

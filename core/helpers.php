@@ -489,6 +489,56 @@ function grantKillHints(int $gameId): void {
 }
 
 /**
+ * Seitenwechsel für Rollen mit side_switch=1 (z.B. Schläfer): wechselt zu einem
+ * zufälligen Zeitpunkt innerhalb von [side_switch_min, side_switch_max] Minuten
+ * nach Spielstart automatisch zur aktiven Auffüll-Rolle (Bürger) — "Rollenwechsel
+ * simulieren" statt eigenem Zustand pro Spieler, dadurch funktionieren Sieg-Logik
+ * und Killer-Sichtbarkeit danach automatisch korrekt (beide hängen an roles.is_killer).
+ * Der Zielzeitpunkt wird deterministisch aus Spiel+Spieler-ID abgeleitet (kein
+ * zusätzlicher Datenbank-Zustand, kein erneuter Zufallswurf bei jedem Aufruf) —
+ * läuft bei jedem get_players-Poll mit, genau wie grantKillHints() oben.
+ */
+function applySideSwitches(int $gameId): void {
+    $g = Database::queryOne("SELECT started_at FROM games WHERE id=? AND status='running'", [$gameId]);
+    if (!$g || !$g['started_at']) return;
+
+    $candidates = Database::query(
+        "SELECT gp.player_id, r.side_switch_min, r.side_switch_max,
+                TIMESTAMPDIFF(SECOND, ?, NOW()) AS elapsed
+         FROM game_players gp JOIN roles r ON r.id=gp.role_id
+         WHERE gp.game_id=? AND gp.is_alive=1 AND r.side_switch=1",
+        [$g['started_at'], $gameId]
+    );
+    if (!$candidates) return;
+
+    $fillRole = Database::queryOne("SELECT id FROM roles WHERE active=1 AND fill=1 LIMIT 1");
+    if (!$fillRole) return; // keine Auffüll-Rolle aktiv — Wechsel kann nicht stattfinden
+
+    require_once CORE_PATH . '/WebPush.php';
+    foreach ($candidates as $c) {
+        $min   = max(0, (int)$c['side_switch_min']);
+        $max   = max($min, (int)$c['side_switch_max']);
+        $seed  = crc32($gameId . ':' . $c['player_id'] . ':side_switch');
+        $range = ($max - $min) * 60 + 60; // Sekunden, inkl. Endpunkt
+        $target = $min * 60 + ($seed % $range);
+        if ((int)$c['elapsed'] < $target) continue;
+
+        Database::execute(
+            "UPDATE game_players SET role_id=? WHERE game_id=? AND player_id=?",
+            [$fillRole['id'], $gameId, $c['player_id']]
+        );
+        // Einmaliger Hinweis im Spielfenster (render_my_status_actions prüft
+        // darauf) — Quelle 'side_switch', viewer=target=der Spieler selbst.
+        Database::execute(
+            "INSERT IGNORE INTO role_insights (game_id, viewer_player_id, target_player_id, source) VALUES (?,?,?,'side_switch')",
+            [$gameId, $c['player_id'], $c['player_id']]
+        );
+        // Neutral wie beim Paar-Hinweis — nichts Konkretes auf dem Sperrbildschirm.
+        WebPush::sendToPlayer((int)$c['player_id'], '🔔 Neuigkeit im Spiel', 'Öffne das Spielfenster für Details.');
+    }
+}
+
+/**
  * Wurde in der aktuellen Bürgerversammlung bereits jemand gehenkt?
  *
  * "Aktuell" = seit Beginn (scheduled_at) der zuletzt tatsächlich GESTARTETEN

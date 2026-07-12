@@ -5,6 +5,51 @@ lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
 
 ---
 
+## [v0.45] — 2026-07-12
+
+### Hinzugefügt
+- **💤 Neues Rollen-Flag „Seitenwechsel" (`side_switch`):** Ein Spieler mit
+  dieser Rolle spielt normal im Killer-Team (kann mit seiner Fähigkeit
+  töten), wechselt aber zu einem **zufälligen Zeitpunkt** innerhalb einer
+  einstellbaren Minuten-Spanne ab Spielstart **vollautomatisch** zur aktiven
+  Auffüll-Rolle (Bürger) — danach keine Killer-Fähigkeit mehr, zählt bei
+  der Siegprüfung nicht mehr als Killer. Neutrale Push-Benachrichtigung +
+  bleibender Hinweis im Spielfenster beim Wechsel („💤 Deine Zeit als
+  verdeckter Killer ist vorbei — du gehörst jetzt zu den Bürgern.").
+  Umsetzung als echter Rollenwechsel (`game_players.role_id` wird
+  umgestellt) statt separatem Spieler-Zustand — Sieg-Logik und
+  Killer-Sichtbarkeit funktionieren dadurch automatisch korrekt, ohne
+  dass diese Stellen angefasst werden mussten. Der Zielzeitpunkt wird
+  deterministisch aus Spiel- und Spieler-ID abgeleitet (kein Zusatz-Zustand,
+  kein erneuter Zufallswurf bei jedem Check) und läuft vollautomatisch bei
+  jedem `get_players`-Poll mit, genau wie die bestehenden Kill-Hinweise
+  (Detektiv).
+  Für den **Schläfer** aktiviert: 30–90 Minuten Spanne — Rolle bleibt aber
+  bewusst weiterhin `active=0` (deaktiviert), bis der Betreiber sie selbst
+  freischaltet.
+  Betroffen: `core/helpers.php` (`applySideSwitches()`), `api/game.php`
+  (`get_players`), `api/admin.php` (`start_game` setzt `games.started_at`,
+  `role_create`/`role_update`), `templates/game_blocks.php`,
+  `templates/role_form_fields.php`, `templates/role_card.php`,
+  `admin/roles.php`. Design-Doku:
+  `docs/superpowers/specs/2026-07-12-schlaefer-seitenwechsel-design.md`.
+
+### DB-Änderungen
+- Neue Spalten `roles.side_switch`, `roles.side_switch_min`,
+  `roles.side_switch_max` sowie `games.started_at` (bereits live angewendet).
+- `app_version` → `0.45`.
+
+```sql
+ALTER TABLE roles
+  ADD COLUMN IF NOT EXISTS side_switch     TINYINT(1) NOT NULL DEFAULT 0  AFTER kill_hinweis,
+  ADD COLUMN IF NOT EXISTS side_switch_min INT        NOT NULL DEFAULT 0  AFTER side_switch,
+  ADD COLUMN IF NOT EXISTS side_switch_max INT        NOT NULL DEFAULT 0  AFTER side_switch_min;
+ALTER TABLE games ADD COLUMN IF NOT EXISTS started_at TIMESTAMP NULL DEFAULT NULL AFTER round;
+UPDATE roles SET side_switch=1, side_switch_min=30, side_switch_max=90 WHERE name='Schläfer';
+```
+
+---
+
 ## [v0.44] — 2026-07-12
 
 ### Behoben

@@ -26,6 +26,18 @@ function render_my_status_actions(array|false|null $game, array|false|null $myGP
         }
     }
 
+    // Rollen mit side_switch=1 (z.B. Schläfer): applySideSwitches() in
+    // core/helpers.php stellt bei Ablauf der Zeitspanne role_id automatisch auf
+    // die Auffüll-Rolle um und hinterlegt dabei einen role_insights-Eintrag
+    // (source='side_switch') — bleibender Hinweis für den Rest der Partie.
+    $sideSwitched = false;
+    if ($status === 'running' && $myGP && $myGP['is_alive']) {
+        $sideSwitched = (bool)Database::queryOne(
+            "SELECT id FROM role_insights WHERE game_id = ? AND viewer_player_id = ? AND target_player_id = ? AND source = 'side_switch'",
+            [$myGP['game_id'], $myGP['player_id'], $myGP['player_id']]
+        );
+    }
+
     ob_start();
     ?>
     <?php if ($status === 'lobby'): ?>
@@ -50,6 +62,13 @@ function render_my_status_actions(array|false|null $game, array|false|null $myGP
     <div class="alert alert--warn mt-2">
       💔 <strong><?= e($partnerDeathName) ?></strong> ist gestorben. Du kannst dich jetzt
       jederzeit selbst als tot melden, wenn du bereit dazu bist.
+    </div>
+    <?php endif; ?>
+
+    <!-- Seitenwechsel-Hinweis (side_switch, z.B. Schläfer) -->
+    <?php if ($sideSwitched): ?>
+    <div class="alert alert--info mt-2">
+      💤 Deine Zeit als verdeckter Killer ist vorbei — du gehörst jetzt zu den Bürgern.
     </div>
     <?php endif; ?>
 

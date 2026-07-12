@@ -171,8 +171,10 @@ switch($action){
         }
     }
 
-    // Spiel starten
-    Database::execute("UPDATE games SET status='running',phase='day',round=1 WHERE id=?",[$gameId]);
+    // Spiel starten — started_at ist die stabile Referenzzeit für zeitgesteuerte
+    // Rollen-Mechaniken (z.B. side_switch/Schläfer). updated_at eignet sich dafür
+    // NICHT, da es sich bei jedem weiteren Update (Phasenwechsel etc.) mitändert.
+    Database::execute("UPDATE games SET status='running',phase='day',round=1,started_at=NOW() WHERE id=?",[$gameId]);
 
     WebPush::sendToGame($gameId, true, '▶️ Spiel gestartet!', 'Das Spiel läuft — viel Erfolg!');
 
@@ -364,7 +366,7 @@ switch($action){
     $cooldown = (int)($input['cooldown'] ?? 0);
     if ($cooldown < 0 || $cooldown > 10080) err('Cooldown: 0–10080 Minuten (max. 7 Tage).');
     Database::execute(
-      "INSERT INTO roles (name,cooldown,description,rules,active,amount,fill,icon_path,sichtbar,killer_sichtbar,befragen,auto_eintrag,is_killer,sort_order,linked_death,rollensicht,kill_hinweis) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      "INSERT INTO roles (name,cooldown,description,rules,active,amount,fill,icon_path,sichtbar,killer_sichtbar,befragen,auto_eintrag,is_killer,sort_order,linked_death,rollensicht,kill_hinweis,side_switch,side_switch_min,side_switch_max) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
       [
         $name,
         $cooldown,
@@ -383,6 +385,9 @@ switch($action){
         !empty($input['linked_death']) ? 1 : 0,
         !empty($input['rollensicht']) ? 1 : 0,
         !empty($input['kill_hinweis']) ? 1 : 0,
+        !empty($input['side_switch']) ? 1 : 0,
+        max(0,(int)($input['side_switch_min'] ?? 0)),
+        max(0,(int)($input['side_switch_max'] ?? 0)),
       ]
     );
     $newRoleId = Database::lastId();
@@ -401,7 +406,7 @@ switch($action){
     $cooldown = (int)($input['cooldown'] ?? 0);
     if ($cooldown < 0 || $cooldown > 10080) err('Cooldown: 0–10080 Minuten (max. 7 Tage).');
     Database::execute(
-      "UPDATE roles SET name=?,cooldown=?,description=?,rules=?,active=?,amount=?,fill=?,icon_path=?,sichtbar=?,killer_sichtbar=?,befragen=?,auto_eintrag=?,is_killer=?,sort_order=?,linked_death=?,rollensicht=?,kill_hinweis=? WHERE id=?",
+      "UPDATE roles SET name=?,cooldown=?,description=?,rules=?,active=?,amount=?,fill=?,icon_path=?,sichtbar=?,killer_sichtbar=?,befragen=?,auto_eintrag=?,is_killer=?,sort_order=?,linked_death=?,rollensicht=?,kill_hinweis=?,side_switch=?,side_switch_min=?,side_switch_max=? WHERE id=?",
       [
         $name,
         $cooldown,
@@ -420,6 +425,9 @@ switch($action){
         !empty($input['linked_death']) ? 1 : 0,
         !empty($input['rollensicht']) ? 1 : 0,
         !empty($input['kill_hinweis']) ? 1 : 0,
+        !empty($input['side_switch']) ? 1 : 0,
+        max(0,(int)($input['side_switch_min'] ?? 0)),
+        max(0,(int)($input['side_switch_max'] ?? 0)),
         $roleId,
       ]
     );
