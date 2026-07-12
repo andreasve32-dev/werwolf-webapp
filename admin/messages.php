@@ -5,7 +5,7 @@ require_once TEMPLATE_PATH . '/messages_blocks.php';
 Auth::requireAdmin();
 
 $messages = Database::query(
-    "SELECT m.id, m.type, m.status, m.message, m.faq_question, m.voice_path, m.reply, m.created_at, m.replied_at, m.read_by_player, m.published,
+    "SELECT m.id, m.type, m.status, m.message, m.faq_question, m.reply, m.created_at, m.replied_at, m.read_by_player, m.published,
             p.display_name, p.username
      FROM messages m
      JOIN players p ON p.id = m.player_id
@@ -49,10 +49,6 @@ require TEMPLATE_PATH . '/base.php';
       <button class="btn btn--ghost btn--sm"   data-filter="wish"     onclick="filterType('wish', this)">💡 Wünsche</button>
       <button class="btn btn--ghost btn--sm"   data-filter="feedback" onclick="filterType('feedback', this)">💬 Feedback</button>
     </div>
-    <button class="btn btn--ghost btn--sm" onclick="cleanupVoices(this)"
-            title="Sprachaufnahmen löschen, die zu keiner Nachricht mehr gehören">
-      🧹 Verwaiste Aufnahmen aufräumen
-    </button>
   </div>
 
   <div class="card card--glow animate-in">
@@ -223,23 +219,6 @@ async function saveFaqQuestion(id) {
   }
 }
 
-async function transcribeVoice(id, btn) {
-  const original = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = '⏳ Transkribiere …';
-  const r = await apiFetch(MSG_API, {action:'transcribe_voice', id});
-  if (r.error === 'session_expired') return;
-  if (r.ok) {
-    showToast(r.message || 'Transkribiert.', 'success');
-    if (r.html) replaceMsgRow(id, r.html);
-    toggleFaqEdit(id); // Textfassung direkt zum Gegenlesen/Anpassen aufklappen
-  } else {
-    showToast(r.error || 'Fehler', 'error');
-    btn.disabled = false;
-    btn.textContent = original;
-  }
-}
-
 async function deleteMsg(id) {
   if (!confirm('Nachricht wirklich löschen?')) return;
   const r = await apiFetch(MSG_API, {action:'delete', id});
@@ -318,89 +297,6 @@ function copyApiToken(btn) {
     () => showToast('Token kopiert.', 'success'),
     () => showToast('Kopieren fehlgeschlagen — bitte manuell markieren.', 'error')
   );
-}
-
-async function cleanupVoices(btn) {
-  const original = btn.textContent;
-  btn.disabled = true; btn.textContent = '⏳ Räume auf …';
-  const r = await apiFetch(MSG_API, {action:'cleanup_voice'});
-  if (r.error === 'session_expired') return;
-  showToast(r.ok ? (r.message || 'Aufgeräumt.') : (r.error || 'Fehler'), r.ok ? 'success' : 'error');
-  btn.disabled = false; btn.textContent = original;
-}
-
-// ── Sprachantwort aufnehmen (Admin, MediaRecorder, max. 1 Min.) ─────
-const RV_MAX_SECS = 60;
-let _rv = {id:null, rec:null, chunks:[], blob:null, timer:null, start:0, stream:null};
-
-function rvPickMime(){ for (const m of ['audio/webm;codecs=opus','audio/webm','audio/mp4']){ if (MediaRecorder.isTypeSupported?.(m)) return m; } return ''; }
-
-function rvOpen(id){
-  if (_rv.id && _rv.id !== id) rvReset(_rv.id, true); // andere offene Aufnahme schließen
-  const box = document.getElementById('rv-box-' + id);
-  if (box) box.style.display = box.style.display === 'none' ? '' : 'none';
-}
-
-async function rvToggleRec(id){
-  if (_rv.rec && _rv.rec.state === 'recording' && _rv.id === id){ rvStop(id, false); return; }
-  const res = document.getElementById('rv-result-' + id);
-  if (!window.MediaRecorder || !navigator.mediaDevices?.getUserMedia){
-    if (res){ res.style.display=''; res.innerHTML='<div class="alert alert--error" style="padding:.3rem .7rem;font-size:.82rem">Aufnahme wird hier nicht unterstützt (HTTPS + Mikrofon nötig).</div>'; }
-    return;
-  }
-  try { _rv.stream = await navigator.mediaDevices.getUserMedia({audio:true}); }
-  catch(e){ if (res){ res.style.display=''; res.innerHTML='<div class="alert alert--error" style="padding:.3rem .7rem;font-size:.82rem">Mikrofon-Zugriff verweigert.</div>'; } return; }
-  _rv.id = id; _rv.chunks=[]; _rv.blob=null;
-  const mime = rvPickMime();
-  try { _rv.rec = new MediaRecorder(_rv.stream, mime ? {mimeType:mime} : undefined); }
-  catch(e){ _rv.rec = new MediaRecorder(_rv.stream); }
-  _rv.rec.ondataavailable = e => { if (e.data && e.data.size > 0) _rv.chunks.push(e.data); };
-  _rv.rec.onstop = () => {
-    _rv.stream?.getTracks().forEach(t=>t.stop()); _rv.stream=null;
-    if (!_rv.chunks.length) return;
-    _rv.blob = new Blob(_rv.chunks, {type:_rv.rec.mimeType || 'audio/webm'});
-    const prev = document.getElementById('rv-preview-' + id);
-    if (prev){ prev.src = URL.createObjectURL(_rv.blob); prev.style.display=''; }
-    const send = document.getElementById('rv-send-' + id); if (send) send.disabled=false;
-    const rec  = document.getElementById('rv-rec-' + id);  if (rec)  rec.textContent='🔄 Neu aufnehmen';
-  };
-  _rv.rec.start(); _rv.start = Date.now();
-  document.getElementById('rv-rec-' + id).textContent = '⏹ Aufnahme beenden';
-  const send = document.getElementById('rv-send-' + id); if (send) send.disabled=true;
-  const prev = document.getElementById('rv-preview-' + id); if (prev) prev.style.display='none';
-  const t = document.getElementById('rv-timer-' + id); t.style.display='';
-  clearInterval(_rv.timer);
-  _rv.timer = setInterval(()=>{ const s=Math.floor((Date.now()-_rv.start)/1000); t.textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')} / 1:00`; if (s>=RV_MAX_SECS) rvStop(id,false); }, 250);
-}
-
-function rvStop(id, discard){
-  clearInterval(_rv.timer); _rv.timer=null;
-  if (_rv.rec && _rv.rec.state === 'recording'){ if (discard) _rv.rec.ondataavailable=null; try { _rv.rec.stop(); } catch(e){} }
-  if (discard){ _rv.stream?.getTracks().forEach(t=>t.stop()); _rv.stream=null; }
-}
-
-function rvReset(id, hide){
-  rvStop(id, true);
-  _rv = {id:null,rec:null,chunks:[],blob:null,timer:null,start:0,stream:null};
-  const rec=document.getElementById('rv-rec-'+id);   if (rec) rec.textContent='🔴 Aufnahme starten';
-  const t=document.getElementById('rv-timer-'+id);   if (t){ t.style.display='none'; t.textContent='0:00 / 1:00'; }
-  const prev=document.getElementById('rv-preview-'+id); if (prev){ prev.style.display='none'; prev.removeAttribute('src'); }
-  const send=document.getElementById('rv-send-'+id);  if (send) send.disabled=true;
-  if (hide){ const box=document.getElementById('rv-box-'+id); if (box) box.style.display='none'; }
-}
-
-async function rvSend(id){
-  if (!_rv.blob || _rv.id !== id){ showToast('Bitte zuerst eine Aufnahme machen.','error'); return; }
-  const send = document.getElementById('rv-send-'+id); send.disabled=true;
-  const fd = new FormData();
-  fd.append('action','reply_voice'); fd.append('id', id);
-  const ext = _rv.blob.type.includes('mp4') ? 'm4a' : (_rv.blob.type.includes('ogg') ? 'ogg' : 'webm');
-  fd.append('voice', _rv.blob, 'antwort.' + ext);
-  try {
-    const r = await (await fetch(MSG_API, {method:'POST', body:fd})).json();
-    if (r.ok){ showToast(r.message || 'Sprachantwort gesendet.','success'); if (r.html) replaceMsgRow(id, r.html); }
-    else { showToast(r.error || 'Fehler','error'); send.disabled=false; }
-  } catch(e){ showToast('Netzwerkfehler beim Senden.','error'); send.disabled=false; }
 }
 
 // ── Live-Update: neue Spielerfragen ohne Reload nachladen ─────

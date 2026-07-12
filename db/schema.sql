@@ -167,9 +167,7 @@ CREATE TABLE messages (
   status         VARCHAR(16) NOT NULL DEFAULT 'open',
   message        TEXT NOT NULL,
   faq_question   TEXT NULL,        -- anonymisierte/bearbeitete Frage für die FAQ (NULL = message wird 1:1 verwendet)
-  voice_path     VARCHAR(255) NULL, -- Sprachnachricht-Datei unter uploads/voice/ (NULL = Textnachricht). Auslieferung nur über api/messages.php (Auth), nie direkt
   reply          TEXT NULL,
-  reply_voice_path VARCHAR(255) NULL, -- Sprach-ANTWORT des Admins (uploads/voice/), Auslieferung nur über api/messages.php?action=voice_file&which=reply
   created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   replied_at     TIMESTAMP NULL,
   read_by_player TINYINT(1) NOT NULL DEFAULT 0,
@@ -282,88 +280,87 @@ CREATE TABLE role_insights (
 -- cooldown: Abklingzeit in Minuten (0 = keine)
 -- sichtbar=1: Spieler mit dieser Rolle erkennen sich beim Spielstart gegenseitig
 --
-INSERT INTO roles (id, name, cooldown, description, rules, active, fill, amount, icon_path, sichtbar, befragen, auto_eintrag, is_killer, sort_order, linked_death) VALUES
+-- Stand: 1:1-Abbild der Live-Rollen (Snapshot 12.07.2026, siehe CHANGELOG v0.39) —
+-- inkl. aller Textänderungen/Flags, die über admin/roles.php gepflegt wurden.
+INSERT INTO roles (id, name, cooldown, description, rules, active, fill, amount, icon_path, sichtbar, killer_sichtbar, befragen, auto_eintrag, is_killer, linked_death, rollensicht, kill_hinweis, sort_order) VALUES
 (1,  'Bürger',      0,
   'Einfacher Bürger ohne besondere Fähigkeiten.',
   'Finde die Mörder durch Beobachten und Abstimmen. Berufe Versammlungen ein.',
-  1, 1, 0, 'assets/icons/roles/buerger.png', 0, 0, 0, 0, 10, 0),
+  1, 1, 0, 'assets/icons/roles/buerger.png', 0, 0, 0, 0, 0, 0, 0, 0, 10),
 
 (2,  'Mörder',      30,
-  'Kann andere Spieler mit der Mordwaffe töten. Abklingzeit: {cooldown} Minuten.',
-  'Zeige einem anderen Spieler die Mordwaffe — dieser ist sofort tot und trägt sich in die Todesliste ein. Die Mordwaffe hat {cooldown} Minuten Abklingzeit. Arbeite mit dem anderen Mörder zusammen.',
-  1, 0, 2, 'assets/icons/roles/moerder.png', 1, 0, 0, 1, 20, 0),
+  'Kann andere Spieler mit der Mörderkarte töten. Abklingzeit: {cooldown} Minuten.',
+  'Zeige einem anderen Spieler deine Mörderkarte — dieser ist sofort tot und trägt sich in die Todesliste ein. Auf Morde hast du {cooldown} Minuten Abklingzeit. Arbeite mit dem anderen Mörder zusammen.',
+  1, 0, 2, 'assets/icons/roles/moerder.png', 1, 0, 0, 0, 1, 0, 0, 0, 20),
 
 (3,  'Nekromant',   0,
   'Kann tote Spieler befragen, indem er ihnen seine Karte zeigt.',
   'Zeige einem toten Spieler deine Karte. Dieser trägt Todeszeitpunkt und -ort in die Todesliste ein und gibt so mehr Informationen preis.',
-  1, 0, 1, 'assets/icons/roles/nekromant.png', 0, 1, 0, 0, 30, 0),
+  1, 0, 1, 'assets/icons/roles/nekromant.png', 0, 0, 1, 0, 0, 0, 0, 0, 30),
 
 (4,  'Hellseherin', 30,
   'Kann alle {cooldown} Minuten einen Spieler zwingen, seine Rolle aufzudecken. Untersuchte Rollen bleiben dauerhaft sichtbar.',
   'Zeige einem Spieler deine Karte — er muss dir seine Rolle zeigen. Trage die Untersuchung danach in der App ein: die Rolle bleibt für dich dauerhaft in der Spielerliste sichtbar. Abklingzeit: {cooldown} Minuten.',
-  1, 0, 1, 'assets/icons/roles/hellseherin.png', 0, 0, 0, 0, 40, 0),
+  1, 0, 1, 'assets/icons/roles/hellseherin.png', 0, 0, 0, 0, 0, 1, 0, 0, 40),
 
 (5,  'Detektiv',    0,
-  'Ermittelt passiv: Nach jeder Mordserie erfährt er automatisch einen Spieler, der sicher kein Killer ist.',
-  'Deine Fähigkeit ist passiv — du musst nichts tun. Immer wenn so viele Morde geschehen sind, wie es Killer im Spiel gibt, zeigt dir die App automatisch einen zufälligen Spieler mit "✅ Kein Killer" in der Spielerliste an. Du bekommst dann eine Benachrichtigung.',
-  1, 0, 1, 'assets/icons/roles/detektiv.png', 0, 0, 0, 0, 50, 0),
+  'Ermittelt passiv: Nach jedem Mord eines Killers erfährt er automatisch einen Spieler, der sicher kein Killer ist.',
+  'Deine Fähigkeit ist passiv — du musst nichts tun. Immer wenn ein Spieler ermordet wird, zeigt dir die App automatisch einen zufälligen Spieler mit "✅ Kein Killer" in der Spielerliste an. Du bekommst dann eine Benachrichtigung.',
+  1, 0, 1, 'assets/icons/roles/detektiv.png', 0, 0, 0, 0, 0, 0, 0, 1, 50),
 
 (6,  'Das Paar',    0,
   '2 Spieler bilden ein Paar und kennen sich von Beginn an.',
-  'Öffne beim Spielstart die Augen wenn das Paar aufgerufen wird — ihr kennt euren Partner. Stirbt dein Partner, nimmst du dir das Leben sobald du seinen Tod bemerkst.',
-  1, 0, 2, 'assets/icons/roles/das-paar.png', 1, 0, 0, 0, 60, 1),
+  'Ihr kennt euren Partner. Stirbt dein Partner, nimmst du dir das Leben sobald du seinen Tod bemerkst.',
+  1, 0, 2, 'assets/icons/roles/das-paar.png', 1, 0, 0, 0, 0, 1, 0, 0, 60),
 
 (7,  'Dodo',        0,
   'Gewinnt das Spiel, indem er von der Gruppe erhängt wird.',
-  'Du gewinnst, wenn die Versammlung dich erhängt. Wirst du von einem Mörder getötet, hat deine Rolle keine Auswirkung. Du darfst KEINE Mordwaffe bei dir tragen.',
-  1, 0, 1, 'assets/icons/roles/dodo.png', 0, 0, 0, 0, 70, 0),
+  'Du gewinnst, wenn die Versammlung dich erhängt. Wirst du von einem Mörder getötet, hat deine Rolle keine Auswirkung.',
+  1, 0, 1, 'assets/icons/roles/dodo.png', 0, 0, 0, 0, 0, 0, 0, 0, 70),
 
--- Optionale Zusatzrollen (standardmäßig deaktiviert)
+-- Optionale Zusatzrollen
 (8,  'Celebrity',   0,
-  'Sein Tod fällt sofort auf — er trägt direkt Todeszeitpunkt und Ort ein.',
-  'Du bist allgemein bekannt. Stirbst du, trägst du sofort Zeitpunkt und Ort in die Todesliste ein.',
-  1, 0, 1, 'assets/icons/roles/celebrity.png', 0, 0, 1, 0, 80, 0),
+  'Sein Tod fällt sofort auf — nachdem du getötet wurdest erscheinen deine Daten auf der Todesliste.',
+  'Du bist allgemein bekannt — nachdem du getötet wurdest erscheinen deine Daten auf der Todesliste.',
+  1, 0, 1, 'assets/icons/roles/celebrity.png', 0, 0, 0, 1, 0, 0, 0, 0, 80),
 
 (9,  'Gunslinger',  0,
   'Kann beliebig oft schießen. Trifft er einen Killer, überlebt er. Trifft er einen Unschuldigen, stirbt er selbst.',
   'Du hast eine Waffe ohne Schussbegrenzung. Schießt du auf einen Killer (z. B. Mörder), lebst du weiter und kannst erneut schießen. Triffst du einen Unschuldigen, stirbst du selbst. Du stehst auf Seite der Bürger.',
-  1, 0, 1, 'assets/icons/roles/gunslinger.png', 0, 0, 0, 0, 90, 0),
+  1, 0, 1, 'assets/icons/roles/gunslinger.png', 0, 0, 0, 0, 0, 0, 0, 0, 90),
 
+-- Sheriff: derzeit deaktiviert (active=0) — Stand aus der Live-DB übernommen
 (10, 'Sheriff',     0,
   'Kann unbegrenzt Spieler erschießen — tötet er jedoch einen Unschuldigen, stirbt er selbst.',
   'Du kannst so viele Spieler erschießen wie du willst. Tötest du jedoch nicht den Dodo oder einen Mörder, stirbst du selbst.',
-  1, 0, 1, 'assets/icons/roles/sheriff.png', 0, 0, 0, 0, 100, 0),
+  0, 0, 1, 'assets/icons/roles/sheriff.png', 0, 0, 0, 0, 0, 0, 0, 0, 100),
 
 -- Geplante Rollen (active=0) — Mechaniken noch nicht gebaut, Details
 -- und benötigte Flags siehe db/neue_rollen_vorlagen.sql
 (11, 'Leichenfresser', 30,
   'Killer, dessen Opfer spurlos verschwinden — sie können nicht vom Nekromanten befragt werden.',
   'Zeige einem anderen Spieler die Mordwaffe — dieser ist sofort tot. Deine Opfer hinterlassen keine Orts- und Zeitspuren und können NICHT vom Nekromanten befragt werden. Abklingzeit: {cooldown} Minuten.',
-  0, 0, 1, NULL, 0, 0, 0, 1, 110, 0),
+  0, 0, 1, NULL, 0, 0, 0, 0, 1, 0, 0, 0, 110),
 
 (12, 'Auftragskiller', 5,
   'Killer mit Auftrag: Er bekommt ein zufälliges Ziel — erst nach dessen Tod das nächste.',
   'Die App zeigt dir ein zufälliges Ziel. Nur dieses Ziel darfst du töten (Mordwaffe zeigen). Nach dem Kill bekommst du nach {cooldown} Minuten Abklingzeit ein neues Ziel zugewiesen.',
-  0, 0, 1, NULL, 0, 0, 0, 1, 120, 0),
+  0, 0, 1, NULL, 0, 0, 0, 0, 1, 0, 0, 0, 120),
 
 (13, 'Schläfer', 0,
   'Beginnt als Killer — wechselt aber nach einiger Zeit heimlich die Seite und spielt dann für das Dorf.',
   'Du startest im Killer-Team und kennst die anderen Killer. Nach einer zufälligen Zeit wechselst du automatisch die Seite: Ab dann gewinnst du mit den Bürgern. Die anderen Killer wissen von Anfang an nur: "Einer von euch ist ein Verräter."',
-  0, 0, 1, NULL, 1, 0, 0, 1, 130, 0),
+  0, 0, 1, NULL, 1, 0, 0, 0, 1, 0, 0, 0, 130),
 
 (14, 'Söldner', 0,
   'Startrolle im Zombie-Modus: Überlebe die Zombie-Plage.',
   'Alle Spieler starten als Söldner. Irgendwann in den ersten Stunden verwandelt sich einer von euch in den ersten Zombie. Findet und eliminiert die Zombies, bevor sie euch alle bekehren.',
-  0, 1, 0, NULL, 0, 0, 0, 0, 140, 0),
+  0, 1, 0, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 140),
 
 (15, 'Zombie', 0,
   'Bekehrt Söldner statt sie zu töten — die Plage wächst.',
   'Zeige einem Söldner deine Karte — er ist ab sofort ebenfalls Zombie und spielt für euch weiter. Ihr gewinnt, wenn alle Spieler infiziert sind. Zombies erkennen sich gegenseitig.',
-  0, 0, 1, NULL, 1, 0, 0, 1, 150, 0);
-
--- Flags, die nicht in der Spaltenliste des Seed-INSERTs stehen
-UPDATE roles SET rollensicht=1 WHERE name='Hellseherin';
-UPDATE roles SET kill_hinweis=1 WHERE name='Detektiv';
+  0, 0, 1, NULL, 1, 0, 0, 0, 1, 0, 0, 0, 150);
 
 -- ── 11. App-Einstellungen (DB-konfigurierbar) ─────────────────────
 CREATE TABLE settings (
@@ -393,10 +390,7 @@ INSERT INTO settings (`key`, value, type, label, description, sort_order) VALUES
 ('login_logo',         '',                                'string', 'Login-Logo',              'Pfad zum Bild auf der Anmeldeseite (leer = Wolf-Emoji 🐺).',       5),
 ('game_timezone',      'Europe/Berlin',                   'string', 'Zeitzone',                'PHP-Zeitzone des Servers (z.B. Europe/Berlin, UTC).',             20),
 ('push_cooldown',      '5',                               'int',    'Push-Cooldown (Min.)',    'Mindestwartezeit zwischen zwei Auto-Push-Benachrichtigungen.',    26),
-('voice_messages_enabled', '1',                           'bool',   'Sprachnachrichten',       'Spieler dürfen Fragen als Sprachnachricht (max. 1 Min.) aufnehmen.', 27),
-('voice_transcription_enabled', '0',                       'bool',   'Sprachnachrichten-Transkription', 'Erlaubt dem Spielleiter, Sprachnachrichten per OpenAI-API automatisch in Text umzuwandeln (Grundlage für die FAQ-Übernahme).', 28),
-('openai_api_key',      '',                                'string', 'OpenAI API-Key',          'Wird nur für die Sprachnachrichten-Transkription verwendet. Wert wird in der Oberfläche nie im Klartext angezeigt.', 29),
-('clear_messages_on_start', '0',                           'bool',   'Nachrichten bei Spielstart löschen', 'Beim Start eines neuen Spiels: alle Sprachnachrichten (immer) sowie alle Text-Fragen ohne FAQ-Veröffentlichung werden gelöscht.', 22),
+('clear_messages_on_start', '0',                           'bool',   'Nachrichten bei Spielstart löschen', 'Beim Start eines neuen Spiels: alle Text-Fragen ohne FAQ-Veröffentlichung werden gelöscht.', 22),
 ('push_last_sent',     '0',                               'int',    'Push: letzter Versand (intern)', 'Unix-Timestamp des letzten gesendeten Pushes (intern).', 999),
 ('feedback_api_token', '',                                'string', 'Feedback-API-Token',      'Zugriffs-Token für die externe Feedback-API (leer = API deaktiviert). Verwaltung über Admin → Spielerfragen & Feedback.', 998);
 

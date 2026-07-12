@@ -44,9 +44,6 @@ function render_message_row(array $msg): string {
           <?php else: ?>
             <span id="pub-tag-<?= (int)$msg['id'] ?>" style="display:none" class="tag tag--alive" style="font-size:.65rem">📢 Im FAQ</span>
           <?php endif; ?>
-          <?php if (!empty($msg['voice_path'])): ?>
-            <span class="tag tag--night" style="font-size:.65rem">🎙️ Sprachnachricht</span>
-          <?php endif; ?>
           <!-- Vorschau der Frage wenn zugeklappt -->
           <?php if (!$isNew): ?>
           <span class="msg-preview text-dim" id="preview-<?= (int)$msg['id'] ?>"
@@ -64,22 +61,14 @@ function render_message_row(array $msg): string {
             <option value="<?= e($sKey) ?>" <?= $sKey === $status ? 'selected' : '' ?>><?= $sMeta['icon'] ?> <?= e($sMeta['label']) ?></option>
             <?php endforeach; ?>
           </select>
-          <?php if (!empty($msg['voice_path']) && VOICE_TRANSCRIPTION): ?>
-          <button class="btn btn--ghost btn--sm" title="Sprachnachricht automatisch transkribieren (OpenAI)"
-                  onclick="transcribeVoice(<?= (int)$msg['id'] ?>, this)">🎙️→📝 Transkribieren</button>
-          <?php endif; ?>
           <?php elseif (!$isNew): ?>
           <button class="btn btn--ghost btn--sm" id="pub-btn-<?= (int)$msg['id'] ?>"
-                  title="<?= $msg['published'] ? 'Aus FAQ entfernen' : (!empty($msg['voice_path']) && empty($msg['faq_question']) ? 'Vor Veröffentlichung erst FAQ-Text hinterlegen' : 'Als FAQ veröffentlichen') ?>"
+                  title="<?= $msg['published'] ? 'Aus FAQ entfernen' : 'Als FAQ veröffentlichen' ?>"
                   onclick="togglePublish(<?= (int)$msg['id'] ?>)">
             <?= $msg['published'] ? '📢 Veröffentlicht' : '📢 FAQ freigeben' ?>
           </button>
           <button class="btn btn--ghost btn--sm" title="FAQ-Text anonymisieren/bearbeiten"
                   onclick="toggleFaqEdit(<?= (int)$msg['id'] ?>)">✏️ FAQ-Text</button>
-          <?php if (!empty($msg['voice_path']) && VOICE_TRANSCRIPTION): ?>
-          <button class="btn btn--ghost btn--sm" title="Sprachnachricht automatisch transkribieren (OpenAI)"
-                  onclick="transcribeVoice(<?= (int)$msg['id'] ?>, this)">🎙️→📝 Transkribieren</button>
-          <?php endif; ?>
           <?php endif; ?>
           <button class="btn btn--ghost btn--sm" title="Löschen"
                   onclick="deleteMsg(<?= (int)$msg['id'] ?>)">🗑</button>
@@ -97,39 +86,17 @@ function render_message_row(array $msg): string {
         <!-- Frage des Spielers (Original, wird nie verändert) -->
         <div style="background:var(--panel-bg);border:1px solid var(--border);border-radius:8px;
                     padding:.6rem .85rem;margin-bottom:.6rem;font-size:.9rem;line-height:1.5">
-          <?php if (!empty($msg['voice_path'])): ?>
-            <?php if (is_file(ROOT_PATH . '/' . $msg['voice_path'])): ?>
-              <?php // onerror fängt beschädigte/nicht dekodierbare Aufnahmen ab —
-                    // Player ausblenden, Hinweis daneben einblenden ?>
-              <audio controls preload="none" style="width:100%;max-width:340px;display:block"
-                     src="<?= e(API_URL) ?>/messages.php?action=voice_file&amp;id=<?= (int)$msg['id'] ?>"
-                     onerror="this.style.display='none';this.nextElementSibling.style.display=''"></audio>
-              <span class="text-dim text-sm" style="display:none">⚠️ Aufnahme kann nicht abgespielt werden (Datei beschädigt oder Format nicht unterstützt).</span>
-            <?php else: ?>
-              <span class="text-dim text-sm">⚠️ Aufnahme-Datei fehlt auf dem Server.</span>
-            <?php endif; ?>
-            <?php // Bei Sprach-Feedback: Transkript direkt unter dem Player zeigen
-                  // (faq_question dient hier als Transkript-Feld — FAQ gibt es für Feedback nicht) ?>
-            <?php if ($isFeedback && !empty($msg['faq_question'])): ?>
-              <p class="text-dim text-sm" style="margin:.5rem 0 0;line-height:1.5">📝 <?= e($msg['faq_question']) ?></p>
-            <?php endif; ?>
-          <?php else: ?>
-            <?= e($msg['message']) ?>
-          <?php endif; ?>
+          <?= e($msg['message']) ?>
         </div>
 
-        <!-- FAQ-Text bearbeiten (anonymisierte/gekürzte Version für die öffentliche FAQ).
-             Bei Sprachnachrichten ist das die EINZIGE Möglichkeit, Inhalte zu veröffentlichen —
-             die Audiodatei selbst wird nie öffentlich, nur diese vom Spielleiter
-             geschriebene Textfassung. -->
+        <!-- FAQ-Text bearbeiten (anonymisierte/gekürzte Version für die öffentliche FAQ). -->
         <?php if (!$isNew && !$isFeedback): ?>
         <div id="faq-edit-<?= (int)$msg['id'] ?>" style="display:none;margin-bottom:.6rem">
           <label class="text-dim text-xs" style="display:block;margin-bottom:.25rem">
             Text für die öffentliche FAQ (Namen/persönliche Angaben hier entfernen):
           </label>
           <textarea class="form-input" id="faq-text-<?= (int)$msg['id'] ?>" rows="2" maxlength="500"
-                    placeholder="<?= !empty($msg['voice_path']) ? 'Anonymisierte Textfassung der Sprachnachricht …' : '' ?>"
-                    style="width:100%;font-size:.85rem;resize:vertical"><?= e($msg['faq_question'] ?? (!empty($msg['voice_path']) ? '' : $msg['message'])) ?></textarea>
+                    style="width:100%;font-size:.85rem;resize:vertical"><?= e($msg['faq_question'] ?? $msg['message']) ?></textarea>
           <div class="flex gap-xs mt-1">
             <button class="btn btn--primary btn--sm" onclick="saveFaqQuestion(<?= (int)$msg['id'] ?>)">✓ Speichern</button>
             <button class="btn btn--ghost btn--sm" onclick="toggleFaqEdit(<?= (int)$msg['id'] ?>)">Abbrechen</button>
@@ -151,10 +118,6 @@ function render_message_row(array $msg): string {
             <p style="margin:0;color:var(--text-bright)" id="reply-text-display-<?= (int)$msg['id'] ?>">
               <?= e($msg['reply']) ?>
             </p>
-            <?php if (!empty($msg['reply_voice_path'])): ?>
-            <audio controls preload="none" style="width:100%;max-width:320px;margin-top:.4rem;display:block"
-                   src="<?= e(API_URL) ?>/messages.php?action=voice_file&amp;which=reply&amp;id=<?= (int)$msg['id'] ?>"></audio>
-            <?php endif; ?>
             <button class="btn btn--ghost btn--sm mt-1"
                     onclick="openEditReply(<?= (int)$msg['id'] ?>, <?= htmlspecialchars(json_encode($msg['reply']), ENT_QUOTES) ?>)">
               ✏️ Bearbeiten
@@ -179,25 +142,6 @@ function render_message_row(array $msg): string {
             <?php endif; ?>
           </div>
           <div id="reply-result-<?= (int)$msg['id'] ?>" style="display:none;margin-top:.4rem"></div>
-
-          <?php if (VOICE_MESSAGES): ?>
-          <!-- Sprachantwort aufnehmen (MediaRecorder, max. 1 Min.) -->
-          <div style="margin-top:.5rem;border-top:1px dashed var(--border);padding-top:.5rem">
-            <button class="btn btn--ghost btn--sm" type="button"
-                    onclick="rvOpen(<?= (int)$msg['id'] ?>, this)">🎙️ Per Sprache antworten</button>
-            <div id="rv-box-<?= (int)$msg['id'] ?>" style="display:none;margin-top:.4rem">
-              <div class="flex gap-xs" style="align-items:center;flex-wrap:wrap">
-                <button class="btn btn--ghost btn--sm" type="button"
-                        id="rv-rec-<?= (int)$msg['id'] ?>" onclick="rvToggleRec(<?= (int)$msg['id'] ?>)">🔴 Aufnahme starten</button>
-                <span id="rv-timer-<?= (int)$msg['id'] ?>" class="text-dim text-xs" style="display:none">0:00 / 1:00</span>
-                <button class="btn btn--primary btn--sm" type="button"
-                        id="rv-send-<?= (int)$msg['id'] ?>" onclick="rvSend(<?= (int)$msg['id'] ?>)" disabled>✓ Sprachantwort senden</button>
-              </div>
-              <audio id="rv-preview-<?= (int)$msg['id'] ?>" controls style="display:none;width:100%;max-width:320px;margin-top:.3rem"></audio>
-              <div id="rv-result-<?= (int)$msg['id'] ?>" style="display:none;margin-top:.3rem"></div>
-            </div>
-          </div>
-          <?php endif; ?>
         </div>
 
       </div><!-- /body -->

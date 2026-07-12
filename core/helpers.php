@@ -261,7 +261,7 @@ function assetUrl(string $path): string {
 /**
  * Erkennt den echten MIME-Typ einer hochgeladenen Datei über ihren Inhalt
  * (nie der vom Browser gemeldeten Endung/Angabe vertrauen — die ist fälschbar).
- * Gemeinsamer Helper für api/upload_role_icon.php und api/messages.php (Sprachnachrichten).
+ * Helper für api/upload_role_icon.php.
  */
 function detectMimeType(string $tmpPath): string|false {
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
@@ -523,33 +523,6 @@ function cooldownRemainingSecs(int $cooldownMins, int|string|null $elapsedSecs):
     $total = $cooldownMins * 60;
     if ($total <= 0 || $elapsedSecs === null) return 0;
     return max(0, min($total, $total - (int)$elapsedSecs));
-}
-
-/**
- * Räumt verwaiste Sprachaufnahmen unter uploads/voice/ auf — also Dateien, die
- * von KEINER Nachricht (messages.voice_path) mehr referenziert werden. Fängt
- * Orphans ab, die auf jedem Weg entstehen können: Kaskaden-Löschung (Spieler
- * gelöscht → seine Nachrichten weg), direkte DB-Eingriffe, abgebrochene Uploads.
- * So kann dauerhaft keine verwaiste Datei liegen bleiben. Gibt die Anzahl
- * gelöschter Dateien zurück.
- */
-function cleanupOrphanedVoiceFiles(): int {
-    $dir = ROOT_PATH . '/uploads/voice';
-    if (!is_dir($dir)) return 0;
-    // Sowohl die Frage-Aufnahme (voice_path) als auch die Admin-Sprachantwort
-    // (reply_voice_path) gelten als referenziert — beide dürfen nicht gelöscht werden.
-    $refs = [];
-    foreach (Database::query("SELECT voice_path, reply_voice_path FROM messages") as $r) {
-        if (!empty($r['voice_path']))       $refs[$r['voice_path']] = true;
-        if (!empty($r['reply_voice_path'])) $refs[$r['reply_voice_path']] = true;
-    }
-    $deleted = 0;
-    foreach (glob($dir . '/*') ?: [] as $f) {
-        if (!is_file($f)) continue;
-        if (!isset($refs['uploads/voice/' . basename($f)]) && @unlink($f)) $deleted++;
-    }
-    if ($deleted > 0) logEvent('INFO', "Verwaiste Sprachaufnahmen aufgeräumt: {$deleted} Datei(en).");
-    return $deleted;
 }
 
 // ============================================================

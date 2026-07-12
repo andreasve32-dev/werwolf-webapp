@@ -16,7 +16,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'save')
         'login_logo', 'mini_logo', 'register_subtitle',
         'game_timezone',
         'push_cooldown',
-        'voice_messages_enabled', 'voice_transcription_enabled', 'openai_api_key',
         'clear_messages_on_start',
     ];
 
@@ -51,20 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'save')
                 break;
             case 'app_debug':
             case 'beta_mode':
-            case 'voice_messages_enabled':
-            case 'voice_transcription_enabled':
             case 'clear_messages_on_start':
                 $v = filter_var($v, FILTER_VALIDATE_BOOLEAN) ? '1' : '0';
-                break;
-            case 'openai_api_key':
-                // Leeres Feld = Wert unverändert lassen (der echte Key wird nie ins
-                // Formular zurückgeschrieben, ein leeres Absenden darf ihn also nicht
-                // löschen). Explizites Entfernen läuft über den eigenen "🗑"-Button.
-                $v = trim($v);
-                if ($v === '') continue 2;
-                if (mb_strlen($v) > 200) {
-                    $errors[$key] = 'API-Key zu lang (max. 200 Zeichen).'; continue 2;
-                }
                 break;
             case 'default_theme':
                 if (!isset(THEMES[$v])) {
@@ -148,14 +135,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'save')
         echo json_encode(['ok' => false, 'errors' => ['db' => 'Datenbankfehler: ' . $e->getMessage()]]); exit;
     }
     echo json_encode(['ok' => true, 'message' => count($values) . ' Einstellung(en) gespeichert.']);
-    exit;
-}
-
-// ── AJAX: OpenAI API-Key entfernen ───────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'openai_key_clear') {
-    header('Content-Type: application/json');
-    Database::execute("UPDATE settings SET value = '' WHERE `key` = 'openai_api_key'");
-    echo json_encode(['ok' => true, 'message' => 'API-Key entfernt.']);
     exit;
 }
 
@@ -272,8 +251,6 @@ $defaults = [
     'mini_logo'          => MINI_LOGO,
     'game_timezone'      => GAME_TIMEZONE,
     'push_cooldown'      => '5',
-    'voice_messages_enabled' => VOICE_MESSAGES ? '1' : '0',
-    'voice_transcription_enabled' => VOICE_TRANSCRIPTION ? '1' : '0',
     'clear_messages_on_start' => CLEAR_MESSAGES_ON_START ? '1' : '0',
 ];
 foreach ($defaults as $k => $def) {
@@ -510,10 +487,9 @@ function settingsAccHead(string $icon, string $title): void {
         <div>
           <span class="settings-row__name"><?= e($cfg['clear_messages_on_start']['label'] ?? 'Nachrichten bei Spielstart löschen') ?></span>
           <div class="text-dim text-xs mt-1">
-            Beim Start eines neuen Spiels werden <strong>alle Sprachnachrichten</strong>
-            (Aufnahme + Datei, unabhängig vom FAQ-Status) sowie <strong>alle Text-Fragen
-            ohne FAQ-Veröffentlichung</strong> automatisch gelöscht. Bereits veröffentlichte
-            Text-FAQ-Einträge bleiben erhalten. Betrifft alle bisherigen Spiele, nicht nur
+            Beim Start eines neuen Spiels werden <strong>alle Text-Fragen ohne
+            FAQ-Veröffentlichung</strong> automatisch gelöscht. Bereits veröffentlichte
+            FAQ-Einträge bleiben erhalten. Betrifft alle bisherigen Spiele, nicht nur
             das gerade beendete.
           </div>
         </div>
@@ -525,75 +501,6 @@ function settingsAccHead(string $icon, string $title): void {
       </div>
 
       <?php settingsSectionFooter('spiel'); ?>
-      </div>
-    </div>
-    </form>
-
-    <!-- ── Sprachnachrichten ───────────────────────────────── -->
-    <form id="form-voice" class="settings-section" method="POST" onsubmit="saveSection(event,'form-voice')">
-    <div class="card animate-in mb-2" style="animation-delay:.06s;scroll-margin-top:1rem" id="sec-voice">
-      <?php settingsAccHead('🎙️', 'Sprachnachrichten'); ?>
-      <div class="settings-acc__body" hidden>
-
-      <div class="settings-row" style="padding:.6rem 0">
-        <div>
-          <span class="settings-row__name"><?= e($cfg['voice_messages_enabled']['label'] ?? 'Sprachnachrichten') ?></span>
-          <div class="text-dim text-xs mt-1">
-            Spieler können Fragen an den Spielleiter als Sprachnachricht aufnehmen
-            (max. 1 Minute). Aufnahmen sind nur für dich und den Absender abrufbar.
-            Die Aufnahme selbst wird nie veröffentlicht — für die FAQ kannst du unten
-            eine Textfassung transkribieren oder von Hand schreiben.
-          </div>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" name="voice_messages_enabled"
-                 <?= ($cfg['voice_messages_enabled']['value'] ?? '1') === '1' ? 'checked' : '' ?>>
-          <span class="toggle-switch__track"></span>
-        </label>
-      </div>
-
-      <div class="settings-row" style="padding:.6rem 0;border-top:1px solid var(--border)">
-        <div>
-          <span class="settings-row__name"><?= e($cfg['voice_transcription_enabled']['label'] ?? 'Sprachnachrichten-Transkription') ?></span>
-          <div class="text-dim text-xs mt-1">
-            Blendet in der Nachrichten-Verwaltung den Button „🎙️→📝 Transkribieren" ein —
-            schickt die Aufnahme an die OpenAI-API und trägt den erkannten Text in das
-            FAQ-Textfeld ein, zum Gegenlesen/Anonymisieren vor der Veröffentlichung.
-            Benötigt einen hinterlegten API-Key (siehe unten). Kosten: Bruchteile eines
-            Cents pro kurzer Nachricht (Modell gpt-4o-mini-transcribe).
-          </div>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" name="voice_transcription_enabled"
-                 <?= ($cfg['voice_transcription_enabled']['value'] ?? '0') === '1' ? 'checked' : '' ?>>
-          <span class="toggle-switch__track"></span>
-        </label>
-      </div>
-
-      <?php $hasOpenAiKey = trim($cfg['openai_api_key']['value'] ?? '') !== ''; ?>
-      <div class="settings-row" style="padding:.6rem 0;border-top:1px solid var(--border);flex-direction:column;align-items:stretch;gap:.4rem">
-        <div>
-          <span class="settings-row__name">OpenAI API-Key</span>
-          <div class="text-dim text-xs mt-1">
-            Nur für die Transkription oben nötig. Der Key wird aus Sicherheitsgründen
-            nie im Klartext angezeigt — leer lassen beim Speichern behält den
-            aktuellen Key bei.
-          </div>
-        </div>
-        <div class="flex gap-xs" style="align-items:center;flex-wrap:wrap">
-          <span class="tag <?= $hasOpenAiKey ? 'tag--alive' : '' ?>" style="font-size:.7rem">
-            <?= $hasOpenAiKey ? '🔑 Key hinterlegt' : '❌ Kein Key hinterlegt' ?>
-          </span>
-          <input class="form-input" type="password" name="openai_api_key" autocomplete="off"
-                 placeholder="<?= $hasOpenAiKey ? '•••••••••••••••• (unverändert lassen)' : 'sk-…' ?>"
-                 style="flex:1;min-width:200px">
-          <?php if ($hasOpenAiKey): ?>
-          <button type="button" class="btn btn--ghost btn--sm" onclick="openAiKeyClear()">🗑 Entfernen</button>
-          <?php endif; ?>
-        </div>
-      </div>
-
-      <?php settingsSectionFooter('voice'); ?>
       </div>
     </div>
     </form>
@@ -1089,19 +996,6 @@ async function uploadFavicon() {
   }
   btn.disabled = false;
   btn.textContent = 'Hochladen';
-}
-
-// ── Sprachnachrichten: OpenAI-Key entfernen ────────────────────
-async function openAiKeyClear() {
-  if (!confirm('OpenAI API-Key wirklich entfernen? Die Transkription funktioniert danach nicht mehr, bis ein neuer Key hinterlegt wird.')) return;
-  try {
-    const r = await fetch(ADMIN_SETTINGS_API + '?action=openai_key_clear', {method: 'POST'});
-    const d = await r.json();
-    if (d.ok) { showToast(d.message || 'Entfernt.', 'success'); setTimeout(() => location.reload(), 800); }
-    else showToast(d.error || 'Fehler', 'error');
-  } catch (err) {
-    showToast('Netzwerkfehler: ' + err.message, 'error');
-  }
 }
 
 // ── Push / VAPID ──────────────────────────────────────────────

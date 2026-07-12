@@ -15,11 +15,11 @@ $_hadAppSession = !empty($_COOKIE[SESSION_NAME]);
 
 /**
  * Löscht rekursiv alle Dateien/Unterordner in $dir (der Ordner selbst bleibt
- * erhalten). Genutzt beim Setup-Reset, damit alte Sprachnachrichten/Uploads
- * nicht als Datei-Leichen auf der Platte liegen bleiben, sobald die
- * referenzierende messages-Tabelle gleich per DROP TABLE geleert wird —
- * die Dateien selbst liegen außerhalb der DB unter uploads/ und würden
- * sonst nie wieder erreichbar/löschbar sein.
+ * erhalten). Genutzt beim Setup-Reset, damit alte Datei-Uploads nicht als
+ * Datei-Leichen auf der Platte liegen bleiben, sobald referenzierende
+ * Tabellen gleich per DROP TABLE geleert werden — die Dateien selbst liegen
+ * außerhalb der DB unter uploads/ und würden sonst nie wieder
+ * erreichbar/löschbar sein.
  */
 function deleteDirContents(string $dir): int {
     if (!is_dir($dir)) return 0;
@@ -253,9 +253,9 @@ if ($action === 'run') {
         sse('done', 'error', 10); exit;
     }
 
-    // 3. clean up old uploads (Sprachnachrichten etc.) — die Dateien liegen außerhalb
+    // 3. clean up old uploads — die Dateien liegen außerhalb
     // der DB unter uploads/ und würden sonst als Datei-Leichen liegen bleiben, sobald
-    // die referenzierende messages-Tabelle gleich per DROP TABLE geleert wird
+    // referenzierende Tabellen gleich per DROP TABLE geleert werden
     $uploadsDir    = dirname(__DIR__) . '/uploads';
     $deletedUploads = deleteDirContents($uploadsDir);
     sse('ok', $deletedUploads > 0
@@ -491,8 +491,7 @@ $noPw        = SETUP_PASSWORD === '';
         <br><br>
         <strong>Spieler, Spielstände, Rollen, Abstimmungen — alles geht verloren!</strong>
         <br><br>
-        Zusätzlich werden alle Dateien im <code>uploads/</code>-Ordner (z.B. gespeicherte
-        Sprachnachrichten) unwiderruflich gelöscht.
+        Zusätzlich werden alle Dateien im <code>uploads/</code>-Ordner unwiderruflich gelöscht.
         <br><br>
         Admin-Konto: <strong id="confirm-admin-name"></strong> (Spieler-Name: <strong id="confirm-admin-display"></strong>)
       </div>

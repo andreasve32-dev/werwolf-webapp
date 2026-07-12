@@ -412,10 +412,9 @@ require TEMPLATE_PATH . '/base.php';
         <td style="padding:.5rem .25rem;color:var(--text);font-weight:600">Nachrichten bei Spielstart löschen</td>
         <td style="padding:.5rem .5rem;color:var(--text-dim)">
           Standard: aus. Ist der Schalter an, räumt jeder Spielstart automatisch auf:
-          alle Sprachnachrichten (immer, samt Datei) und alle Text-Fragen ohne
-          FAQ-Veröffentlichung werden gelöscht. Bereits veröffentlichte Text-FAQ-
-          Einträge bleiben stehen. Betrifft alle bisherigen Spiele, nicht nur das
-          gerade beendete.
+          alle Text-Fragen ohne FAQ-Veröffentlichung werden gelöscht. Bereits
+          veröffentlichte FAQ-Einträge bleiben stehen. Betrifft alle bisherigen
+          Spiele, nicht nur das gerade beendete.
         </td>
       </tr>
     </table>
@@ -450,35 +449,6 @@ require TEMPLATE_PATH . '/base.php';
       <strong>Tipp:</strong> Nutze Spieler-Nachrichten für Rollenfragen in der Nacht —
       statt zu flüstern kannst du z.B. der Hellseherin das Ergebnis als Nachricht schicken.
     </div>
-    <p style="margin-top:.75rem">
-      <strong>🎙️ Sprachnachrichten:</strong> Ist der Schalter unter
-      <em>Einstellungen → Sprachnachrichten</em> aktiv, können Spieler ihre Frage auch
-      einsprechen (max. 1 Minute). In der Nachrichten-Verwaltung erscheint dann ein
-      Audio-Player statt des Fragetexts. Du antwortest wie gewohnt per Text —
-      <strong>oder per Sprachnachricht</strong>: über den Button
-      <em>🎙️ Per Sprache antworten</em> im Antwort-Bereich nimmst du deine Antwort
-      auf (max. 1 Minute, mit Vorschau vor dem Senden). Der Spieler hört deine
-      Sprachantwort dann in seinem Posteingang.
-      Die Aufnahme selbst wird <strong>nie</strong> veröffentlicht (die Stimme würde
-      den Absender verraten) — willst du den Inhalt in die FAQ übernehmen, schreibe
-      über <em>✏️ FAQ-Text</em> erst eine anonymisierte Textfassung; erst danach lässt
-      sich die Frage veröffentlichen. Beim Löschen einer Nachricht wird die Aufnahme
-      mit gelöscht; verwaiste Aufnahmen kannst du zusätzlich über
-      <em>🧹 Verwaiste Aufnahmen aufräumen</em> (oben in der Nachrichten-Verwaltung) entfernen.
-    </p>
-    <div class="tip-box" style="margin-top:.75rem">
-      <strong>🎙️→📝 Automatische Transkription:</strong> Aktivierst du zusätzlich
-      <em>Einstellungen → Sprachnachrichten → Sprachnachrichten-Transkription</em>
-      und hinterlegst dort einen OpenAI API-Key, erscheint bei jeder Sprachnachricht
-      der Button <em>🎙️→📝 Transkribieren</em>. Er schickt die Aufnahme an OpenAI
-      und trägt den erkannten Text direkt ins FAQ-Textfeld ein (öffnet sich
-      automatisch) — lies ihn gegen, entferne alles Identifizierende und
-      veröffentliche wie gewohnt über <em>📢 FAQ freigeben</em>. Ohne API-Key oder
-      bei ausgeschaltetem Schalter bleibt der Button unsichtbar bzw. meldet einen
-      Fehler. <strong>Deine eigenen Sprachantworten</strong> werden bei aktiver
-      Transkription <strong>automatisch</strong> in Text umgewandelt und als
-      Antworttext gespeichert (der Spieler sieht Audio + Text).
-    </div>
   </div>
 
   <!-- ═══════════════════════════════════════════
@@ -503,20 +473,16 @@ require TEMPLATE_PATH . '/base.php';
       🟢 Erledigt</strong>, alternativ <strong>🚫 Abgelehnt</strong>. Der Spieler sieht den
       Status live auf seiner Feedback-Seite — wie in einem kleinen Ticketsystem. Sobald du
       die Nachrichten-Verwaltung öffnest, gelten alle Einträge automatisch als
-      <strong>👁 gelesen</strong> (auch das sieht der Spieler). Antworten kannst du
-      wie bei Fragen (Text oder Sprachnachricht) — bei Feedback ist das optional, der
-      Status genügt. Feedback-Einträge lassen sich <strong>nicht</strong> im FAQ
-      veröffentlichen (das gibt es nur für Spielerfragen). Spieler können Feedback auch
-      als <strong>🎙️ Sprachnachricht</strong> einsprechen — mit aktivierter Transkription
-      wandelst du sie per <em>🎙️→📝 Transkribieren</em> in Text um (erscheint unter dem
-      Audio-Player und in der Feedback-API als <code>transcript</code>).
+      <strong>👁 gelesen</strong> (auch das sieht der Spieler). Antworten sind bei
+      Feedback optional, der Status genügt. Feedback-Einträge lassen sich
+      <strong>nicht</strong> im FAQ veröffentlichen (das gibt es nur für Spielerfragen).
     </p>
     <div class="tip-box" style="margin-top:.75rem">
       <strong>🔌 Feedback-API (für KI-Assistenten):</strong> Unten in der
       Nachrichten-Verwaltung findest du die <em>Feedback-API</em>. Generierst du dort ein
       <strong>Token</strong>, können externe Werkzeuge (z.B. ein KI-Assistent beim
       Entwickeln) die Feedback-Einträge über HTTPS auslesen und den Status setzen —
-      Spielerfragen und Audiodateien werden dabei <strong>nie</strong> ausgeliefert.
+      Spielerfragen werden dabei <strong>nie</strong> ausgeliefert.
       Das Token wird nur einmal angezeigt: direkt kopieren. Ohne Token ist die API
       komplett deaktiviert; über <em>🗑 Token entfernen</em> schaltest du sie jederzeit ab.
     </div>

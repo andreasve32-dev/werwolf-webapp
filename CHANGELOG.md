@@ -5,6 +5,47 @@ lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
 
 ---
 
+## [v0.39] — 2026-07-12
+
+### Geändert
+- **Rollen-Seed in `db/schema.sql`/`db/init.sql` auf den aktuellen Live-Stand
+  aktualisiert** (Snapshot der `roles`-Tabelle vom Testserver): Texte von
+  Mörder, Detektiv, Das Paar, Dodo und Celebrity wurden über
+  `admin/roles.php` angepasst — diese Änderungen stecken jetzt auch in den
+  Seed-Dateien für Neuinstallationen. Spalten-Liste des Seed-INSERTs um
+  `killer_sichtbar`, `linked_death`, `rollensicht`, `kill_hinweis` ergänzt
+  (vorher teils über separate `UPDATE`-Nachträge gesetzt). **Sheriff ist im
+  Seed jetzt standardmäßig deaktiviert** (`active=0`), weil das auf dem
+  Testserver aktuell so eingestellt ist.
+- `db/neue_rollen_vorlagen.sql` bereits deckungsgleich, keine Änderung nötig.
+
+### DB-Änderungen
+- Keine Schema-Änderung. Nur `app_version` → `0.39` (Setting).
+
+---
+
+## [v0.38] — 2026-07-12
+
+### Entfernt
+- **🎙️ Sprachnachrichten-System komplett entfernt** (auf Wunsch des Betreibers):
+  Aufnahme/Wiedergabe von Sprachnachrichten bei Spielerfragen und Feedback,
+  Sprachantworten des Spielleiters, automatische Transkription über die
+  OpenAI-API samt API-Key-Verwaltung, das Aufräumen verwaister Aufnahmen.
+  Betroffen: `app/game.php` (Frage-Modal + Posteingang), `app/feedback.php`,
+  `admin/messages.php`, `templates/messages_blocks.php`, `api/messages.php`,
+  `api/feedback.php`, `api/admin.php` (Spielstart-Aufräumlogik),
+  `admin/settings.php` (Einstellungsbereich „Sprachnachrichten" entfernt),
+  `core/bootstrap.php`, `core/helpers.php`, `docs/spieler.php`, `docs/admin.php`.
+  Die externe Feedback-API liefert kein `has_voice`/`transcript`-Feld mehr aus.
+
+### DB-Änderungen
+- Spalten `messages.voice_path` und `messages.reply_voice_path` entfernt.
+- Settings-Zeilen `voice_messages_enabled`, `voice_transcription_enabled`,
+  `openai_api_key` entfernt.
+- `app_version` → `0.38`.
+
+---
+
 ## [v0.37] — 2026-07-09
 
 ### Hinzugefügt

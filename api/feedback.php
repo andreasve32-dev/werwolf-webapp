@@ -8,7 +8,7 @@
 //      (leer = API komplett deaktiviert, Verwaltung: Admin → Spielerfragen & Feedback)
 //   3. Vergleich über hash_equals (kein Timing-Leak) + Rate-Limit pro IP
 //   4. Es werden NUR Feedback-Typen ausgeliefert — nie Spielerfragen
-//      (die können Rollen-/Spielgeheimnisse enthalten) und nie Audiodateien.
+//      (die können Rollen-/Spielgeheimnisse enthalten).
 require_once dirname(__DIR__) . '/core/bootstrap.php';
 
 // Kein Session-Zugriff nötig — Lock sofort freigeben.
@@ -102,8 +102,8 @@ switch ($action) {
         $limit = max(1, min(200, $limit));
 
         $rows = Database::query(
-            "SELECT m.id, m.type, m.status, m.message, m.faq_question, m.reply, m.created_at, m.replied_at,
-                    (m.voice_path IS NOT NULL) AS has_voice, p.display_name AS player
+            "SELECT m.id, m.type, m.status, m.message, m.reply, m.created_at, m.replied_at,
+                    p.display_name AS player
              FROM messages m JOIN players p ON p.id = m.player_id
              WHERE " . implode(' AND ', $where) . "
              ORDER BY m.id DESC
@@ -115,13 +115,10 @@ switch ($action) {
             'type'       => $r['type'],
             'status'     => $r['status'],
             'message'    => $r['message'],
-            // Bei Sprach-Feedback: vom Admin erzeugtes Transkript (macht Audio auswertbar)
-            'transcript' => $r['faq_question'],
             'reply'      => $r['reply'],
             'player'     => $r['player'],
             'created_at' => $r['created_at'],
             'replied_at' => $r['replied_at'],
-            'has_voice'  => (bool)$r['has_voice'],
         ], $rows);
         jsonResponse([
             'ok'          => true,

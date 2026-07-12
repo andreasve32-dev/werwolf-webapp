@@ -23,7 +23,7 @@ require_once __DIR__ . '/../config/themes.php';
 
 // 1a. HTTPS erzwingen (App-Ebene, Defense-in-Depth zusätzlich zu Apache-Redirect/HSTS).
 //     Grund: die App ist ohne HTTPS unsicher UND mehrere Kernfunktionen brauchen einen
-//     sicheren Kontext (Push, Sprachaufnahme via MediaRecorder, Service Worker). Wird die
+//     sicheren Kontext (Push, Service Worker). Wird die
 //     App auf einem fremden Server nur über HTTP betrieben, blockiert sie hier bewusst.
 //     Ausnahme: CLI (Skripte/Tests) und localhost (lokale Entwicklung).
 if (PHP_SAPI !== 'cli') {
@@ -46,7 +46,7 @@ if (PHP_SAPI !== 'cli') {
            . '<div style="font-size:3rem">🔒</div>'
            . '<h1 style="font-size:1.3rem;margin:.4rem 0">HTTPS erforderlich</h1>'
            . '<p style="color:#555;line-height:1.6">Diese App kann aus Sicherheitsgründen nur über eine '
-           . 'verschlüsselte <strong>HTTPS</strong>-Verbindung genutzt werden. Login, Sprachaufnahme und '
+           . 'verschlüsselte <strong>HTTPS</strong>-Verbindung genutzt werden. Login und '
            . 'Push-Benachrichtigungen funktionieren über HTTP nicht.</p>'
            . ($__h !== '' ? '<p><a href="https://' . $__h . $__u . '" style="color:#2563eb">→ Zur sicheren HTTPS-Version</a></p>' : '')
            . '</div></html>';
@@ -99,8 +99,6 @@ define('LOGIN_LOGO',         $_cfg['login_logo']         ?? '');
 define('MINI_LOGO',          $_cfg['mini_logo']          ?? '');
 define('ASSET_VERSION',      $_cfg['asset_version']      ?? '1');
 define('GAME_TIMEZONE',      $_cfg['game_timezone']      ?? 'Europe/Berlin');
-define('VOICE_MESSAGES',     filter_var($_cfg['voice_messages_enabled'] ?? '1', FILTER_VALIDATE_BOOLEAN));
-define('VOICE_TRANSCRIPTION', filter_var($_cfg['voice_transcription_enabled'] ?? '0', FILTER_VALIDATE_BOOLEAN));
 define('CLEAR_MESSAGES_ON_START', filter_var($_cfg['clear_messages_on_start'] ?? '0', FILTER_VALIDATE_BOOLEAN));
 date_default_timezone_set(GAME_TIMEZONE);
 unset($_cfg);

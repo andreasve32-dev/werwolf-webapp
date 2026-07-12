@@ -161,21 +161,13 @@ switch($action){
     // Spielerfragen aufräumen, wenn der Admin das per Einstellung so will — ERST hier,
     // nachdem alle Prüfungen (Spieleranzahl, Sonderrollen, Preset) erfolgreich durchlaufen
     // sind, damit ein abgebrochener Spielstart (z.B. Sonderrollen übersteigen Spieler-
-    // anzahl) niemals Nachrichten löscht. Sprachnachrichten werden IMMER gelöscht (auch
-    // wenn ihr Text schon in der FAQ steht — die Aufnahme-Datei ist danach ohnehin nicht
-    // mehr nötig), Text-Fragen nur, wenn sie nicht bereits veröffentlicht sind
-    // (published=0). Betrifft alle Spiele, nicht nur das gerade startende.
+    // anzahl) niemals Nachrichten löscht. Gelöscht werden Text-Fragen, die nicht bereits
+    // veröffentlicht sind (published=0). Betrifft alle Spiele, nicht nur das gerade startende.
     $clearedMsgCount = 0;
     if (CLEAR_MESSAGES_ON_START) {
-        $toDelete = Database::query("SELECT voice_path FROM messages WHERE voice_path IS NOT NULL OR published = 0");
-        foreach ($toDelete as $tr) {
-            if ($tr['voice_path'] && str_starts_with($tr['voice_path'], 'uploads/voice/')) {
-                @unlink(ROOT_PATH . '/' . $tr['voice_path']);
-            }
-        }
-        $clearedMsgCount = count($toDelete);
+        $clearedMsgCount = (int)(Database::queryOne("SELECT COUNT(*) AS cnt FROM messages WHERE published = 0")['cnt'] ?? 0);
         if ($clearedMsgCount > 0) {
-            Database::execute("DELETE FROM messages WHERE voice_path IS NOT NULL OR published = 0");
+            Database::execute("DELETE FROM messages WHERE published = 0");
         }
     }
 
