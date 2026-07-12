@@ -116,7 +116,7 @@ require TEMPLATE_PATH . '/base.php';
 
   <?php if (!$game || $game['status'] !== 'running'): ?>
   <div class="alert alert--warn mb-2">
-    Kein laufendes Spiel — die spielbezogenen Debug-Werkzeuge (Rolle, Spielkarte,
+    Kein laufendes Spiel — die spielbezogenen Debug-Werkzeuge (Rolle, Rollen ansehen,
     Cooldown, Tod/Wiederbeleben) sind nur während eines laufenden Spiels verfügbar.
     Die Testspieler-Verwaltung unten geht unabhängig davon jederzeit.
   </div>
@@ -158,25 +158,47 @@ require TEMPLATE_PATH . '/base.php';
     </div>
   </div>
 
-  <!-- ── Spielkarte eines Spielers ansehen ────────────────────────── -->
+  <!-- ── Alle Rollen ansehen ──────────────────────────────────────── -->
+  <?php
+    // Wie der Dorfbewohner-Block im Spielfenster (.player-grid/.player-card),
+    // nur dass hier bewusst ALLE echten Rollen direkt sichtbar sind — ignoriert
+    // alle normalen Sichtbarkeitsregeln, nur für dich als Debug-Werkzeug.
+    $__rolesById = array_column(allRoles(), null, 'id');
+    $__debugPeekData = [];
+  ?>
   <div class="card card--glow animate-in mb-2" style="border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04)">
-    <?php debugAccHead('🃏', 'Spielkarte ansehen'); ?>
+    <?php debugAccHead('🃏', 'Alle Rollen ansehen'); ?>
     <div class="debug-acc__body" hidden>
       <p class="text-dim text-xs mb-2">
-        Zeigt die volle Rollenkarte eines beliebigen Spielers — ignoriert bewusst alle
-        normalen Sichtbarkeitsregeln, nur für dich als Debug-Werkzeug sichtbar.
+        Zeigt die echten Rollen aller Spieler auf einen Blick — ignoriert bewusst alle
+        normalen Sichtbarkeitsregeln, nur für dich als Debug-Werkzeug sichtbar. Antippen
+        für Beschreibung/Regeln.
       </p>
-      <div class="flex gap-sm">
-        <select id="debug-peek-select" class="form-input" style="flex:1">
-          <option value="">Spieler wählen…</option>
-          <?php foreach ($gamePlayers as $gp): ?>
-          <option value="<?= (int)$gp['player_id'] ?>">
-            <?= e($gp['display_name']) ?><?= $gp['is_alive'] ? '' : ' (tot)' ?>
-          </option>
-          <?php endforeach; ?>
-        </select>
-        <button class="btn btn--ghost" style="border-color:rgba(251,191,36,.4);color:#fbbf24"
-                onclick="debugPeekRole()">Anzeigen</button>
+      <div class="player-grid" id="debug-role-grid">
+        <?php foreach ($gamePlayers as $gp):
+          $r = $gp['role_id'] ? ($__rolesById[(int)$gp['role_id']] ?? null) : null;
+          $r = $r ?: roleFallback();
+          $dead = !$gp['is_alive'];
+          $__debugPeekData[(int)$gp['player_id']] = [
+              'display_name' => $gp['display_name'],
+              'is_alive'     => (bool)$gp['is_alive'],
+              'role_name'    => $r['name'],
+              'icon_url'     => roleIconUrl($r),
+              'sichtbar'     => (bool)($r['sichtbar'] ?? 0),
+              'description'  => roleText($r['description'] ?? '', $r),
+              'rules'        => roleText($r['rules'] ?? '', $r),
+              'cooldown'     => (int)($r['cooldown'] ?? 0),
+          ];
+        ?>
+        <div class="player-card<?= $dead ? ' player-card--dead' : '' ?>"
+             id="debug-role-card-<?= (int)$gp['player_id'] ?>"
+             onclick="debugShowRoleDetail(<?= (int)$gp['player_id'] ?>)">
+          <?php if ($dead): ?><span class="player-card__skull">💀</span><?php endif; ?>
+          <?= roleIconHtml($r, 'lg') ?>
+          <div class="player-card__name"><?= e($gp['display_name']) ?></div>
+          <div class="player-card__role"><?= e($r['name']) ?></div>
+        </div>
+        <?php endforeach; ?>
       </div>
       <div id="debug-peek-result" class="mt-2"></div>
     </div>
@@ -221,8 +243,9 @@ require TEMPLATE_PATH . '/base.php';
 
 <?php
 $page['inline_js'] = sprintf(
-    'const API_BASE = %s; const GAME_ID = %s; const TP_API = %s;',
-    json_encode(API_URL), json_encode($gameId), json_encode(APP_URL . '/admin/testplayers.php')
+    'const API_BASE = %s; const GAME_ID = %s; const TP_API = %s; const DEBUG_ROLE_DATA = %s;',
+    json_encode(API_URL), json_encode($gameId), json_encode(APP_URL . '/admin/testplayers.php'),
+    json_encode($__debugPeekData ?? [])
 );
 $page['inline_js'] .= <<<'JS'
 
@@ -258,14 +281,17 @@ async function debugSetOwnRole() {
   }
 }
 
-async function debugPeekRole() {
-  const sel = document.getElementById('debug-peek-select');
+// Karte im Rollen-Grid antippen → volle Details anzeigen (rein clientseitig,
+// die echten Rollendaten aller Spieler stecken schon serverseitig gerendert
+// in DEBUG_ROLE_DATA — kein zusätzlicher Request nötig).
+let _debugSelectedPid = null;
+function debugShowRoleDetail(pid) {
+  const r = DEBUG_ROLE_DATA[pid];
   const res = document.getElementById('debug-peek-result');
-  const pid = parseInt(sel?.value);
-  if (!pid) { showToast('Kein Spieler gewählt', 'error'); return; }
-  const r = await apiFetch(API_BASE+'/admin.php', {action:'debug_peek_role', game_id:GAME_ID, player_id:pid});
-  if (r.error === 'session_expired') return;
-  if (!r.ok) { res.innerHTML = `<div class="alert alert--error">${escHtml(r.error||'Fehler')}</div>`; return; }
+  if (!r || !res) return;
+  document.querySelectorAll('#debug-role-grid .player-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('debug-role-card-' + pid)?.classList.add('selected');
+  _debugSelectedPid = pid;
   res.innerHTML = `
     <div class="panel" style="padding:1rem;text-align:center">
       <div style="width:72px;height:72px;margin:0 auto .6rem;border-radius:50%;background-size:cover;background-position:center;background-image:url('${escHtml(r.icon_url)}')"></div>

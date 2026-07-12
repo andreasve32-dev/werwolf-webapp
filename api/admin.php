@@ -310,34 +310,6 @@ switch($action){
     Database::execute("UPDATE game_players SET cooldown_started_at=NULL WHERE game_id=? AND player_id=?", [$gameId, $_adminId]);
     ok('⏱️ Cooldown zurückgesetzt.');break;
 
-  case 'debug_peek_role':
-    // Zeigt die volle Rollenkarte eines beliebigen Spielers — ignoriert bewusst alle
-    // normalen Sichtbarkeitsregeln (get_players etc.), daher nur im Debug-Modus.
-    if (!APP_DEBUG) err('Nur im Debug-Modus verfügbar.', 403);
-    $g = Database::queryOne("SELECT * FROM games WHERE id=? AND status='running'", [$gameId]);
-    if (!$g) err('Spiel läuft nicht');
-    $pid = (int)($input['player_id'] ?? 0);
-    if (!$pid) err('Kein Spieler gewählt');
-    $gp = Database::queryOne(
-      "SELECT gp.role_id, gp.is_alive, p.display_name
-       FROM game_players gp JOIN players p ON p.id = gp.player_id
-       WHERE gp.game_id=? AND gp.player_id=?",
-      [$gameId, $pid]
-    );
-    if (!$gp) err('Spieler nicht im Spiel');
-    $role = $gp['role_id'] ? Database::queryOne("SELECT * FROM roles WHERE id=?", [$gp['role_id']]) : null;
-    $role = $role ?: roleFallback();
-    ok('', [
-      'display_name' => $gp['display_name'],
-      'is_alive'     => (bool)$gp['is_alive'],
-      'role_name'    => $role['name'],
-      'icon_url'     => roleIconUrl($role),
-      'sichtbar'     => (bool)($role['sichtbar'] ?? 0),
-      'description'  => roleText($role['description'] ?? '', $role),
-      'rules'        => roleText($role['rules'] ?? '', $role),
-      'cooldown'     => (int)($role['cooldown'] ?? 0),
-    ]);break;
-
   case 'add_player':
     $g=Database::queryOne("SELECT status FROM games WHERE id=?",[$gameId]);
     if(!$g||$g['status']!=='lobby') err('Nur in der Lobby möglich');

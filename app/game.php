@@ -1081,13 +1081,20 @@ const CD_BTN_LABEL = MY_ROLLENSICHT
   const remaining = document.getElementById('cd-remaining');
   if (!btn) return;
 
-  // Reines Server-Polling, keine Client-Uhr mehr beteiligt: die Anzeige zeigt
-  // immer nur den zuletzt vom Server gemeldeten Rest-Sekunden-Wert (DB-Uhr,
-  // via TIMESTAMPDIFF berechnet) — kein lokales Herunterzählen, kein
-  // Date.now() mehr. Aktualisiert sich dadurch nur im Rhythmus des
-  // eingestellten Poll-Intervalls statt sekundengenau.
-  function render(secs) {
-    if (!secs || secs <= 0) {
+  // Durchsetzung ist immer serverseitig (DB-Uhr) — hier geht es nur noch um
+  // eine ruckelfreie Anzeige: pro Sekunde lokal weiterzählen (sonst springt
+  // die Anzeige nur alle paar Sekunden im Poll-Rhythmus), aber bei JEDEM Poll
+  // wird der Referenzpunkt frisch vom Server übernommen (_setCooldownRemaining).
+  // Eine verstellte Geräte-Uhr kann dadurch höchstens bis zum nächsten Poll
+  // eine falsche Anzeige verursachen — nie die Fähigkeit selbst freischalten.
+  let endsAt = null;
+  let tickTimer = null;
+
+  function render() {
+    const left = endsAt ? (endsAt - Date.now()) / 1000 : 0;
+    if (left <= 0) {
+      clearInterval(tickTimer);
+      tickTimer               = null;
       btn.disabled           = false;
       btn.textContent        = CD_BTN_LABEL;
       statusEl.style.display = 'none';
@@ -1096,16 +1103,21 @@ const CD_BTN_LABEL = MY_ROLLENSICHT
     btn.disabled           = true;
     btn.textContent        = '⏱ Cooldown läuft …';
     statusEl.style.display = '';
-    const m = Math.floor(secs / 60);
-    const s = Math.floor(secs % 60);
+    const m = Math.floor(left / 60);
+    const s = Math.floor(left % 60);
     remaining.textContent  = m + ':' + String(s).padStart(2, '0');
   }
 
-  render(MY_COOLDOWN_REMAINING);
+  function sync(secs) {
+    endsAt = secs > 0 ? Date.now() + secs * 1000 : null;
+    render();
+    clearInterval(tickTimer);
+    tickTimer = endsAt ? setInterval(render, 1000) : null;
+  }
 
-  window._setCooldownRemaining = function(secs) {
-    render(secs);
-  };
+  sync(MY_COOLDOWN_REMAINING);
+
+  window._setCooldownRemaining = sync;
 })();
 
 function startCooldown() {

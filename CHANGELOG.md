@@ -5,6 +5,44 @@ lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
 
 ---
 
+## [v0.44] — 2026-07-12
+
+### Behoben
+- **Ruckelnde Cooldown-Anzeige** (Regression aus v0.41): Die Umstellung auf
+  reines Server-Polling ließ die Rest-Zeit-Anzeige nur noch im Poll-Rhythmus
+  springen (mehrere Sekunden Stillstand, dann Sprung). Jetzt zählt die
+  Anzeige wieder jede Sekunde flüssig lokal herunter, wird aber bei **jedem**
+  Poll frisch vom Server-Wert synchronisiert (nicht mehr nur einmalig beim
+  Start) — dadurch weiterhin keine dauerhafte Abweichung durch eine
+  verstellte Geräte-Uhr möglich, nur eine ruckelfreie Anzeige zwischen zwei
+  Polls. Die eigentliche Freischaltung der Fähigkeit bleibt unverändert
+  ausschließlich serverseitig (DB-Uhr) geprüft. Betroffen: `app/game.php`
+  (`initCooldown()`).
+
+### DB-Änderungen
+- Keine. Nur `app_version` → `0.44`.
+
+---
+
+## [v0.43] — 2026-07-12
+
+### Geändert
+- **🃏 Debug-Menü „Alle Rollen ansehen" statt „Spielkarte ansehen":** Zeigt
+  jetzt alle Spieler als Karten-Grid wie den Dorfbewohner-Block im
+  Spielfenster (`.player-grid`/`.player-card`, gleiches Icon/Name/Rolle-
+  Layout) — die echten Rollennamen stehen direkt auf jeder Karte, kein
+  Dropdown + „Anzeigen"-Klick pro Spieler mehr nötig. Antippen einer Karte
+  zeigt weiterhin die volle Rollenkarte (Beschreibung, Regeln, Cooldown)
+  darunter — jetzt komplett clientseitig aus serverseitig eingebetteten
+  Daten, ohne AJAX-Request. Betroffen: `admin/debug.php`. Die alte
+  `debug_peek_role`-API-Aktion (`api/admin.php`) wurde entfernt, da nicht
+  mehr gebraucht.
+
+### DB-Änderungen
+- Keine. Nur `app_version` → `0.43`.
+
+---
+
 ## [v0.42] — 2026-07-12
 
 ### Entfernt
