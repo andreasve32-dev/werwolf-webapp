@@ -310,17 +310,18 @@ require TEMPLATE_PATH . '/base.php';
     <h3>Versammlung im Admin-Panel</h3>
     <p>
       Eine Versammlung braucht <strong>zwei Einberufer</strong>: Der erste Spieler stellt
-      einen Antrag (Banner zeigt „wartet auf einen zweiten Einberufer"), erst mit der
-      Unterstützung eines zweiten Spielers steht der Termin zur nächsten vollen Stunde.
+      einen Antrag (Banner zeigt „wartet auf einen zweiten Einberufer"), mit der
+      Unterstützung eines zweiten Spielers startet die Versammlung <strong>sofort</strong>.
       Spieler können <strong>nur während der laufenden Versammlung anklagen</strong>.
       Beenden können die beiden Einberufer — oder du als Admin jederzeit über
       <strong>„✖ Beenden"</strong> im Banner, zum Beispiel wenn das Dorf fertig
-      abgestimmt hat.
+      abgestimmt hat. Nach dem Beenden ist eine neue Versammlung erst nach
+      <strong>15 Minuten Pause</strong> wieder einberufbar (serverseitig gesperrt).
     </p>
     <div class="ui-mock" style="margin-top:.75rem">
       <span class="label">Bürgerversammlung-Banner (Admin-Panel)</span>
       <span class="info">🔔 Bürgerversammlung aktiv</span><br>
-      Einberufen von: <span class="action">Spieler A</span> und <span class="action">Spieler B</span> · Termin 15:00 Uhr<br>
+      Einberufen von: <span class="action">Spieler A</span> und <span class="action">Spieler B</span> · Versammlung läuft jetzt!<br>
       <span class="danger">[✖ Beenden]</span>
     </div>
   </div>

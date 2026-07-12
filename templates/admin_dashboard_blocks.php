@@ -166,11 +166,7 @@ function admin_render_assembly_banner(array $s): string {
     ob_start();
     ?>
     <?php if ($pendingAssembly): ?>
-    <?php
-      $aPending = $pendingAssembly['scheduled_at'] === null;
-      $aTime    = $aPending ? 0 : (int)$pendingAssembly['scheduled_at'];
-      $aLabel   = $aPending ? '' : date('H:i', $aTime);
-    ?>
+    <?php $aPending = $pendingAssembly['scheduled_at'] === null; ?>
     <div class="alert animate-in" style="display:flex;align-items:center;gap:.8rem;padding:.9rem 1rem;
          background:rgba(99,102,241,.14);border-color:rgba(99,102,241,.4);color:#c7d2fe;font-size:.9rem">
       <span style="font-size:1.5rem">🏛️</span>
@@ -184,12 +180,7 @@ function admin_render_assembly_banner(array $s): string {
             und <strong><?= e($pendingAssembly['supporter']) ?></strong>
           <?php endif; ?>
           <?= !empty($pendingAssembly['supporter']) ? 'haben' : 'hat' ?> eine Versammlung einberufen
-          <?php if ($aTime > time()): ?>
-            — Termin: <strong><?= $aLabel ?> Uhr</strong>
-            <span class="text-xs" style="opacity:.7;margin-left:.4rem" id="admin-assembly-countdown" data-ts="<?= $aTime ?>"></span>
-          <?php else: ?>
-            — <strong>Versammlung läuft jetzt!</strong>
-          <?php endif; ?>
+          — <strong>Versammlung läuft jetzt!</strong>
         <?php endif; ?>
       </div>
       <button class="btn btn--danger btn--sm" onclick="endAssemblyAdmin()" style="white-space:nowrap">

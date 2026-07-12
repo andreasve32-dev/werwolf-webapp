@@ -5,6 +5,41 @@ lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
 
 ---
 
+## [v0.41] — 2026-07-12
+
+### Geändert
+- **🏛️ Bürgerversammlung startet sofort statt zur nächsten vollen Stunde:**
+  Sobald ein zweiter Spieler den Antrag unterstützt, läuft die Versammlung
+  direkt los (Push „Versammlung beginnt jetzt!" statt „Treffen um HH:MM
+  Uhr"). Der komplette Countdown (Spielfenster + Admin-Panel-Banner)
+  entfällt dadurch — es gibt nur noch die Zustände „Antrag wartet" und
+  „Versammlung läuft".
+- **Neu: 15-Minuten-Sperre nach Versammlungsende.** Nach dem Beenden einer
+  Versammlung wird ein neuer Antrag serverseitig abgelehnt, bis 15 Minuten
+  (DB-Uhr) vergangen sind — mit Restzeit-Angabe in der Fehlermeldung.
+- **Keine Client-Uhr mehr für Timing-Entscheidungen:** Auf internen Wunsch
+  (Testbefund: verstellte Geräte-Uhr sorgte für Verwirrung) verwenden jetzt
+  ausschließlich Server-/DB-Uhr-Werte:
+  - Bürgerversammlung: `_assemblyIsRunning()` prüft nur noch den vom Server
+    gelieferten Zustand (`pending`/`scheduled_at` gesetzt), kein
+    `Date.now()`-Vergleich mehr.
+  - **Rollen-Fähigkeits-Cooldown** (z. B. Mörder 30 Min.): Die Anzeige zählt
+    nicht mehr lokal herunter, sondern zeigt bei jedem Poll den frisch von
+    der DB berechneten Rest-Sekunden-Wert (`api/game.php` → `get_players`
+    liefert `me.cooldown_remaining_secs`). Aktualisiert sich dadurch im
+    Rhythmus des Poll-Intervalls statt sekundengenau — bewusster
+    UX-Tradeoff. Die eigentliche Serversperre gegen Missbrauch bestand
+    bereits vorher unabhängig von der Anzeige.
+  Design-Doku: `docs/superpowers/specs/2026-07-12-buergerversammlung-und-cooldown-serverzeit-design.md`.
+- Nebenbei behoben: `$showAccuse` in `app/game.php` behandelte einen noch
+  offenen (`scheduled_at IS NULL`) Versammlungsantrag durch PHPs
+  Typ-Jonglage bei `null <= time()` fälschlich als „läuft bereits".
+
+### DB-Änderungen
+- Keine Schema-Änderung. Nur `app_version` → `0.41`.
+
+---
+
 ## [v0.40] — 2026-07-12
 
 ### Geändert

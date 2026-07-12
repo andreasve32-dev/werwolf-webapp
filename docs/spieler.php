@@ -261,10 +261,11 @@ require TEMPLATE_PATH . '/base.php';
     <p>
       Als lebender Spieler kannst du im Spiel-Fenster auf <strong>„Bürgerversammlung
       einberufen"</strong> tippen — damit stellst du einen <strong>Antrag</strong>, den alle
-      sehen. Erst wenn ein <strong>zweiter Spieler</strong> den Antrag unterstützt, steht die
-      Versammlung fest: Sie startet zur nächsten vollen Stunde, alle Spieler erhalten eine
+      sehen. Erst wenn ein <strong>zweiter Spieler</strong> den Antrag unterstützt, startet
+      die Versammlung <strong>sofort</strong>, alle Spieler erhalten eine
       Push-Benachrichtigung. Du kannst deinen Antrag jederzeit zurückziehen. Nur eine
-      Versammlung gleichzeitig ist möglich.
+      Versammlung gleichzeitig ist möglich, und nach einer beendeten Versammlung ist eine
+      neue erst nach <strong>15 Minuten Pause</strong> wieder möglich.
     </p>
   </div>
 

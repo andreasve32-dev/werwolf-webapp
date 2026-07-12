@@ -553,11 +553,11 @@ Im Formular „Rollen verwalten" gibt es einen Bild-Uploader:
 
 ## 🗓️ Bürgerversammlung
 
-Lebende Spieler können über das Spielfenster eine **Bürgerversammlung einberufen**. Die Versammlung startet zur nächsten vollen Stunde — alle Spieler erhalten eine Push-Benachrichtigung. Nur eine Versammlung gleichzeitig ist möglich.
+Lebende Spieler können über das Spielfenster eine **Bürgerversammlung einberufen**. Es braucht **mindestens 2 Spieler**: Der erste stellt den Antrag, sobald ein zweiter (anderer) Spieler ihn unterstützt, **startet die Versammlung sofort** — alle Spieler erhalten eine Push-Benachrichtigung. Nur eine Versammlung gleichzeitig ist möglich, und nach dem Beenden ist eine neue erst nach **15 Minuten Pause** wieder einberufbar (serverseitig gegen die DB-Uhr geprüft, keine Client-Zeit beteiligt).
 
-- **Einberufen:** Spielfenster → „Bürgerversammlung einberufen" (nur lebende Spieler)
-- **Ablauf:** Countdown bis zur vollen Stunde, dann „Versammlung läuft"-Anzeige
-- **Beenden:** Der Einberufende oder ein Admin kann die Versammlung jederzeit beenden
+- **Einberufen:** Spielfenster → „Bürgerversammlung einberufen" (nur lebende Spieler, mind. 2 nötig)
+- **Ablauf:** Antrag → zweiter Einberufer unterstützt → Versammlung läuft sofort
+- **Beenden:** Einer der beiden Einberufer oder ein Admin kann die Versammlung jederzeit beenden
 - **Admin-Panel:** Aktive Versammlungen werden oben im Admin-Panel als Banner angezeigt
 - **Hinrichtung:** Der „Hängen"-Button ist erst nutzbar, sobald mindestens `MIN_VOTES_TO_HANG`
   Spieler (fest 2, `core/bootstrap.php`) für denselben Angeklagten gestimmt haben — sowohl im

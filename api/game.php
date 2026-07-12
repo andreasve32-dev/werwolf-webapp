@@ -115,12 +115,23 @@ switch($action){
     unset($p);
 
     $g = Database::queryOne("SELECT status, phase, round, winner FROM games WHERE id=?", [$gameId]);
-    $myGPRow = Database::queryOne("SELECT * FROM game_players WHERE game_id=? AND player_id=?", [$gameId, $playerId]);
+    // Cooldown-Rest immer frisch aus der DB-Uhr berechnet (TIMESTAMPDIFF gegen
+    // NOW()) und bei jedem Poll mitgeliefert — der Client zeigt nur noch den
+    // zuletzt vom Server gemeldeten Wert an, keine eigene Zeitmessung mehr.
+    $myGPRow = Database::queryOne(
+      "SELECT gp.*, r.cooldown AS role_cooldown,
+              TIMESTAMPDIFF(SECOND, gp.cooldown_started_at, NOW()) AS cd_elapsed
+       FROM game_players gp LEFT JOIN roles r ON r.id=gp.role_id
+       WHERE gp.game_id=? AND gp.player_id=?",
+      [$gameId, $playerId]
+    );
+    $cdRemaining = $myGPRow ? cooldownRemainingSecs((int)($myGPRow['role_cooldown'] ?? 0), $myGPRow['cd_elapsed']) : 0;
     require_once TEMPLATE_PATH . '/game_blocks.php';
     echo json_encode([
       'players'        => $players,
       'game'           => $g ? ['status'=>$g['status'],'phase'=>$g['phase'],'round'=>(int)$g['round'],'winner'=>$g['winner'] ?? null] : null,
-      'me'             => ['in_game'=>(bool)$myGPRow, 'is_alive'=>$myGPRow ? (bool)$myGPRow['is_alive'] : false],
+      'me'             => ['in_game'=>(bool)$myGPRow, 'is_alive'=>$myGPRow ? (bool)$myGPRow['is_alive'] : false,
+                            'cooldown_remaining_secs'=>$cdRemaining],
       'my_status_html' => render_my_status_actions($g, $myGPRow),
     ]);break;
 
@@ -250,12 +261,25 @@ switch($action){
     $callerName = $caller['display_name'] ?? 'Ein Spieler';
     require_once dirname(__DIR__) . '/core/WebPush.php';
 
-    // Bereits eine aktive Anfrage (Antrag, Countdown oder laufend)?
+    // Bereits eine aktive Anfrage (Antrag oder laufend)?
     $existing = Database::queryOne(
         "SELECT * FROM assembly_requests WHERE game_id=? AND ended_at IS NULL", [$gameId]
     );
 
     if (!$existing) {
+        // 15-Minuten-Sperre nach der letzten beendeten Versammlung — komplett
+        // serverseitig gegen die DB-Uhr geprüft (kein PHP-time(), kein
+        // Client-Zeitstempel), damit eine verstellte Geräte-Uhr nichts bewirkt.
+        $cooldown = Database::queryOne(
+            "SELECT TIMESTAMPDIFF(SECOND, ended_at, NOW()) AS elapsed FROM assembly_requests
+             WHERE game_id=? AND ended_at IS NOT NULL ORDER BY ended_at DESC LIMIT 1",
+            [$gameId]
+        );
+        if ($cooldown && (int)$cooldown['elapsed'] < 900) {
+            $waitMin = (int)ceil((900 - (int)$cooldown['elapsed']) / 60);
+            echo json_encode(['ok'=>false,'error'=>"Nach einer Versammlung muss das Dorf noch ca. {$waitMin} Minute(n) warten."]);
+            exit;
+        }
         // Phase 1: erster Einberufer stellt den Antrag — Versammlung kommt
         // erst zustande, wenn ein ZWEITER Spieler sie ebenfalls einberuft
         Database::execute(
@@ -279,39 +303,29 @@ switch($action){
         exit;
     }
 
-    // Phase 2: zweiter Einberufer unterstützt → Termin nächste volle Stunde
-    $nextHour = (int)((floor(time() / 3600) + 1) * 3600);
-    $timeStr  = date('H:i', $nextHour);
+    // Phase 2: zweiter Einberufer unterstützt → Versammlung startet sofort
+    // (kein Warten mehr auf die nächste volle Stunde). notified sofort auf 1,
+    // da die Ankündigung hier direkt als Push rausgeht.
+    $now = time();
     Database::execute(
-        "UPDATE assembly_requests SET supporter_id=?, scheduled_at=? WHERE id=?",
-        [$playerId, $nextHour, $existing['id']]
+        "UPDATE assembly_requests SET supporter_id=?, scheduled_at=?, notified=1 WHERE id=?",
+        [$playerId, $now, $existing['id']]
     );
     $firstCaller = Database::queryOne("SELECT display_name FROM players WHERE id=?", [(int)$existing['player_id']]);
-    WebPush::sendToGame($gameId, true, '🏛️ Versammlung einberufen!',
+    WebPush::sendToGame($gameId, true, '🏛️ Versammlung beginnt jetzt!',
         ($firstCaller['display_name'] ?? 'Ein Spieler') . ' und ' . $callerName .
-        ' rufen zur Bürgerversammlung — Treffen um ' . $timeStr . ' Uhr.');
-    echo json_encode(['ok'=>true,'scheduled_at'=>$nextHour,'caller'=>$firstCaller['display_name'] ?? 'Ein Spieler',
+        ' rufen zur Bürgerversammlung — kommt jetzt zusammen!');
+    echo json_encode(['ok'=>true,'scheduled_at'=>$now,'caller'=>$firstCaller['display_name'] ?? 'Ein Spieler',
                       'caller_id'=>(int)$existing['player_id'],'supporter_id'=>(int)$playerId,
-                      'message'=>'Versammlung um '.$timeStr.' Uhr einberufen.']);
+                      'message'=>'Versammlung einberufen — sie läuft jetzt.']);
     break;
 
   case 'get_assembly':
     $g = Database::queryOne("SELECT status FROM games WHERE id=?", [$gameId]);
     if (!$g || $g['status'] !== 'running') { echo json_encode(['assembly'=>null]); break; }
-    $now = time();
-    // Fällige Erinnerung versenden (lazy check)
-    $due = Database::queryOne(
-        "SELECT ar.id FROM assembly_requests ar
-         WHERE ar.game_id=? AND ar.notified=0 AND ar.scheduled_at<=?
-         ORDER BY ar.scheduled_at LIMIT 1",
-        [$gameId, $now]
-    );
-    if ($due) {
-        require_once dirname(__DIR__) . '/core/WebPush.php';
-        WebPush::sendToGame($gameId, true, '🏛️ Jetzt: Bürgerversammlung!',
-            'Die Versammlung beginnt — kommt zusammen und beratet!');
-        Database::execute("UPDATE assembly_requests SET notified=1 WHERE id=?", [$due['id']]);
-    }
+    // Kein "fällige Erinnerung"-Check mehr nötig: scheduled_at wird beim
+    // Einberufen (call_assembly) immer sofort auf "jetzt" gesetzt und notified
+    // direkt mitgesetzt — es kann also nie mehr in der Zukunft liegen.
     $assembly = Database::queryOne(
         "SELECT ar.scheduled_at, ar.notified, ar.player_id AS caller_id, ar.supporter_id,
                 p.display_name AS caller

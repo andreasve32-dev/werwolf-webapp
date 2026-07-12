@@ -348,21 +348,6 @@ async function endAssemblyAdmin() {
   else showToast(r.error||'Fehler','error');
 }
 
-// ── Versammlungs-Countdown im Admin-Banner ───────────────────
-// Element wird alle 5s neu gerendert (Dashboard-Polling) — Referenz und
-// Zeitstempel deshalb bei jedem Tick frisch aus data-ts auslesen statt
-// einmalig einzufangen.
-setInterval(() => {
-  const el = document.getElementById('admin-assembly-countdown');
-  if (!el) return;
-  const ts = parseInt(el.dataset.ts || '0', 10);
-  if (!ts) { el.textContent = ''; return; }
-  const diff = ts - Math.floor(Date.now()/1000);
-  if (diff <= 0) { el.textContent = ''; return; }
-  const m = Math.floor(diff/60), s = diff%60;
-  el.textContent = '(noch ' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0') + ')';
-}, 1000);
-
 // ── Spielerliste ein-/ausklappen ─────────────────────────────
 function togglePlayers() {
   const body    = document.getElementById('player-list-body');

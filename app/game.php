@@ -237,9 +237,10 @@ require TEMPLATE_PATH . '/base.php';
         <?php if ($myGP && $myGP['is_alive']): ?>
         <div id="assembly-call-section">
           <p class="text-dim text-sm mb-2" id="assembly-call-text">
-            Berufe eine Versammlung ein — sie kommt zustande, sobald ein zweiter
-            Spieler sie ebenfalls einberuft, und findet dann zur nächsten vollen
-            Stunde statt. Alle Spieler werden per Push benachrichtigt.
+            Berufe eine Versammlung ein — sie startet sofort, sobald ein zweiter
+            Spieler sie ebenfalls einberuft. Alle Spieler werden per Push
+            benachrichtigt. Nach einer beendeten Versammlung ist eine neue
+            erst nach 15 Minuten Pause wieder möglich.
           </p>
           <button class="btn btn--primary btn--full" id="assembly-call-btn" onclick="callAssembly()">
             📣 Versammlung einberufen
@@ -247,19 +248,6 @@ require TEMPLATE_PATH . '/base.php';
           <div id="assembly-call-result" class="mt-1"></div>
         </div>
         <?php endif; ?>
-
-        <!-- Countdown: via JS befüllt, anfangs versteckt -->
-        <div id="assembly-countdown-section" style="display:none;text-align:center;padding:.25rem 0">
-          <div style="font-size:1.8rem;margin-bottom:.3rem">🏛️</div>
-          <div style="font-family:var(--font-display);font-size:1.15rem;color:var(--text-bright)" id="assembly-time-label"></div>
-          <div class="text-dim text-xs mt-1" id="assembly-caller-label"></div>
-          <div style="margin-top:.9rem;font-size:2rem;font-weight:700;color:var(--accent);
-                      font-variant-numeric:tabular-nums;letter-spacing:.04em" id="assembly-countdown">--:--</div>
-          <div class="text-xs text-dim mt-1">verbleibend</div>
-          <button class="btn btn--ghost btn--sm mt-2" id="assembly-end-btn-countdown" onclick="endAssembly()" style="display:none">
-            ✖ Versammlung abbrechen
-          </button>
-        </div>
 
         <!-- Versammlung läuft! -->
         <div id="assembly-running-section" style="display:none">
@@ -275,7 +263,8 @@ require TEMPLATE_PATH . '/base.php';
 
       <!-- Anklagen (nur tagsüber, lebendig, und nur während laufender Versammlung) -->
       <?php $showAccuse = $status === 'running' && $phase === 'day' && $myGP && $myGP['is_alive']
-                          && $currentAssembly && $currentAssembly['scheduled_at'] <= time(); ?>
+                          && $currentAssembly && $currentAssembly['scheduled_at'] !== null
+                          && $currentAssembly['scheduled_at'] <= time(); ?>
       <div class="card animate-in mt-2" id="assembly-card"
            style="animation-delay:.12s<?= $showAccuse ? '' : ';display:none' ?>">
         <div class="section-title">⚖️ Anklagen</div>
@@ -583,6 +572,9 @@ function renderGameState(r) {
   if (r.me) {
     MY_ALIVE   = r.me.is_alive;
     MY_IN_GAME = r.me.in_game;
+    if (typeof r.me.cooldown_remaining_secs === 'number' && window._setCooldownRemaining) {
+      window._setCooldownRemaining(r.me.cooldown_remaining_secs);
+    }
     const actionsEl = document.getElementById('my-status-actions');
     if (actionsEl && r.my_status_html !== undefined && r.my_status_html !== _lastStatusHtml) {
       actionsEl.innerHTML = r.my_status_html;
@@ -712,9 +704,12 @@ async function castVote() {
 }
 
 // ── Anklage-Karte: nur während laufender Versammlung sichtbar ──
+// Reine Zustandsprüfung ohne Zeitvergleich — scheduled_at wird von call_assembly
+// immer sofort auf "jetzt" gesetzt, sobald der zweite Einberufer unterstützt
+// (kein Warten mehr auf einen Termin), daher genügt "gesetzt und nicht mehr
+// pending" als Signal. Kein Date.now() mehr in der gesamten Versammlungs-Logik.
 function _assemblyIsRunning() {
-  return !!(_assemblyData && _assemblyData.scheduled_at
-            && _assemblyData.scheduled_at <= Math.floor(Date.now() / 1000));
+  return !!(_assemblyData && !_assemblyData.pending && _assemblyData.scheduled_at);
 }
 
 function _updateAccuseCard() {
@@ -726,20 +721,17 @@ function _updateAccuseCard() {
 
 // ── Bürgerversammlung einberufen ────────────────────────────────
 let _assemblyData = ASSEMBLY_DATA; // aus PHP: {scheduled_at, notified, caller} | null
-let _assemblyCountdownTimer = null;
 let _assemblyWasRunning = null; // null = erster Render (keine Glocke beim Seitenladen)
 
 function _assemblyRender() {
-  const callSection      = document.getElementById('assembly-call-section');
-  const countdownSection = document.getElementById('assembly-countdown-section');
-  const runningSection   = document.getElementById('assembly-running-section');
-  if (!countdownSection) return;
+  const callSection    = document.getElementById('assembly-call-section');
+  const runningSection = document.getElementById('assembly-running-section');
+  if (!runningSection) return;
 
-  // Anklage-Karte im Sekundentakt mitziehen: erscheint exakt beim
-  // Versammlungsbeginn, verschwindet beim Beenden
+  // Anklage-Karte mitziehen: erscheint beim Versammlungsbeginn, verschwindet beim Beenden
   _updateAccuseCard();
 
-  // Glocken-Effekt genau in der Sekunde, in der die Versammlung beginnt
+  // Glocken-Effekt, sobald die Versammlung neu als laufend erkannt wird
   const _runNow = _assemblyIsRunning();
   if (_assemblyWasRunning === false && _runNow) window.FX?.bellRing?.();
   _assemblyWasRunning = _runNow;
@@ -753,12 +745,11 @@ function _assemblyRender() {
   // Antrag gestellt — wartet sichtbar auf den zweiten Einberufer
   if (_assemblyData && _assemblyData.pending) {
     if (callSection) callSection.style.display = '';
-    countdownSection.style.display = 'none';
-    runningSection.style.display   = 'none';
+    runningSection.style.display = 'none';
     const mine = PLAYER_ID === _assemblyData.caller_id;
     if (callText) callText.textContent = mine
       ? '⏳ Dein Antrag läuft — ein zweiter Spieler muss die Versammlung unterstützen.'
-      : '📣 ' + (_assemblyData.caller || 'Ein Spieler') + ' möchte eine Versammlung einberufen — unterstütze den Antrag! Sie findet dann zur nächsten vollen Stunde statt.';
+      : '📣 ' + (_assemblyData.caller || 'Ein Spieler') + ' möchte eine Versammlung einberufen — unterstütze den Antrag! Sie startet dann sofort.';
     if (callBtn) {
       callBtn.disabled = false;
       if (mine) { callBtn.textContent = '✖ Antrag zurückziehen';       callBtn.onclick = endAssembly; }
@@ -767,41 +758,22 @@ function _assemblyRender() {
     return;
   }
 
-  if (!_assemblyData || !_assemblyData.scheduled_at) {
-    if (callSection) callSection.style.display = '';
-    countdownSection.style.display = 'none';
-    runningSection.style.display   = 'none';
-    // Standard-Zustand wiederherstellen (nach abgelehntem/beendetem Antrag)
-    if (callText) callText.textContent = 'Berufe eine Versammlung ein — sie kommt zustande, sobald ein zweiter Spieler sie ebenfalls einberuft, und findet dann zur nächsten vollen Stunde statt. Alle Spieler werden per Push benachrichtigt.';
-    if (callBtn) { callBtn.textContent = '📣 Versammlung einberufen'; callBtn.onclick = callAssembly; callBtn.disabled = false; }
-    return;
-  }
-
-  const now  = Math.floor(Date.now() / 1000);
-  const diff = _assemblyData.scheduled_at - now;
-  const timeLabel = new Date(_assemblyData.scheduled_at * 1000)
-    .toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
-
-  if (diff > 0) {
+  // Läuft die Versammlung? (reine Zustandsprüfung, siehe _assemblyIsRunning)
+  if (_assemblyIsRunning()) {
     if (callSection) callSection.style.display = 'none';
-    countdownSection.style.display = '';
-    runningSection.style.display   = 'none';
-    document.getElementById('assembly-time-label').textContent = 'Versammlung um ' + timeLabel + ' Uhr';
-    document.getElementById('assembly-caller-label').textContent = 'Einberufen von ' + (_assemblyData.caller || '');
-    const m = Math.floor(diff / 60), s = diff % 60;
-    document.getElementById('assembly-countdown').textContent =
-      String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-    const endBtn = document.getElementById('assembly-end-btn-countdown');
-    if (endBtn) endBtn.style.display = canEnd ? '' : 'none';
-  } else {
-    if (callSection) callSection.style.display = 'none';
-    countdownSection.style.display = 'none';
-    runningSection.style.display   = '';
+    runningSection.style.display = '';
     const callerEl = document.getElementById('assembly-running-caller');
     if (callerEl) callerEl.textContent = 'Einberufen von ' + (_assemblyData.caller || '');
     const endBtn = document.getElementById('assembly-end-btn-running');
     if (endBtn) endBtn.style.display = canEnd ? '' : 'none';
+    return;
   }
+
+  // Standard-Zustand (nach abgelehntem/beendetem Antrag)
+  if (callSection) callSection.style.display = '';
+  runningSection.style.display = 'none';
+  if (callText) callText.textContent = 'Berufe eine Versammlung ein — sie startet sofort, sobald ein zweiter Spieler sie ebenfalls einberuft. Alle Spieler werden per Push benachrichtigt. Nach einer beendeten Versammlung ist eine neue erst nach 15 Minuten Pause wieder möglich.';
+  if (callBtn) { callBtn.textContent = '📣 Versammlung einberufen'; callBtn.onclick = callAssembly; callBtn.disabled = false; }
 }
 
 async function endAssembly() {
@@ -852,7 +824,6 @@ const assemblyPoll = liveBlocks({
   },
 });
 _assemblyRender();
-setInterval(_assemblyRender, 1000); // reiner Anzeige-Ticker (kein Serverkontakt)
 assemblyPoll.start();
 
 
@@ -1155,15 +1126,13 @@ const CD_BTN_LABEL = MY_ROLLENSICHT
   const remaining = document.getElementById('cd-remaining');
   if (!btn) return;
 
-  // Nur EINE Uhr: der Server liefert verbleibende Sekunden (DB-Uhr),
-  // der Client zählt lokal herunter — keine Zeitstempel-Vergleiche
-  // zwischen PHP-, DB- und Browser-Uhr mehr.
-  let endsAt = MY_COOLDOWN_REMAINING > 0 ? Date.now() + MY_COOLDOWN_REMAINING * 1000 : null;
-
-  function tick() {
-    const left = endsAt ? (endsAt - Date.now()) / 1000 : 0;
-    if (left <= 0) {
-      endsAt                 = null;
+  // Reines Server-Polling, keine Client-Uhr mehr beteiligt: die Anzeige zeigt
+  // immer nur den zuletzt vom Server gemeldeten Rest-Sekunden-Wert (DB-Uhr,
+  // via TIMESTAMPDIFF berechnet) — kein lokales Herunterzählen, kein
+  // Date.now() mehr. Aktualisiert sich dadurch nur im Rhythmus des
+  // eingestellten Poll-Intervalls statt sekundengenau.
+  function render(secs) {
+    if (!secs || secs <= 0) {
       btn.disabled           = false;
       btn.textContent        = CD_BTN_LABEL;
       statusEl.style.display = 'none';
@@ -1172,17 +1141,15 @@ const CD_BTN_LABEL = MY_ROLLENSICHT
     btn.disabled           = true;
     btn.textContent        = '⏱ Cooldown läuft …';
     statusEl.style.display = '';
-    const m = Math.floor(left / 60);
-    const s = Math.floor(left % 60);
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
     remaining.textContent  = m + ':' + String(s).padStart(2, '0');
   }
 
-  tick();
-  setInterval(tick, 1000);
+  render(MY_COOLDOWN_REMAINING);
 
   window._setCooldownRemaining = function(secs) {
-    endsAt = secs > 0 ? Date.now() + secs * 1000 : null;
-    tick();
+    render(secs);
   };
 })();
 
