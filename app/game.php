@@ -94,9 +94,9 @@ require TEMPLATE_PATH . '/base.php';
     <?php if ($status === 'lobby'): ?>
       🏰 Warte auf Spielstart
     <?php elseif ($phase === 'day'): ?>
-      ☀️ Tag — Das Dorf berät
+      ☀️ Tag
     <?php else: ?>
-      🌕 Nacht — Die Wölfe erwachen
+      🌕 Nacht
     <?php endif; ?>
     </span>
   </div>
@@ -520,7 +520,7 @@ function _updatePhaseBanner(status, phase) {
   if (status !== 'running') {
     _setBannerText('🏰 Warte auf Spielstart');
   } else {
-    _setBannerText(phase === 'night' ? '🌕 Nacht — Die Wölfe erwachen' : '☀️ Tag — Das Dorf berät');
+    _setBannerText(phase === 'night' ? '🌕 Nacht' : '☀️ Tag');
   }
 }
 

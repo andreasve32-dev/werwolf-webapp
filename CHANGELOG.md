@@ -5,6 +5,20 @@ lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
 
 ---
 
+## [v0.48] — 2026-07-13
+
+### Geändert
+- **Phasen-Banner ohne Flavor-Text:** „☀️ Tag — Das Dorf berät" /
+  „🌕 Nacht — Die Wölfe erwachen" waren nach der Dorf-Sprüche-Entfernung
+  (v0.42) als fester Ersatztext stehen geblieben — zeigt jetzt nur noch
+  die reine Phase („☀️ Tag" / „🌕 Nacht"). Betroffen: `app/game.php`
+  (initiales Rendering + `_updatePhaseBanner()`).
+
+### DB-Änderungen
+- Keine. Nur `app_version` → `0.48`.
+
+---
+
 ## [v0.47] — 2026-07-12
 
 ### Geändert
