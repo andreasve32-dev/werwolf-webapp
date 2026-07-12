@@ -164,35 +164,21 @@ require TEMPLATE_PATH . '/base.php';
     // nur dass hier bewusst ALLE echten Rollen direkt sichtbar sind — ignoriert
     // alle normalen Sichtbarkeitsregeln, nur für dich als Debug-Werkzeug.
     $__rolesById = array_column(allRoles(), null, 'id');
-    $__debugPeekData = [];
   ?>
   <div class="card card--glow animate-in mb-2" style="border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04)">
     <?php debugAccHead('🃏', 'Alle Rollen ansehen'); ?>
     <div class="debug-acc__body" hidden>
       <p class="text-dim text-xs mb-2">
         Zeigt die echten Rollen aller Spieler auf einen Blick — ignoriert bewusst alle
-        normalen Sichtbarkeitsregeln, nur für dich als Debug-Werkzeug sichtbar. Antippen
-        für Beschreibung/Regeln.
+        normalen Sichtbarkeitsregeln, nur für dich als Debug-Werkzeug sichtbar.
       </p>
-      <div class="player-grid" id="debug-role-grid">
+      <div class="player-grid">
         <?php foreach ($gamePlayers as $gp):
           $r = $gp['role_id'] ? ($__rolesById[(int)$gp['role_id']] ?? null) : null;
           $r = $r ?: roleFallback();
           $dead = !$gp['is_alive'];
-          $__debugPeekData[(int)$gp['player_id']] = [
-              'display_name' => $gp['display_name'],
-              'is_alive'     => (bool)$gp['is_alive'],
-              'role_name'    => $r['name'],
-              'icon_url'     => roleIconUrl($r),
-              'sichtbar'     => (bool)($r['sichtbar'] ?? 0),
-              'description'  => roleText($r['description'] ?? '', $r),
-              'rules'        => roleText($r['rules'] ?? '', $r),
-              'cooldown'     => (int)($r['cooldown'] ?? 0),
-          ];
         ?>
-        <div class="player-card<?= $dead ? ' player-card--dead' : '' ?>"
-             id="debug-role-card-<?= (int)$gp['player_id'] ?>"
-             onclick="debugShowRoleDetail(<?= (int)$gp['player_id'] ?>)">
+        <div class="player-card<?= $dead ? ' player-card--dead' : '' ?>" style="cursor:default">
           <?php if ($dead): ?><span class="player-card__skull">💀</span><?php endif; ?>
           <?= roleIconHtml($r, 'lg') ?>
           <div class="player-card__name"><?= e($gp['display_name']) ?></div>
@@ -200,7 +186,6 @@ require TEMPLATE_PATH . '/base.php';
         </div>
         <?php endforeach; ?>
       </div>
-      <div id="debug-peek-result" class="mt-2"></div>
     </div>
   </div>
 
@@ -243,9 +228,8 @@ require TEMPLATE_PATH . '/base.php';
 
 <?php
 $page['inline_js'] = sprintf(
-    'const API_BASE = %s; const GAME_ID = %s; const TP_API = %s; const DEBUG_ROLE_DATA = %s;',
-    json_encode(API_URL), json_encode($gameId), json_encode(APP_URL . '/admin/testplayers.php'),
-    json_encode($__debugPeekData ?? [])
+    'const API_BASE = %s; const GAME_ID = %s; const TP_API = %s;',
+    json_encode(API_URL), json_encode($gameId), json_encode(APP_URL . '/admin/testplayers.php')
 );
 $page['inline_js'] .= <<<'JS'
 
@@ -279,29 +263,6 @@ async function debugSetOwnRole() {
   } else {
     res.innerHTML = `<div class="alert alert--error">${escHtml(r.error||'Fehler')}</div>`;
   }
-}
-
-// Karte im Rollen-Grid antippen → volle Details anzeigen (rein clientseitig,
-// die echten Rollendaten aller Spieler stecken schon serverseitig gerendert
-// in DEBUG_ROLE_DATA — kein zusätzlicher Request nötig).
-let _debugSelectedPid = null;
-function debugShowRoleDetail(pid) {
-  const r = DEBUG_ROLE_DATA[pid];
-  const res = document.getElementById('debug-peek-result');
-  if (!r || !res) return;
-  document.querySelectorAll('#debug-role-grid .player-card').forEach(c => c.classList.remove('selected'));
-  document.getElementById('debug-role-card-' + pid)?.classList.add('selected');
-  _debugSelectedPid = pid;
-  res.innerHTML = `
-    <div class="panel" style="padding:1rem;text-align:center">
-      <div style="width:72px;height:72px;margin:0 auto .6rem;border-radius:50%;background-size:cover;background-position:center;background-image:url('${escHtml(r.icon_url)}')"></div>
-      <div style="font-family:var(--font-display);font-size:1.05rem;color:var(--text-bright)">${escHtml(r.role_name)}</div>
-      <div class="text-dim text-xs mt-1">${escHtml(r.display_name)}${r.is_alive ? '' : ' · ☠️ tot'}</div>
-      ${r.sichtbar ? '<div class="tag tag--alive mt-1" style="font-size:.65rem">👁️ Erkennt sich mit Rollengleichen</div>' : ''}
-      ${r.description ? `<p class="text-sm mt-2" style="text-align:left">${escHtml(r.description)}</p>` : ''}
-      ${r.rules ? `<div class="text-dim text-xs mt-1" style="text-align:left">📜 ${escHtml(r.rules)}</div>` : ''}
-      ${r.cooldown > 0 ? `<div class="text-dim text-xs mt-1">⏳ Cooldown: alle ${r.cooldown + 1} Nächte</div>` : ''}
-    </div>`;
 }
 
 async function revivePlayer(pid, name) {

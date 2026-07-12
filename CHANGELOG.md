@@ -5,6 +5,19 @@ lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
 
 ---
 
+## [v0.46] — 2026-07-12
+
+### Geändert
+- **🃏 „Alle Rollen ansehen" vereinfacht:** Die Karten im Debug-Grid sind
+  jetzt nicht mehr anklickbar, das aufklappbare Detail-Panel (Beschreibung/
+  Regeln/Cooldown darunter) entfällt — die Vierecke mit Icon, Name und
+  Rollenname reichen aus. Betroffen: `admin/debug.php`.
+
+### DB-Änderungen
+- Keine. Nur `app_version` → `0.46`.
+
+---
+
 ## [v0.45] — 2026-07-12
 
 ### Hinzugefügt
