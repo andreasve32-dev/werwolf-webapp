@@ -127,21 +127,18 @@ require TEMPLATE_PATH . '/base.php';
     <?php debugAccHead('🎭', 'Eigene Rolle wählen'); ?>
     <div class="debug-acc__body" hidden>
       <p class="text-dim text-xs mb-2">
-        Setzt deine eigene Rolle im laufenden Spiel sofort.
-        Aktuell: <span id="debug-current-role-label"><?php if ($adminGameEntry['role_name'] ?? null): ?><strong style="color:var(--text-bright)"><?= e($adminGameEntry['role_name']) ?></strong><?php else: ?><em>keine Rolle</em><?php endif; ?></span>
+        Antippen setzt deine eigene Rolle im laufenden Spiel sofort (aktuelle Rolle ist markiert).
       </p>
-      <div class="flex gap-sm mb-2">
-        <select id="debug-role-select" class="form-input" style="flex:1">
-          <option value="">Rolle wählen…</option>
-          <?php foreach ($debugRoles as $r): ?>
-          <option value="<?= (int)$r['id'] ?>"
-            <?= (int)($adminGameEntry['role_id'] ?? 0) === (int)$r['id'] ? 'selected' : '' ?>>
-            <?= e($r['name']) ?>
-          </option>
-          <?php endforeach; ?>
-        </select>
-        <button class="btn btn--ghost" style="border-color:rgba(251,191,36,.4);color:#fbbf24"
-                onclick="debugSetOwnRole()">Setzen</button>
+      <div class="player-grid mb-2" id="debug-ownrole-grid">
+        <?php foreach ($debugRoles as $r):
+          $isCurrent = (int)($adminGameEntry['role_id'] ?? 0) === (int)$r['id'];
+        ?>
+        <div class="player-card<?= $isCurrent ? ' selected' : '' ?>" id="debug-ownrole-card-<?= (int)$r['id'] ?>"
+             onclick="debugSetOwnRole(<?= (int)$r['id'] ?>)">
+          <?= roleIconHtml($r, 'lg') ?>
+          <div class="player-card__name"><?= e($r['name']) ?></div>
+        </div>
+        <?php endforeach; ?>
       </div>
       <div id="debug-role-result" class="mb-1"></div>
       <button class="btn btn--ghost btn--sm" style="border-color:rgba(251,191,36,.4);color:#fbbf24"
@@ -249,19 +246,16 @@ function toggleDebugAcc(btn) {
   body.hidden = open;
 }
 
-async function debugSetOwnRole() {
-  const sel   = document.getElementById('debug-role-select');
-  const res   = document.getElementById('debug-role-result');
-  const label = document.getElementById('debug-current-role-label');
-  const roleId = parseInt(sel?.value);
-  if (!roleId) { showToast('Keine Rolle gewählt', 'error'); return; }
+async function debugSetOwnRole(roleId) {
+  const res = document.getElementById('debug-role-result');
   const r = await apiFetch(API_BASE+'/admin.php', {action:'set_own_role', game_id:GAME_ID, role_id:roleId});
   if (r.error === 'session_expired') return;
   if (r.ok) {
-    res.innerHTML = `<div class="alert alert--success">${escHtml(r.message||'Rolle gesetzt')}</div>`;
-    if (label && r.role_name) label.textContent = r.role_name;
+    document.querySelectorAll('#debug-ownrole-grid .player-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById('debug-ownrole-card-' + roleId)?.classList.add('selected');
+    if (res) res.innerHTML = `<div class="alert alert--success">${escHtml(r.message||'Rolle gesetzt')}</div>`;
   } else {
-    res.innerHTML = `<div class="alert alert--error">${escHtml(r.error||'Fehler')}</div>`;
+    if (res) res.innerHTML = `<div class="alert alert--error">${escHtml(r.error||'Fehler')}</div>`;
   }
 }
 

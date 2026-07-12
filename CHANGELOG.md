@@ -5,6 +5,21 @@ lautete das Schema v0.0.x, ab v0.26 verkürzt auf Wunsch des Betreibers).
 
 ---
 
+## [v0.47] — 2026-07-12
+
+### Geändert
+- **🎭 „Eigene Rolle wählen" im Debug-Menü als Mini-Grid:** Statt Dropdown +
+  „Setzen"-Button jetzt ein Karten-Grid aller aktiven Rollen (gleiches
+  Icon+Name-Layout wie „Alle Rollen ansehen") — Antippen setzt die eigene
+  Rolle im laufenden Spiel sofort, die aktuelle Rolle ist hervorgehoben.
+  Betroffen: `admin/debug.php`, `templates/admin_dashboard_blocks.php`
+  (`$debugRoles`-Query liefert jetzt zusätzlich `icon_path`).
+
+### DB-Änderungen
+- Keine. Nur `app_version` → `0.47`.
+
+---
+
 ## [v0.46] — 2026-07-12
 
 ### Geändert

@@ -91,7 +91,7 @@ function admin_compute_state(int $gameId): array {
     $debugRoles     = [];
     $adminGameEntry = null;
     if (APP_DEBUG && $game['status'] === 'running') {
-        $debugRoles     = Database::query("SELECT id, name FROM roles WHERE active=1 ORDER BY sort_order, name");
+        $debugRoles     = Database::query("SELECT id, name, icon_path FROM roles WHERE active=1 ORDER BY sort_order, name");
         $adminGameEntry = Database::queryOne(
             "SELECT gp.role_id, r.name AS role_name
              FROM game_players gp LEFT JOIN roles r ON r.id=gp.role_id
